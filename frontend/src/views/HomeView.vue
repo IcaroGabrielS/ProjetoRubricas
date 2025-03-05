@@ -71,12 +71,13 @@ export default {
       stores: [],
       storesLoading: true,
       storesError: null,
-      currentDateTime: '2025-03-05 17:43:15'
+      currentDateTime: '2025-03-05 19:03:46'
     }
   },
   created() {
     this.loadUserInfo();
     this.fetchStores();
+    this.updateDateTime();
   },
   methods: {
     loadUserInfo() {
@@ -130,8 +131,12 @@ export default {
       this.$router.push('/stores/create');
     },
     manageAccounts() {
-      // Implementar futuramente a navegação para gerenciamento de contas
-      alert('Funcionalidade em desenvolvimento');
+      // Navegar para a página de gerenciamento de contas
+      this.$router.push('/users');
+    },
+    updateDateTime() {
+      // Atualiza com o horário atual fornecido
+      this.currentDateTime = '2025-03-05 19:03:46';
     },
     logout() {
       localStorage.removeItem('user');

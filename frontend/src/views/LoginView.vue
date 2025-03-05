@@ -41,7 +41,7 @@
       </form>
       
       <div class="login-footer">
-        <p>Não tem uma conta? <router-link to="/register">Registrar</router-link></p>
+        <!-- Removed the registration link since only admins can create users now -->
         <p class="current-info">
           <span>{{ currentDateTime }}</span>
           <span class="user-info">{{ currentUser }}</span>
@@ -59,7 +59,7 @@ export default {
       username: '',
       password: '',
       error: '',
-      currentDateTime: '2025-03-04 22:02:58',
+      currentDateTime: '2025-03-05 19:13:33',
       currentUser: 'IcaroGabrielS'
     }
   },

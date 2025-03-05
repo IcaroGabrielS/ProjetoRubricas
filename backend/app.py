@@ -59,8 +59,9 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Rota para registro de usuário
+# Rota para registro de usuário (agora restrita a administradores)
 @app.route('/api/register', methods=['POST'])
+@admin_required
 def register():
     data = request.get_json()
     
@@ -69,18 +70,18 @@ def register():
     if existing_user:
         return jsonify({'message': 'Username already exists'}), 400
     
-    # Cria um novo usuário (por padrão não é admin)
+    # Cria um novo usuário (admin pode definir se é admin ou não)
     new_user = User(
         username=data['username'],
         password=data['password'],
-        is_admin=False
+        is_admin=data.get('is_admin', False)  # Permite ao admin definir se o novo usuário é admin
     )
     
     # Salva o usuário no banco
     db.session.add(new_user)
     db.session.commit()
     
-    return jsonify({'message': 'User registered successfully'}), 201
+    return jsonify({'message': 'User registered successfully', 'user': new_user.to_dict()}), 201
 
 # Rota para login
 @app.route('/api/login', methods=['POST'])

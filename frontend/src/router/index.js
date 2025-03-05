@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
 import CreateStoreView from '../views/CreateStoreView.vue'
 import StoreDetailView from '../views/StoreDetailView.vue'
+import UsersView from '../views/UsersView.vue'  // Import the new UsersView component
 
 const routes = [
   {
@@ -15,12 +15,8 @@ const routes = [
   {
     path: '/login',
     name: 'login',
-    component: LoginView
-  },
-  {
-    path: '/register',
-    name: 'register',
-    component: RegisterView
+    component: LoginView,
+    meta: { redirectIfLoggedIn: true } // New meta flag
   },
   {
     path: '/stores/create',
@@ -33,6 +29,12 @@ const routes = [
     name: 'store-detail',
     component: StoreDetailView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/users',
+    name: 'users',
+    component: UsersView,
+    meta: { requiresAuth: true, requiresAdmin: true }  // Only admin can access
   }
 ]
 
@@ -50,6 +52,12 @@ router.beforeEach((to, from, next) => {
   if (isLoggedIn) {
     const user = JSON.parse(loggedInStr)
     isAdmin = user.is_admin === true
+  }
+  
+  // Redirect to home if user is already logged in and tries to access login page
+  if (to.matched.some(record => record.meta.redirectIfLoggedIn) && isLoggedIn) {
+    next('/')
+    return
   }
   
   if (to.matched.some(record => record.meta.requiresAuth) && !isLoggedIn) {
