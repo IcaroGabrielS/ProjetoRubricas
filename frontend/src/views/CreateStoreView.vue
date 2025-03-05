@@ -5,15 +5,20 @@
         <h1>Criar Nova Loja</h1>
       </div>
 
-      <form @submit.prevent="handleCreateStore" class="store-form">
+      <div v-if="usersLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Carregando usuários...</p>
+      </div>
+
+      <form v-else @submit.prevent="handleCreateStore" class="store-form">
         <div class="form-group">
-          <label for="name">Nome do Grupo:</label>
+          <label for="name">Nome da Loja:</label>
           <input 
             type="text" 
             id="name" 
             v-model="store.name" 
             required
-            placeholder="Digite o nome do grupo"
+            placeholder="Digite o nome da loja"
           >
         </div>
         
@@ -49,6 +54,22 @@
             placeholder="Digite o endereço completo"
           ></textarea>
         </div>
+
+        <div class="form-group">
+          <label for="owner_id">Dono da Loja:</label>
+          <div class="select-wrapper">
+            <select 
+              id="owner_id" 
+              v-model="store.owner_id" 
+              required
+            >
+              <option value="" disabled selected>Selecione um usuário</option>
+              <option v-for="user in users" :key="user.id" :value="user.id">
+                {{ user.username }} {{ user.is_admin ? '(Admin)' : '' }}
+              </option>
+            </select>
+          </div>
+        </div>
         
         <button type="submit" :disabled="loading" class="submit-btn">
           <span v-if="loading" class="loading-indicator"></span>
@@ -66,7 +87,7 @@
         <div class="success-icon">✓</div>
         <p>{{ successMessage }}</p>
         <div class="success-actions">
-          <router-link to="/stores" class="action-btn view-btn">Ver lista de lojas</router-link>
+          <router-link to="/" class="action-btn view-btn">Voltar para Home</router-link>
           <button @click="resetForm" class="action-btn reset-btn">Criar outra loja</button>
         </div>
       </div>
@@ -83,15 +104,19 @@ export default {
         name: '',
         state_registration: '',
         store_number: '',
-        address: ''
+        address: '',
+        owner_id: ''
       },
+      users: [],
       loading: false,
+      usersLoading: true,
       error: null,
       successMessage: ''
     }
   },
   created() {
     this.checkIfAdmin();
+    this.fetchUsers();
   },
   methods: {
     checkIfAdmin() {
@@ -104,6 +129,43 @@ export default {
       const user = JSON.parse(userStr);
       if (!user.is_admin) {
         this.$router.push('/');
+      }
+    },
+    async fetchUsers() {
+      this.usersLoading = true;
+      this.error = null;
+      
+      try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch('/api/users', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          this.error = data.message || 'Erro ao carregar usuários';
+          this.usersLoading = false;
+          return;
+        }
+        
+        this.users = data.users;
+        this.usersLoading = false;
+      } catch (error) {
+        this.error = 'Erro ao conectar ao servidor para carregar usuários';
+        this.usersLoading = false;
+        console.error('Error fetching users:', error);
       }
     },
     async handleCreateStore() {
@@ -149,7 +211,8 @@ export default {
         name: '',
         state_registration: '',
         store_number: '',
-        address: ''
+        address: '',
+        owner_id: ''
       };
       this.successMessage = '';
     }
@@ -249,7 +312,7 @@ body {
   color: #333;
 }
 
-.form-group input, .form-group textarea {
+.form-group input, .form-group textarea, .form-group select {
   width: 100%;
   padding: 0.9rem;
   border: 2px solid #e1e1e1;
@@ -261,7 +324,7 @@ body {
   font-family: 'Sarala', sans-serif;
 }
 
-.form-group input:focus, .form-group textarea:focus {
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
   border-color: #204578;
   box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
   outline: none;
@@ -275,6 +338,45 @@ body {
 .form-group textarea {
   resize: vertical;
   min-height: 100px;
+}
+
+/* Estilo para o select */
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper:after {
+  content: "\25BC";
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #555;
+  font-size: 0.8rem;
+}
+
+select {
+  appearance: none;
+  cursor: pointer;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.loading-state .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(32, 69, 120, 0.1);
+  border-top-color: #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
 .submit-btn {

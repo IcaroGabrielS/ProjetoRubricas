@@ -20,33 +20,67 @@
           </div>
         </div>
         
-        <div class="store-info">
-          <div class="info-row">
-            <span class="label">Número da Loja:</span>
-            <span class="value">{{ store.store_number }}</span>
+        <div class="store-info-card">
+          <div class="card-header">
+            <h2>Informações da Loja</h2>
           </div>
           
-          <div class="info-row">
-            <span class="label">Inscrição Estadual:</span>
-            <span class="value">{{ store.state_registration }}</span>
-          </div>
-          
-          <div class="info-row">
-            <span class="label">Endereço:</span>
-            <span class="value">{{ store.address }}</span>
-          </div>
-          
-          <div class="info-row">
-            <span class="label">Data de Criação:</span>
-            <span class="value">{{ formatDate(store.created_at) }}</span>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">
+                <i class="info-icon">🏪</i>
+                Número da Loja
+              </div>
+              <div class="info-value">{{ store.store_number }}</div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <i class="info-icon">📝</i>
+                Inscrição Estadual
+              </div>
+              <div class="info-value">{{ store.state_registration }}</div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <i class="info-icon">📍</i>
+                Endereço
+              </div>
+              <div class="info-value">{{ store.address }}</div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <i class="info-icon">🗓️</i>
+                Data de Criação
+              </div>
+              <div class="info-value">{{ formatDate(store.created_at) }}</div>
+            </div>
+            
+            <div class="info-item" v-if="store.owner_username">
+              <div class="info-label">
+                <i class="info-icon">👤</i>
+                Proprietário
+              </div>
+              <div class="info-value">{{ store.owner_username }}</div>
+            </div>
           </div>
         </div>
         
         <div class="file-section">
-          <h2>Arquivos da Loja</h2>
+          <div class="file-section-header">
+            <h2>Arquivos da Loja</h2>
+            <div class="file-count" v-if="store.files">
+              {{ store.files.length }} arquivo(s)
+            </div>
+          </div>
           
-          <div v-if="isAdmin" class="file-upload">
-            <h3>Upload de Arquivo</h3>
+          <div v-if="isAdmin" class="upload-card">
+            <div class="upload-header">
+              <h3>Upload de Arquivo</h3>
+            </div>
+            
             <form @submit.prevent="uploadFile" class="upload-form">
               <div class="form-group">
                 <label for="file" class="file-label">
@@ -82,15 +116,17 @@
             </div>
           </div>
           
-          <div class="file-list">
-            <h3>Arquivos Disponíveis</h3>
+          <div class="files-card">
+            <div class="files-header">
+              <h3>Arquivos Disponíveis</h3>
+            </div>
             
             <div v-if="store.files && store.files.length === 0" class="no-files">
               <div class="empty-icon">📂</div>
               <p>Nenhum arquivo disponível para esta loja.</p>
             </div>
             
-            <div v-else class="files-table-wrapper">
+            <div v-else class="files-table-container">
               <table class="files-table">
                 <thead>
                   <tr>
@@ -102,7 +138,12 @@
                 </thead>
                 <tbody>
                   <tr v-for="file in store.files" :key="file.id">
-                    <td>{{ file.filename }}</td>
+                    <td>
+                      <div class="file-name">
+                        <span class="file-type-icon">{{ getFileIcon(file.file_type) }}</span>
+                        {{ file.filename }}
+                      </div>
+                    </td>
                     <td>{{ file.file_type.toUpperCase() }}</td>
                     <td>{{ formatDate(file.uploaded_at) }}</td>
                     <td>
@@ -118,7 +159,10 @@
         </div>
         
         <div class="actions">
-          <router-link to="/stores" class="back-btn">Voltar para Lista</router-link>
+          <router-link to="/" class="back-btn">
+            <span class="back-icon">←</span>
+            Voltar para Home
+          </router-link>
         </div>
       </div>
     </div>
@@ -138,6 +182,8 @@ export default {
         address: '',
         created_at: null,
         created_by: null,
+        owner_id: null,
+        owner_username: null,
         files: []
       },
       loading: true,
@@ -147,7 +193,7 @@ export default {
       fileLoading: false,
       fileError: null,
       fileSuccess: null,
-      currentDateTime: '2025-03-04 22:32:33',
+      currentDateTime: '2025-03-05 18:08:27',
       currentUser: 'IcaroGabrielS'
     }
   },
@@ -214,6 +260,15 @@ export default {
       this.fileError = null;
       this.fileSuccess = null;
     },
+    getFileIcon(fileType) {
+      switch(fileType.toLowerCase()) {
+        case 'pdf': return '📕';
+        case 'csv': return '📊';
+        case 'xls': 
+        case 'xlsx': return '📈';
+        default: return '📄';
+      }
+    },
     async uploadFile() {
       if (!this.selectedFile) {
         this.fileError = 'Por favor, selecione um arquivo para enviar.';
@@ -277,176 +332,487 @@ export default {
   padding: 0;
 }
 
-html, body {
-  height: 100%;
-  overflow: hidden; /* Previne rolagem em toda a página */
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Sarala', sans-serif;
-  background: linear-gradient(135deg, #142C4D, #204578);
-  color: #333;
+.store-detail-container {
+  margin-top: 60px; /* Altura da navbar */
+  height: calc(100vh - 60px); /* Altura total da viewport menos a altura da navbar */
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  font-family: 'Sarala', sans-serif;
+  padding: 20px;
+  overflow-y: auto; /* Habilita a rolagem vertical */
 }
 
-.store-detail {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+.store-detail-content {
+  width: 1200px; /* Largura fixa para desktop */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  padding: 2rem;
   animation: fade-in 0.8s ease-out;
+  overflow: visible; /* Mantém o conteúdo visível */
+  margin-bottom: 20px; /* Espaço no final */
 }
 
-.loading, .error {
-  text-align: center;
-  padding: 20px;
-}
-
-.error {
-  color: #dc3545;
-}
-
-.store-content h1 {
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
-  color: #142C4D;
-  font-size: 2.2rem;
-  font-weight: 700;
-}
-
-.store-info {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 30px;
-}
-
-.info-row {
-  margin-bottom: 12px;
+/* Estado de carregamento */
+.loading-state {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
 }
 
-.info-row .label {
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+/* Estado de erro */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.error-icon {
+  width: 60px;
+  height: 60px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: bold;
-  width: 150px;
-  color: #495057;
+  font-size: 2rem;
+  margin-bottom: 1rem;
 }
 
-.info-row .value {
-  flex-grow: 1;
+.error-state p {
+  color: #b91c1c;
+  font-weight: 500;
+  font-size: 1.1rem;
 }
 
-.file-section {
-  margin-top: 30px;
+/* Cabeçalho da página */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #204578;
 }
 
-.file-section h2 {
-  border-bottom: 1px solid #dee2e6;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
+.page-header h1 {
   color: #142C4D;
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
+  margin: 0;
 }
 
-.file-upload {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+.header-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.9rem;
 }
 
-.file-upload h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
+.date-info {
+  color: #666;
+  margin-bottom: 0.2rem;
+}
+
+.user-info {
   color: #142C4D;
+  font-weight: 600;
+}
+
+/* Card de informações da loja */
+.store-info-card {
+  background: linear-gradient(to right bottom, #ffffff, #f8f9fa);
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.card-header {
+  background: linear-gradient(to right, #142C4D, #204578);
+  padding: 1rem 1.5rem;
+}
+
+.card-header h2 {
+  color: white;
   font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Sempre duas colunas para desktop */
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.info-icon {
+  margin-right: 0.5rem;
+  font-style: normal;
+}
+
+.info-value {
+  font-size: 1.1rem;
+  color: #333;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  border-left: 3px solid #204578;
+}
+
+/* Seção de arquivos */
+.file-section {
+  margin-top: 2rem;
+}
+
+.file-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.file-section-header h2 {
+  color: #142C4D;
+  font-size: 1.6rem;
   font-weight: 700;
+  margin: 0;
+}
+
+.file-count {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 0.3rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Card de upload */
+.upload-card {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.upload-header {
+  background: linear-gradient(to right, #204578, #3c72c2);
+  padding: 1rem 1.5rem;
+}
+
+.upload-header h3 {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.upload-form {
+  padding: 1.5rem;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 1.5rem;
+}
+
+.file-label {
+  display: flex;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background-color: white;
+  border: 2px dashed #ced4da;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.file-label:hover {
+  border-color: #204578;
+  background-color: #f0f4f8;
+}
+
+.file-icon {
+  font-size: 1.5rem;
+  margin-right: 0.8rem;
+}
+
+.file-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-input {
+  position: absolute;
+  left: -9999px;
 }
 
 small {
   display: block;
-  margin-top: 5px;
+  margin-top: 0.5rem;
   color: #6c757d;
+  font-size: 0.85rem;
+}
+
+.upload-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(to right, #204578, #3c72c2);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(32, 69, 120, 0.2);
+}
+
+.upload-btn:disabled {
+  background: linear-gradient(to right, #6c757d, #495057);
+  cursor: not-allowed;
+}
+
+.loading-indicator.small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+/* Mensagens de erro e sucesso */
+.error-message, .success-message {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  color: #b91c1c;
 }
 
 .success-message {
-  color: #28a745;
-  margin-top: 10px;
+  background-color: #d1fae5;
+  color: #065f46;
+  align-items: center;
+}
+
+.error-icon.small, .success-icon.small {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.8rem;
+  flex-shrink: 0;
+}
+
+.error-icon.small {
+  background-color: #b91c1c;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.success-icon.small {
+  background-color: #059669;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+  margin-left: auto;
+}
+
+/* Card de arquivos */
+.files-card {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.files-header {
+  background: linear-gradient(to right, #204578, #3c72c2);
+  padding: 1rem 1.5rem;
+}
+
+.files-header h3 {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.files-table-container {
+  padding: 1rem;
+  max-height: 300px; /* Altura máxima para a tabela */
+  overflow-y: auto; /* Adiciona rolagem vertical apenas para a tabela */
 }
 
 .files-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 15px;
 }
 
 .files-table th, .files-table td {
-  padding: 12px;
+  padding: 0.8rem;
   text-align: left;
-  border-bottom: 1px solid #dee2e6;
 }
 
 .files-table th {
-  background-color: #f8f9fa;
-  font-weight: bold;
+  background-color: #e9ecef;
   color: #495057;
+  font-weight: 600;
+  position: sticky;
+  top: 0; /* Mantém o cabeçalho da tabela fixo durante rolagem */
 }
 
-.no-files {
-  text-align: center;
-  color: #6c757d;
-  padding: 20px;
+.files-table tr {
+  border-bottom: 1px solid #dee2e6;
+  transition: background-color 0.2s ease;
+}
+
+.files-table tr:hover {
+  background-color: #f0f4f8;
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.file-type-icon {
+  font-size: 1.2rem;
 }
 
 .download-btn {
   display: inline-block;
-  background-color: #007bff;
+  background-color: #204578;
   color: white;
-  padding: 6px 12px;
+  padding: 0.4rem 0.8rem;
   border-radius: 4px;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
   transition: all 0.3s ease;
 }
 
 .download-btn:hover {
-  background-color: #0069d9;
+  background-color: #142C4D;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 3px 8px rgba(32, 69, 120, 0.3);
+}
+
+/* Estado vazio */
+.no-files {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #6c757d;
+}
+
+.no-files p {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Botão de voltar */
+.actions {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
 .back-btn {
-  display: inline-block;
-  background-color: #6c757d;
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(to right, #6c757d, #495057);
   color: white;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
   text-decoration: none;
-  margin-top: 30px;
+  font-weight: 600;
   transition: all 0.3s ease;
 }
 
 .back-btn:hover {
-  background-color: #5a6268;
+  background: linear-gradient(to right, #5a6268, #3d4246);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
 }
 
-.actions {
-  margin-top: 30px;
-  text-align: center;
+.back-icon {
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
 }
 
 /* Animações */
@@ -455,23 +821,8 @@ small {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsividade */
-@media (max-width: 480px) {
-  .store-detail {
-    max-width: 90%;
-    padding: 2rem 1.5rem;
-  }
-  
-  .store-content h1 {
-    font-size: 1.8rem;
-  }
-  
-  .file-section h2 {
-    font-size: 1.4rem;
-  }
-  
-  .file-upload h3 {
-    font-size: 1.2rem;
-  }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>

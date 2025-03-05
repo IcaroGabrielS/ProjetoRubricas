@@ -34,9 +34,12 @@ class Store(db.Model):
     address = db.Column(db.String(250), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # Relacionamento com o criador (usuário administrador)
-    creator = db.relationship('User', backref='stores')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_stores')
+    # Relacionamento com o dono
+    owner = db.relationship('User', foreign_keys=[owner_id], backref='owned_stores')
     
     def to_dict(self):
         return {
@@ -46,7 +49,9 @@ class Store(db.Model):
             "store_number": self.store_number,
             "address": self.address,
             "created_at": self.created_at.isoformat(),
-            "created_by": self.created_by
+            "created_by": self.created_by,
+            "owner_id": self.owner_id,
+            "owner_username": self.owner.username if self.owner else None
         }
 
 class StoreFile(db.Model):

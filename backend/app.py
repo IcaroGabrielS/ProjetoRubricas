@@ -101,6 +101,15 @@ def login():
     
     return jsonify({'message': 'Invalid username or password'}), 401
 
+# Rota para listar usuários (apenas admin)
+@app.route('/api/users', methods=['GET'])
+@admin_required
+def list_users():
+    users = User.query.all()
+    return jsonify({
+        'users': [user.to_dict() for user in users]
+    }), 200
+
 # Rota para criar lojas (apenas admin)
 @app.route('/api/stores', methods=['POST'])
 @admin_required
@@ -108,12 +117,19 @@ def create_store():
     data = request.get_json()
     user_id = request.headers.get('User-ID')
     
+    # Verificar se o owner_id existe
+    owner_id = data.get('owner_id')
+    owner = User.query.get(owner_id)
+    if not owner:
+        return jsonify({'message': 'Usuário dono não encontrado'}), 400
+    
     new_store = Store(
         name=data['name'],
         state_registration=data['state_registration'],
         store_number=data['store_number'],
         address=data['address'],
-        created_by=user_id
+        created_by=user_id,
+        owner_id=owner_id
     )
     
     db.session.add(new_store)
@@ -127,7 +143,19 @@ def create_store():
 # Rota para listar lojas
 @app.route('/api/stores', methods=['GET'])
 def list_stores():
-    stores = Store.query.all()
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    # Se for admin, mostrar todas as lojas
+    if user.is_admin:
+        stores = Store.query.all()
+    else:
+        # Se não for admin, mostrar apenas as lojas onde o usuário é dono
+        stores = Store.query.filter_by(owner_id=user.id).all()
+    
     return jsonify({
         'stores': [store.to_dict() for store in stores]
     }), 200
@@ -135,7 +163,18 @@ def list_stores():
 # Rota para obter detalhes de uma loja
 @app.route('/api/stores/<int:store_id>', methods=['GET'])
 def get_store(store_id):
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
     store = Store.query.get_or_404(store_id)
+    
+    # Verificar se o usuário tem permissão para acessar esta loja
+    if not user.is_admin and store.owner_id != user.id:
+        return jsonify({'message': 'Acesso não autorizado a esta loja'}), 403
+    
     store_dict = store.to_dict()
     
     # Adicionar arquivos associados

@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
-import StoreListView from '../views/StoreListView.vue'
 import CreateStoreView from '../views/CreateStoreView.vue'
 import StoreDetailView from '../views/StoreDetailView.vue'
 
@@ -22,12 +21,6 @@ const routes = [
     path: '/register',
     name: 'register',
     component: RegisterView
-  },
-  {
-    path: '/stores',
-    name: 'stores',
-    component: StoreListView,
-    meta: { requiresAuth: true }
   },
   {
     path: '/stores/create',

@@ -3,12 +3,12 @@
     <nav v-if="isLoggedIn">
       <div class="nav-container">
         <div class="nav-links">
-          <router-link to="/">Home</router-link> |
-          <router-link to="/stores">Lojas</router-link>
-          <router-link v-if="isAdmin" to="/stores/create">| Criar Loja</router-link>
+          <router-link to="/">Home</router-link>
+          <router-link v-if="isAdmin" to="/stores/create"> | Criar Loja</router-link>
         </div>
         <div class="user-info">
           <span>{{ username }}</span>
+          <span class="datetime">{{ currentDateTime }}</span>
           <button @click="logout" class="logout-btn">Logout</button>
         </div>
       </div>
@@ -20,13 +20,6 @@
 <script>
 export default {
   name: 'App',
-  data() {
-    return {
-      isLoggedIn: false,
-      isAdmin: false,
-      username: ''
-    }
-  },
   created() {
     this.checkLoginStatus();
   },
@@ -37,7 +30,7 @@ export default {
         const user = JSON.parse(userStr);
         this.isLoggedIn = true;
         this.isAdmin = user.is_admin === true;
-        this.username = user.username;
+        this.username = user.username || 'IcaroGabrielS';
       } else {
         this.isLoggedIn = false;
         this.isAdmin = false;
@@ -76,6 +69,7 @@ nav {
   left: 0;
   right: 0;
   z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .nav-container {
@@ -108,6 +102,12 @@ nav {
   font-weight: bold;
 }
 
+.datetime {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: normal;
+}
+
 .logout-btn {
   background-color: #dc3545;
   color: white;
@@ -132,12 +132,38 @@ button {
 }
 
 button:hover {
-  background-color: #0069d9;
+  background-color: #000000;
 }
 
 .content {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .nav-container {
+    flex-direction: column;
+    padding: 10px;
+  }
+  
+  .nav-links {
+    margin-bottom: 10px;
+  }
+  
+  .user-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  #app {
+    margin-top: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .datetime {
+    display: none;
+  }
 }
 </style>
