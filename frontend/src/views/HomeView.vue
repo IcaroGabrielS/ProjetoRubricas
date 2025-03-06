@@ -9,37 +9,37 @@
       
       <div class="dashboard-summary">
         <div class="dashboard-item">
-          <h3>Suas Lojas</h3>
-          <p>Selecione uma loja abaixo para acessar seus detalhes e arquivos.</p>
+          <h3>Suas Empresas</h3>
+          <p>Selecione uma empresa abaixo para acessar seus detalhes e arquivos.</p>
         </div>
       </div>
       
-      <!-- Lista de lojas -->
+      <!-- Lista de empresas -->
       <div class="stores-section">
-        <div v-if="storesLoading" class="loading-indicator">
+        <div v-if="companiesLoading" class="loading-indicator">
           <div class="loading-spinner"></div>
-          <p>Carregando lojas...</p>
+          <p>Carregando empresas...</p>
         </div>
         
-        <div v-else-if="storesError" class="error-message">
+        <div v-else-if="companiesError" class="error-message">
           <div class="error-icon">!</div>
-          <p>{{ storesError }}</p>
+          <p>{{ companiesError }}</p>
         </div>
         
-        <div v-else-if="stores.length === 0" class="empty-state">
-          <p>Você não tem acesso a nenhuma loja no momento.</p>
+        <div v-else-if="companies.length === 0" class="empty-state">
+          <p>Você não tem acesso a nenhuma empresa no momento.</p>
         </div>
         
         <div v-else class="stores-list">
           <div 
-            v-for="store in stores" 
-            :key="store.id" 
+            v-for="company in companies" 
+            :key="company.id" 
             class="store-item"
-            @click="goToStoreDetail(store.id)"
+            @click="goToCompanyDetail(company.id)"
           >
             <div class="store-item-details">
-              <span class="store-name">{{ store.name }}</span>
-              <span class="store-number">#{{ store.store_number }}</span>
+              <span class="store-name">{{ company.name }}</span>
+              <span class="store-number">CNPJ: {{ company.cnpj }}</span>
             </div>
             <div class="store-item-arrow">
               <span>›</span>
@@ -49,7 +49,7 @@
       </div>
       
       <div class="quick-actions">
-        <button v-if="isAdmin" class="action-button admin" @click="createStore">Nova Loja</button>
+        <button v-if="isAdmin" class="action-button admin" @click="createCompany">Nova Empresa</button>
         <button v-if="isAdmin" class="action-button admin" @click="manageAccounts">Gerenciar Contas</button>
         <button class="action-button logout" @click="logout">Sair</button>
       </div>
@@ -68,16 +68,15 @@ export default {
     return {
       username: 'Usuário',
       isAdmin: false,
-      stores: [],
-      storesLoading: true,
-      storesError: null,
-      currentDateTime: '2025-03-05 19:03:46'
+      companies: [],
+      companiesLoading: true,
+      companiesError: null,
+      currentDateTime: '2025-03-06 13:38:16'
     }
   },
   created() {
     this.loadUserInfo();
-    this.fetchStores();
-    this.updateDateTime();
+    this.fetchCompanies();
   },
   methods: {
     loadUserInfo() {
@@ -90,7 +89,7 @@ export default {
         this.$router.push('/login');
       }
     },
-    async fetchStores() {
+    async fetchCompanies() {
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -100,7 +99,7 @@ export default {
         
         const user = JSON.parse(userStr);
         
-        const response = await fetch('/api/stores', {
+        const response = await fetch('/api/companies', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -111,32 +110,28 @@ export default {
         const data = await response.json();
         
         if (!response.ok) {
-          this.storesError = data.message || 'Erro ao carregar lojas';
-          this.storesLoading = false;
+          this.companiesError = data.message || 'Erro ao carregar empresas';
+          this.companiesLoading = false;
           return;
         }
         
-        this.stores = data.stores;
-        this.storesLoading = false;
+        this.companies = data.companies;
+        this.companiesLoading = false;
       } catch (error) {
-        this.storesError = 'Erro ao conectar ao servidor';
-        this.storesLoading = false;
-        console.error('Error fetching stores:', error);
+        this.companiesError = 'Erro ao conectar ao servidor';
+        this.companiesLoading = false;
+        console.error('Error fetching companies:', error);
       }
     },
-    goToStoreDetail(storeId) {
-      this.$router.push(`/stores/${storeId}`);
+    goToCompanyDetail(companyId) {
+      this.$router.push(`/companies/${companyId}`);
     },
-    createStore() {
-      this.$router.push('/stores/create');
+    createCompany() {
+      this.$router.push('/companies/create');
     },
     manageAccounts() {
       // Navegar para a página de gerenciamento de contas
       this.$router.push('/users');
-    },
-    updateDateTime() {
-      // Atualiza com o horário atual fornecido
-      this.currentDateTime = '2025-03-05 19:03:46';
     },
     logout() {
       localStorage.removeItem('user');

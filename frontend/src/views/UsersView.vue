@@ -83,6 +83,15 @@
                     {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
                   </span>
                 </div>
+                <div class="user-actions">
+                  <button 
+                    class="delete-button" 
+                    @click="confirmDeleteUser(user)"
+                    title="Remover usuário"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -90,6 +99,24 @@
         
         <div class="users-actions">
           <button class="secondary-button" @click="goBack">Voltar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div class="modal" v-if="showDeleteModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Confirmar Exclusão</h3>
+          <button class="close-modal-btn" @click="showDeleteModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Tem certeza que deseja excluir o usuário <strong>{{ userToDelete?.username }}</strong>?</p>
+          <p class="warning-text">Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="showDeleteModal = false">Cancelar</button>
+          <button class="confirm-delete-btn" @click="deleteUser">Confirmar Exclusão</button>
         </div>
       </div>
     </div>
@@ -109,7 +136,10 @@ export default {
         username: '',
         password: '',
         is_admin: false
-      }
+      },
+      showDeleteModal: false,
+      userToDelete: null,
+      deleteLoading: false
     }
   },
   created() {
@@ -204,6 +234,59 @@ export default {
       } catch (error) {
         this.error = 'Erro ao conectar ao servidor';
         console.error('Error creating user:', error);
+      }
+    },
+    confirmDeleteUser(user) {
+      this.userToDelete = user;
+      this.showDeleteModal = true;
+    },
+    async deleteUser() {
+      if (!this.userToDelete) {
+        return;
+      }
+      
+      this.deleteLoading = true;
+      
+      try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(`/api/users/${this.userToDelete.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          }
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          this.error = data.message || 'Erro ao excluir usuário';
+          this.showDeleteModal = false;
+          this.deleteLoading = false;
+          return;
+        }
+        
+        // Mostrar mensagem de sucesso
+        this.success = `Usuário ${this.userToDelete.username} excluído com sucesso!`;
+        
+        // Fechar o modal
+        this.showDeleteModal = false;
+        this.deleteLoading = false;
+        this.userToDelete = null;
+        
+        // Atualizar lista de usuários
+        this.fetchUsers();
+      } catch (error) {
+        this.error = 'Erro ao conectar ao servidor';
+        this.showDeleteModal = false;
+        this.deleteLoading = false;
+        console.error('Error deleting user:', error);
       }
     },
     goBack() {
@@ -387,6 +470,12 @@ export default {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
+.user-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
 .user-name {
   font-weight: 600;
   font-size: 1.1rem;
@@ -407,6 +496,33 @@ export default {
 .admin-type {
   background-color: #e0f2fe;
   color: #0077b6;
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.delete-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 1px solid #ff7675;
+  color: #ff7675;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+  background-color: #ff7675;
+  color: white;
+  transform: scale(1.1);
 }
 
 .action-button {
@@ -513,9 +629,118 @@ export default {
   font-size: 1.1rem;
 }
 
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fade-in 0.3s ease;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  animation: slide-up 0.3s ease;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: linear-gradient(to right, #ff7675, #fab1a0);
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-body p {
+  margin-bottom: 0.8rem;
+  font-size: 1.1rem;
+}
+
+.warning-text {
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.modal-actions {
+  padding: 1rem 1.5rem;
+  background-color: #f9f9f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.cancel-btn {
+  padding: 0.7rem 1.5rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.confirm-delete-btn {
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(to right, #ff7675, #fab1a0);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-delete-btn:hover {
+  background: linear-gradient(to right, #d63031, #e84393);
+  box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
+}
+
 /* Animações */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 

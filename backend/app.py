@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from models import db, User, Store, StoreFile, bcrypt
+from models import db, User, Company, CompanyFile, bcrypt
 from config import Config
 import os
 from werkzeug.utils import secure_filename
@@ -111,84 +111,93 @@ def list_users():
         'users': [user.to_dict() for user in users]
     }), 200
 
-# Rota para criar lojas (apenas admin)
-@app.route('/api/stores', methods=['POST'])
+# Rota para excluir usuários (apenas admin)
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
 @admin_required
-def create_store():
+def delete_user(user_id):
+    # Verifica se o usuário existe
+    user_to_delete = User.query.get_or_404(user_id)
+    
+    # Verifica se é o próprio usuário tentando se excluir
+    admin_id = request.headers.get('User-ID')
+    if int(admin_id) == user_id:
+        return jsonify({'message': 'Não é possível excluir seu próprio usuário'}), 400
+    
+    # Verifica se existem empresas criadas por este usuário
+    companies_created = Company.query.filter_by(created_by=user_id).all()
+    
+    # Podemos decidir se queremos impedir a exclusão ou transferir a propriedade
+    # Neste exemplo, impedimos a exclusão se o usuário criou empresas
+    if companies_created:
+        return jsonify({'message': 'Não é possível excluir este usuário porque ele criou empresas'}), 400
+    
+    # Exclui o usuário
+    db.session.delete(user_to_delete)
+    db.session.commit()
+    
+    return jsonify({'message': 'Usuário excluído com sucesso'}), 200
+
+# Rota para criar empresas (apenas admin)
+@app.route('/api/companies', methods=['POST'])
+@admin_required
+def create_company():
     data = request.get_json()
     user_id = request.headers.get('User-ID')
     
-    # Verificar se o owner_id existe
-    owner_id = data.get('owner_id')
-    owner = User.query.get(owner_id)
-    if not owner:
-        return jsonify({'message': 'Usuário dono não encontrado'}), 400
-    
-    new_store = Store(
+    new_company = Company(
         name=data['name'],
         state_registration=data['state_registration'],
-        store_number=data['store_number'],
-        address=data['address'],
-        created_by=user_id,
-        owner_id=owner_id
+        cnpj=data['cnpj'],
+        created_by=user_id
     )
     
-    db.session.add(new_store)
+    db.session.add(new_company)
     db.session.commit()
     
     return jsonify({
-        'message': 'Store created successfully',
-        'store': new_store.to_dict()
+        'message': 'Company created successfully',
+        'company': new_company.to_dict()
     }), 201
 
-# Rota para listar lojas
-@app.route('/api/stores', methods=['GET'])
-def list_stores():
+# Rota para listar empresas
+@app.route('/api/companies', methods=['GET'])
+def list_companies():
     user_id = request.headers.get('User-ID')
     user = User.query.get(user_id)
     
     if not user:
         return jsonify({'message': 'Usuário não encontrado'}), 404
     
-    # Se for admin, mostrar todas as lojas
-    if user.is_admin:
-        stores = Store.query.all()
-    else:
-        # Se não for admin, mostrar apenas as lojas onde o usuário é dono
-        stores = Store.query.filter_by(owner_id=user.id).all()
+    # Todos os usuários podem ver todas as empresas
+    companies = Company.query.all()
     
     return jsonify({
-        'stores': [store.to_dict() for store in stores]
+        'companies': [company.to_dict() for company in companies]
     }), 200
 
-# Rota para obter detalhes de uma loja
-@app.route('/api/stores/<int:store_id>', methods=['GET'])
-def get_store(store_id):
+# Rota para obter detalhes de uma empresa
+@app.route('/api/companies/<int:company_id>', methods=['GET'])
+def get_company(company_id):
     user_id = request.headers.get('User-ID')
     user = User.query.get(user_id)
     
     if not user:
         return jsonify({'message': 'Usuário não encontrado'}), 404
     
-    store = Store.query.get_or_404(store_id)
-    
-    # Verificar se o usuário tem permissão para acessar esta loja
-    if not user.is_admin and store.owner_id != user.id:
-        return jsonify({'message': 'Acesso não autorizado a esta loja'}), 403
-    
-    store_dict = store.to_dict()
+    company = Company.query.get_or_404(company_id)
+    company_dict = company.to_dict()
     
     # Adicionar arquivos associados
-    files = StoreFile.query.filter_by(store_id=store_id).all()
-    store_dict['files'] = [file.to_dict() for file in files]
+    files = CompanyFile.query.filter_by(company_id=company_id).all()
+    company_dict['files'] = [file.to_dict() for file in files]
     
-    return jsonify({'store': store_dict}), 200
+    return jsonify({'company': company_dict}), 200
 
-# Rota para upload de arquivos para uma loja
-@app.route('/api/stores/<int:store_id>/files', methods=['POST'])
+# Rota para upload de arquivos para uma empresa
+@app.route('/api/companies/<int:company_id>/files', methods=['POST'])
 @admin_required
-def upload_file(store_id):
-    store = Store.query.get_or_404(store_id)
+def upload_file(company_id):
+    company = Company.query.get_or_404(company_id)
     
     if 'file' not in request.files:
         return jsonify({'message': 'No file part'}), 400
@@ -199,17 +208,17 @@ def upload_file(store_id):
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        # Criar pasta para a loja se não existir
-        store_folder = os.path.join(app.config['UPLOAD_FOLDER'], f'store_{store_id}')
-        os.makedirs(store_folder, exist_ok=True)
+        # Criar pasta para a empresa se não existir
+        company_folder = os.path.join(app.config['UPLOAD_FOLDER'], f'company_{company_id}')
+        os.makedirs(company_folder, exist_ok=True)
         
-        file_path = os.path.join(store_folder, filename)
+        file_path = os.path.join(company_folder, filename)
         file.save(file_path)
         
         # Salvar referência no banco
         file_type = filename.rsplit('.', 1)[1].lower()
-        new_file = StoreFile(
-            store_id=store_id,
+        new_file = CompanyFile(
+            company_id=company_id,
             filename=filename,
             file_path=file_path,
             file_type=file_type
@@ -228,7 +237,7 @@ def upload_file(store_id):
 # Rota para download de arquivos
 @app.route('/api/files/<int:file_id>', methods=['GET'])
 def download_file(file_id):
-    file = StoreFile.query.get_or_404(file_id)
+    file = CompanyFile.query.get_or_404(file_id)
     directory = os.path.dirname(file.file_path)
     filename = os.path.basename(file.file_path)
     return send_from_directory(directory, filename, as_attachment=True)

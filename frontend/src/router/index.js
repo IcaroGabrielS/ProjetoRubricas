@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
-import CreateStoreView from '../views/CreateStoreView.vue'
-import StoreDetailView from '../views/StoreDetailView.vue'
-import UsersView from '../views/UsersView.vue'  // Import the new UsersView component
+import CreateCompanyView from '../views/CreateCompanyView.vue'
+import CompanyDetailView from '../views/CompanyDetailView.vue'
+import UsersView from '../views/UsersView.vue'
 
 const routes = [
   {
@@ -16,25 +16,25 @@ const routes = [
     path: '/login',
     name: 'login',
     component: LoginView,
-    meta: { redirectIfLoggedIn: true } // New meta flag
+    meta: { redirectIfLoggedIn: true }
   },
   {
-    path: '/stores/create',
-    name: 'create-store',
-    component: CreateStoreView,
+    path: '/companies/create',
+    name: 'create-company',
+    component: CreateCompanyView,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
-    path: '/stores/:id',
-    name: 'store-detail',
-    component: StoreDetailView,
+    path: '/companies/:id',
+    name: 'company-detail',
+    component: CompanyDetailView,
     meta: { requiresAuth: true }
   },
   {
     path: '/users',
     name: 'users',
     component: UsersView,
-    meta: { requiresAuth: true, requiresAdmin: true }  // Only admin can access
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 

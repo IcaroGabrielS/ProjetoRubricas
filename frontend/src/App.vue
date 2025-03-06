@@ -11,9 +11,9 @@
             <i class="nav-icon">🏠</i>
             <span>Home</span>
           </router-link>
-          <router-link v-if="isAdmin" to="/stores/create" class="nav-link">
+          <router-link v-if="isAdmin" to="/companies/create" class="nav-link">
             <i class="nav-icon">➕</i>
-            <span>Criar Loja</span>
+            <span>Criar Empresa</span>
           </router-link>
           <router-link v-if="isAdmin" to="/users" class="nav-link">
             <i class="nav-icon">👥</i>
@@ -48,7 +48,7 @@ export default {
       isLoggedIn: false,
       isAdmin: false,
       username: 'IcaroGabrielS',
-      currentDateTime: '2025-03-05 19:42:36'
+      currentDateTime: '2025-03-06 13:45:11'
     }
   },
   created() {
@@ -62,7 +62,7 @@ export default {
         this.isLoggedIn = true;
         this.isAdmin = user.is_admin === true;
         this.username = user.username || 'IcaroGabrielS';
-        this.currentDateTime = '2025-03-05 19:42:36';
+        this.currentDateTime = '2025-03-06 13:45:11';
       } else {
         this.isLoggedIn = false;
         this.isAdmin = false;

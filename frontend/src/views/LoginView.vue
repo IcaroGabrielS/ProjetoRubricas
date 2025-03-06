@@ -59,7 +59,7 @@ export default {
       username: '',
       password: '',
       error: '',
-      currentDateTime: '2025-03-05 19:13:33',
+      currentDateTime: '2025-03-06 13:41:43',
       currentUser: 'IcaroGabrielS'
     }
   },
@@ -103,6 +103,7 @@ export default {
 </script>
 
 <style>
+/* CSS remains unchanged */
 @import url('https://fonts.googleapis.com/css2?family=Sarala:wght@400;700&display=swap');
 
 * {
@@ -129,6 +130,7 @@ body {
 </style>
 
 <style scoped>
+/* Scoped CSS styles remain unchanged */
 .login-container {
   width: 100vw;
   height: 100vh;

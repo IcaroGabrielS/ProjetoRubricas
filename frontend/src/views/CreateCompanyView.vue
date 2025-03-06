@@ -3,24 +3,19 @@
     <div class="store-container">
       <div class="store-content">
         <div class="page-header">
-          <h1>Criar Nova Loja</h1>
+          <h1>Criar Nova Empresa</h1>
         </div>
 
-        <div v-if="usersLoading" class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>Carregando usuários...</p>
-        </div>
-
-        <form v-else @submit.prevent="handleCreateStore" class="store-form">
+        <form @submit.prevent="handleCreateCompany" class="store-form">
           <div class="form-row">
             <div class="form-group">
-              <label for="name">Nome da Loja:</label>
+              <label for="name">Nome da Empresa:</label>
               <input 
                 type="text" 
                 id="name" 
-                v-model="store.name" 
+                v-model="company.name" 
                 required
-                placeholder="Digite o nome da loja"
+                placeholder="Digite o nome da empresa"
               >
             </div>
             
@@ -29,7 +24,7 @@
               <input 
                 type="text" 
                 id="state_registration" 
-                v-model="store.state_registration" 
+                v-model="company.state_registration" 
                 required
                 placeholder="Digite a inscrição estadual"
               >
@@ -37,49 +32,22 @@
           </div>
           
           <div class="form-row">
-            <div class="form-group">
-              <label for="store_number">Número da Loja:</label>
+            <div class="form-group full-width">
+              <label for="cnpj">CNPJ:</label>
               <input 
-                type="number" 
-                id="store_number" 
-                v-model="store.store_number" 
+                type="text" 
+                id="cnpj" 
+                v-model="company.cnpj" 
                 required
-                placeholder="Digite o número da loja"
+                placeholder="Digite o CNPJ da empresa"
               >
             </div>
-            
-            <div class="form-group">
-              <label for="owner_id">Dono da Loja:</label>
-              <div class="select-wrapper">
-                <select 
-                  id="owner_id" 
-                  v-model="store.owner_id" 
-                  required
-                >
-                  <option value="" disabled selected>Selecione um usuário</option>
-                  <option v-for="user in users" :key="user.id" :value="user.id">
-                    {{ user.username }} {{ user.is_admin ? '(Admin)' : '' }}
-                  </option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div class="form-group full-width">
-            <label for="address">Endereço:</label>
-            <textarea 
-              id="address" 
-              v-model="store.address" 
-              required
-              rows="3"
-              placeholder="Digite o endereço completo"
-            ></textarea>
           </div>
 
           <div class="button-container">
             <button type="submit" :disabled="loading" class="submit-btn">
               <span v-if="loading" class="loading-indicator"></span>
-              {{ loading ? 'Criando...' : 'Criar Loja' }}
+              {{ loading ? 'Criando...' : 'Criar Empresa' }}
             </button>
           </div>
         </form>
@@ -95,7 +63,7 @@
           <p>{{ successMessage }}</p>
           <div class="success-actions">
             <router-link to="/" class="action-btn view-btn">Voltar para Home</router-link>
-            <button @click="resetForm" class="action-btn reset-btn">Criar outra loja</button>
+            <button @click="resetForm" class="action-btn reset-btn">Criar outra empresa</button>
           </div>
         </div>
       </div>
@@ -105,26 +73,21 @@
 
 <script>
 export default {
-  name: 'CreateStoreView',
+  name: 'CreateCompanyView',
   data() {
     return {
-      store: {
+      company: {
         name: '',
         state_registration: '',
-        store_number: '',
-        address: '',
-        owner_id: ''
+        cnpj: ''
       },
-      users: [],
       loading: false,
-      usersLoading: true,
       error: null,
       successMessage: ''
     }
   },
   created() {
     this.checkIfAdmin();
-    this.fetchUsers();
   },
   methods: {
     checkIfAdmin() {
@@ -139,44 +102,7 @@ export default {
         this.$router.push('/');
       }
     },
-    async fetchUsers() {
-      this.usersLoading = true;
-      this.error = null;
-      
-      try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        
-        const response = await fetch('/api/users', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': user.id
-          }
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.error = data.message || 'Erro ao carregar usuários';
-          this.usersLoading = false;
-          return;
-        }
-        
-        this.users = data.users;
-        this.usersLoading = false;
-      } catch (error) {
-        this.error = 'Erro ao conectar ao servidor para carregar usuários';
-        this.usersLoading = false;
-        console.error('Error fetching users:', error);
-      }
-    },
-    async handleCreateStore() {
+    async handleCreateCompany() {
       this.loading = true;
       this.error = null;
       
@@ -189,38 +115,36 @@ export default {
         
         const user = JSON.parse(userStr);
         
-        const response = await fetch('/api/stores', {
+        const response = await fetch('/api/companies', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'User-ID': user.id
           },
-          body: JSON.stringify(this.store)
+          body: JSON.stringify(this.company)
         });
         
         const data = await response.json();
         
         if (!response.ok) {
-          this.error = data.message || 'Erro ao criar loja';
+          this.error = data.message || 'Erro ao criar empresa';
           this.loading = false;
           return;
         }
         
-        this.successMessage = 'Loja criada com sucesso!';
+        this.successMessage = 'Empresa criada com sucesso!';
         this.loading = false;
       } catch (error) {
         this.error = 'Erro ao conectar ao servidor';
         this.loading = false;
-        console.error('Error creating store:', error);
+        console.error('Error creating company:', error);
       }
     },
     resetForm() {
-      this.store = {
+      this.company = {
         name: '',
         state_registration: '',
-        store_number: '',
-        address: '',
-        owner_id: ''
+        cnpj: ''
       };
       this.successMessage = '';
     }

@@ -13,7 +13,7 @@
       
       <div v-else class="store-content">
         <div class="page-header">
-          <h1>{{ store.name }}</h1>
+          <h1>{{ company.name }}</h1>
           <div class="header-info">
             <div class="date-info">{{ currentDateTime }}</div>
             <div class="user-info">{{ currentUser }}</div>
@@ -22,16 +22,16 @@
         
         <div class="store-info-card">
           <div class="card-header">
-            <h2>Informações da Loja</h2>
+            <h2>Informações da Empresa</h2>
           </div>
           
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">
-                <i class="info-icon">🏪</i>
-                Número da Loja
+                <i class="info-icon">🏢</i>
+                CNPJ
               </div>
-              <div class="info-value">{{ store.store_number }}</div>
+              <div class="info-value">{{ company.cnpj }}</div>
             </div>
             
             <div class="info-item">
@@ -39,15 +39,7 @@
                 <i class="info-icon">📝</i>
                 Inscrição Estadual
               </div>
-              <div class="info-value">{{ store.state_registration }}</div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-label">
-                <i class="info-icon">📍</i>
-                Endereço
-              </div>
-              <div class="info-value">{{ store.address }}</div>
+              <div class="info-value">{{ company.state_registration }}</div>
             </div>
             
             <div class="info-item">
@@ -55,24 +47,16 @@
                 <i class="info-icon">🗓️</i>
                 Data de Criação
               </div>
-              <div class="info-value">{{ formatDate(store.created_at) }}</div>
-            </div>
-            
-            <div class="info-item" v-if="store.owner_username">
-              <div class="info-label">
-                <i class="info-icon">👤</i>
-                Proprietário
-              </div>
-              <div class="info-value">{{ store.owner_username }}</div>
+              <div class="info-value">{{ formatDate(company.created_at) }}</div>
             </div>
           </div>
         </div>
         
         <div class="file-section">
           <div class="file-section-header">
-            <h2>Arquivos da Loja</h2>
-            <div class="file-count" v-if="store.files">
-              {{ store.files.length }} arquivo(s)
+            <h2>Arquivos da Empresa</h2>
+            <div class="file-count" v-if="company.files">
+              {{ company.files.length }} arquivo(s)
             </div>
           </div>
           
@@ -121,9 +105,9 @@
               <h3>Arquivos Disponíveis</h3>
             </div>
             
-            <div v-if="store.files && store.files.length === 0" class="no-files">
+            <div v-if="company.files && company.files.length === 0" class="no-files">
               <div class="empty-icon">📂</div>
-              <p>Nenhum arquivo disponível para esta loja.</p>
+              <p>Nenhum arquivo disponível para esta empresa.</p>
             </div>
             
             <div v-else class="files-table-container">
@@ -137,7 +121,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="file in store.files" :key="file.id">
+                  <tr v-for="file in company.files" :key="file.id">
                     <td>
                       <div class="file-name">
                         <span class="file-type-icon">{{ getFileIcon(file.file_type) }}</span>
@@ -171,19 +155,16 @@
 
 <script>
 export default {
-  name: 'StoreDetailView',
+  name: 'CompanyDetailView',
   data() {
     return {
-      store: {
+      company: {
         id: null,
         name: '',
         state_registration: '',
-        store_number: null,
-        address: '',
+        cnpj: '',
         created_at: null,
         created_by: null,
-        owner_id: null,
-        owner_username: null,
         files: []
       },
       loading: true,
@@ -193,13 +174,13 @@ export default {
       fileLoading: false,
       fileError: null,
       fileSuccess: null,
-      currentDateTime: '2025-03-05 18:08:27',
+      currentDateTime: '2025-03-06 13:34:24',
       currentUser: 'IcaroGabrielS'
     }
   },
   created() {
     this.checkAdmin();
-    this.fetchStoreDetails();
+    this.fetchCompanyDetails();
   },
   methods: {
     checkAdmin() {
@@ -209,7 +190,7 @@ export default {
         this.isAdmin = user.is_admin === true;
       }
     },
-    async fetchStoreDetails() {
+    async fetchCompanyDetails() {
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -218,9 +199,9 @@ export default {
         }
         
         const user = JSON.parse(userStr);
-        const storeId = this.$route.params.id;
+        const companyId = this.$route.params.id;
         
-        const response = await fetch(`/api/stores/${storeId}`, {
+        const response = await fetch(`/api/companies/${companyId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -231,17 +212,17 @@ export default {
         const data = await response.json();
         
         if (!response.ok) {
-          this.error = data.message || 'Erro ao carregar detalhes da loja';
+          this.error = data.message || 'Erro ao carregar detalhes da empresa';
           this.loading = false;
           return;
         }
         
-        this.store = data.store;
+        this.company = data.company;
         this.loading = false;
       } catch (error) {
         this.error = 'Erro ao conectar ao servidor';
         this.loading = false;
-        console.error('Error fetching store details:', error);
+        console.error('Error fetching company details:', error);
       }
     },
     formatDate(dateString) {
@@ -290,7 +271,7 @@ export default {
         const formData = new FormData();
         formData.append('file', this.selectedFile);
         
-        const response = await fetch(`/api/stores/${this.store.id}/files`, {
+        const response = await fetch(`/api/companies/${this.company.id}/files`, {
           method: 'POST',
           headers: {
             'User-ID': user.id
@@ -312,7 +293,7 @@ export default {
         document.getElementById('file').value = '';
         
         // Atualiza a lista de arquivos
-        this.fetchStoreDetails();
+        this.fetchCompanyDetails();
       } catch (error) {
         this.fileError = 'Erro ao conectar ao servidor';
         this.fileLoading = false;
