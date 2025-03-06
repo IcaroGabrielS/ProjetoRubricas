@@ -1,94 +1,102 @@
 <template>
-  <div class="create-store-container">
-    <div class="create-store-content">
-      <div class="page-header">
-        <h1>Criar Nova Loja</h1>
-      </div>
-
-      <div v-if="usersLoading" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>Carregando usuários...</p>
-      </div>
-
-      <form v-else @submit.prevent="handleCreateStore" class="store-form">
-        <div class="form-group">
-          <label for="name">Nome da Loja:</label>
-          <input 
-            type="text" 
-            id="name" 
-            v-model="store.name" 
-            required
-            placeholder="Digite o nome da loja"
-          >
-        </div>
-        
-        <div class="form-group">
-          <label for="state_registration">Inscrição Estadual:</label>
-          <input 
-            type="text" 
-            id="state_registration" 
-            v-model="store.state_registration" 
-            required
-            placeholder="Digite a inscrição estadual"
-          >
-        </div>
-        
-        <div class="form-group">
-          <label for="store_number">Número da Loja:</label>
-          <input 
-            type="number" 
-            id="store_number" 
-            v-model="store.store_number" 
-            required
-            placeholder="Digite o número da loja"
-          >
-        </div>
-        
-        <div class="form-group">
-          <label for="address">Endereço:</label>
-          <textarea 
-            id="address" 
-            v-model="store.address" 
-            required
-            rows="3"
-            placeholder="Digite o endereço completo"
-          ></textarea>
+  <div class="store-layout">
+    <div class="store-container">
+      <div class="store-content">
+        <div class="page-header">
+          <h1>Criar Nova Loja</h1>
         </div>
 
-        <div class="form-group">
-          <label for="owner_id">Dono da Loja:</label>
-          <div class="select-wrapper">
-            <select 
-              id="owner_id" 
-              v-model="store.owner_id" 
-              required
-            >
-              <option value="" disabled selected>Selecione um usuário</option>
-              <option v-for="user in users" :key="user.id" :value="user.id">
-                {{ user.username }} {{ user.is_admin ? '(Admin)' : '' }}
-              </option>
-            </select>
+        <div v-if="usersLoading" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Carregando usuários...</p>
+        </div>
+
+        <form v-else @submit.prevent="handleCreateStore" class="store-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">Nome da Loja:</label>
+              <input 
+                type="text" 
+                id="name" 
+                v-model="store.name" 
+                required
+                placeholder="Digite o nome da loja"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label for="state_registration">Inscrição Estadual:</label>
+              <input 
+                type="text" 
+                id="state_registration" 
+                v-model="store.state_registration" 
+                required
+                placeholder="Digite a inscrição estadual"
+              >
+            </div>
           </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="store_number">Número da Loja:</label>
+              <input 
+                type="number" 
+                id="store_number" 
+                v-model="store.store_number" 
+                required
+                placeholder="Digite o número da loja"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label for="owner_id">Dono da Loja:</label>
+              <div class="select-wrapper">
+                <select 
+                  id="owner_id" 
+                  v-model="store.owner_id" 
+                  required
+                >
+                  <option value="" disabled selected>Selecione um usuário</option>
+                  <option v-for="user in users" :key="user.id" :value="user.id">
+                    {{ user.username }} {{ user.is_admin ? '(Admin)' : '' }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="address">Endereço:</label>
+            <textarea 
+              id="address" 
+              v-model="store.address" 
+              required
+              rows="3"
+              placeholder="Digite o endereço completo"
+            ></textarea>
+          </div>
+
+          <div class="button-container">
+            <button type="submit" :disabled="loading" class="submit-btn">
+              <span v-if="loading" class="loading-indicator"></span>
+              {{ loading ? 'Criando...' : 'Criar Loja' }}
+            </button>
+          </div>
+        </form>
+        
+        <div v-if="error" class="error-message">
+          <div class="error-icon">!</div>
+          <p>{{ error }}</p>
+          <button class="close-btn" @click="error = null" aria-label="Fechar">×</button>
         </div>
         
-        <button type="submit" :disabled="loading" class="submit-btn">
-          <span v-if="loading" class="loading-indicator"></span>
-          {{ loading ? 'Criando...' : 'Criar Loja' }}
-        </button>
-      </form>
-      
-      <div v-if="error" class="error-message">
-        <div class="error-icon">!</div>
-        <p>{{ error }}</p>
-        <button class="close-btn" @click="error = null" aria-label="Fechar">×</button>
-      </div>
-      
-      <div v-if="successMessage" class="success-message">
-        <div class="success-icon">✓</div>
-        <p>{{ successMessage }}</p>
-        <div class="success-actions">
-          <router-link to="/" class="action-btn view-btn">Voltar para Home</router-link>
-          <button @click="resetForm" class="action-btn reset-btn">Criar outra loja</button>
+        <div v-if="successMessage" class="success-message">
+          <div class="success-icon">✓</div>
+          <p>{{ successMessage }}</p>
+          <div class="success-actions">
+            <router-link to="/" class="action-btn view-btn">Voltar para Home</router-link>
+            <button @click="resetForm" class="action-btn reset-btn">Criar outra loja</button>
+          </div>
         </div>
       </div>
     </div>
@@ -263,51 +271,71 @@ body {
 </style>
 
 <style scoped>
-.create-store-container {
-  min-height: 100vh;
-  width: 100%;
-  padding: 2rem;
+.store-layout {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
 }
 
-.create-store-content {
+.store-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.store-content {
   width: 100%;
-  max-width: 650px;
+  min-width: 1200px;
+  max-width: 85%;
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  padding: 2rem;
-  animation: fade-in 0.8s ease-out;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 2.5rem 3rem;
+  animation: fade-in 0.6s ease-out;
+  overflow-y: auto;
+  max-height: calc(100vh - 4rem);
 }
 
 .page-header {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
   border-bottom: 1px solid #eaeaea;
-  text-align: center;
 }
 
 .page-header h1 {
   color: #142C4D;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
 }
 
 .store-form {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
 }
 
 .form-group {
   margin-bottom: 1.5rem;
   text-align: left;
+  flex: 1;
+}
+
+.full-width {
+  width: 100%;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #333;
 }
@@ -366,27 +394,32 @@ select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 0;
+  padding: 3rem 0;
 }
 
 .loading-state .loading-spinner {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border: 4px solid rgba(32, 69, 120, 0.1);
   border-top-color: #204578;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 .submit-btn {
-  width: 100%;
-  padding: 1rem;
+  padding: 1rem 2.5rem;
   background: linear-gradient(to right, #142C4D, #204578);
   border: none;
   border-radius: 8px;
   color: white;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -394,6 +427,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 200px;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -424,7 +458,7 @@ select {
 
 .error-message, .success-message {
   margin-top: 1.5rem;
-  padding: 1rem;
+  padding: 1.2rem;
   border-radius: 8px;
   display: flex;
   align-items: flex-start;
@@ -483,20 +517,21 @@ select {
 
 .success-actions {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
   justify-content: center;
 }
 
 .action-btn {
-  padding: 0.7rem 1.2rem;
+  padding: 0.8rem 1.5rem;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
+  min-width: 180px;
+  text-align: center;
 }
 
 .view-btn {
@@ -528,28 +563,5 @@ select {
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .create-store-container {
-    padding: 1rem;
-  }
-  
-  .create-store-content {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .success-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .action-btn {
-    width: 100%;
-    text-align: center;
-  }
 }
 </style>

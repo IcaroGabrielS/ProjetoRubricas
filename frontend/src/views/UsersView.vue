@@ -1,87 +1,96 @@
 <template>
-  <div class="users-container">
-    <div class="users-card">
-      <div class="users-header">
-        <h1>Gerenciar Usuários</h1>
-        <p class="subtitle">Crie e gerencie contas de usuários</p>
-      </div>
-      
-      <div v-if="error" class="error-alert">
-        <span>{{ error }}</span>
-        <button class="close-btn" @click="error = ''" aria-label="Fechar">&times;</button>
-      </div>
-      
-      <div v-if="success" class="success-alert">
-        <span>{{ success }}</span>
-        <button class="close-btn" @click="success = ''" aria-label="Fechar">&times;</button>
-      </div>
-      
-      <!-- Formulário para criar usuários -->
-      <div class="section-card">
-        <h2>Criar Novo Usuário</h2>
-        <form class="user-form" @submit.prevent="createUser">
-          <div class="form-group">
-            <label for="username">Nome de Usuário</label>
-            <input 
-              type="text" 
-              id="username" 
-              v-model="newUser.username" 
-              required
-              placeholder="Digite o nome do usuário"
-            >
-          </div>
-          
-          <div class="form-group">
-            <label for="password">Senha</label>
-            <input 
-              type="password" 
-              id="password" 
-              v-model="newUser.password" 
-              required
-              placeholder="Digite a senha"
-            >
-          </div>
-          
-          <div class="form-group checkbox-group">
-            <input 
-              type="checkbox" 
-              id="is_admin" 
-              v-model="newUser.is_admin"
-            >
-            <label for="is_admin">Usuário Administrador</label>
-          </div>
-          
-          <button type="submit" class="action-button">Criar Usuário</button>
-        </form>
-      </div>
-      
-      <!-- Lista de usuários -->
-      <div class="section-card">
-        <h2>Usuários Existentes</h2>
-        
-        <div v-if="usersLoading" class="loading-indicator">
-          <div class="loading-spinner"></div>
-          <p>Carregando usuários...</p>
+  <div class="store-layout">
+    <div class="store-container">
+      <div class="store-content">
+        <div class="page-header">
+          <h1>Gerenciar Usuários</h1>
+          <p class="subtitle">Crie e gerencie contas de usuários</p>
         </div>
         
-        <div v-else-if="users.length === 0" class="empty-state">
-          <p>Não há usuários cadastrados além do seu.</p>
+        <div v-if="error" class="error-alert">
+          <span>{{ error }}</span>
+          <button class="close-btn" @click="error = ''" aria-label="Fechar">&times;</button>
         </div>
         
-        <div v-else class="users-list">
-          <div v-for="user in users" :key="user.id" class="user-item">
-            <div class="user-item-details">
-              <span class="user-name">{{ user.username }}</span>
-              <span class="user-type" :class="{ 'admin-type': user.is_admin }">
-                {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
-              </span>
+        <div v-if="success" class="success-alert">
+          <span>{{ success }}</span>
+          <button class="close-btn" @click="success = ''" aria-label="Fechar">&times;</button>
+        </div>
+        
+        <!-- Layout de duas seções lado a lado -->
+        <div class="sections-row">
+          <!-- Formulário para criar usuários -->
+          <div class="section-card create-section">
+            <h2>Criar Novo Usuário</h2>
+            <form class="user-form" @submit.prevent="createUser">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="username">Nome de Usuário</label>
+                  <input 
+                    type="text" 
+                    id="username" 
+                    v-model="newUser.username" 
+                    required
+                    placeholder="ID do novo Usuário"
+                  >
+                </div>
+                
+                <div class="form-group">
+                  <label for="password">Senha</label>
+                  <input 
+                    type="password" 
+                    id="password" 
+                    v-model="newUser.password" 
+                    required
+                    placeholder="Nova Senha"
+                  >
+                </div>
+              </div>
+              
+              <div class="form-group checkbox-group">
+                <input 
+                  type="checkbox" 
+                  id="is_admin" 
+                  v-model="newUser.is_admin"
+                >
+                <label for="is_admin">Usuário Administrador</label>
+              </div>
+              
+              <div class="button-container">
+                <button type="submit" class="action-button">Criar Usuário</button>
+              </div>
+            </form>
+          </div>
+          
+          <!-- Lista de usuários -->
+          <div class="section-card users-section">
+            <h2>Usuários Existentes</h2>
+            
+            <div v-if="usersLoading" class="loading-indicator">
+              <div class="loading-spinner"></div>
+              <p>Carregando usuários...</p>
+            </div>
+            
+            <div v-else-if="users.length === 0" class="empty-state">
+              <p>Não há usuários cadastrados além do seu.</p>
+            </div>
+            
+            <div v-else class="users-list">
+              <div v-for="user in users" :key="user.id" class="user-item">
+                <div class="user-item-details">
+                  <span class="user-name">{{ user.username }}</span>
+                  <span class="user-type" :class="{ 'admin-type': user.is_admin }">
+                    {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <div class="users-actions">
-        <button class="secondary-button" @click="goBack">Voltar</button>
+        
+        <div class="users-actions">
+          <button class="secondary-button" @click="goBack">Voltar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -205,40 +214,43 @@ export default {
 </script>
 
 <style scoped>
-.users-container {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-}
-
-.users-card {
-  width: 100%;
-  max-width: 700px;
-  max-height: 90vh;
-  padding: 2.5rem;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  animation: fade-in 0.8s ease-out;
-  position: relative;
+.store-layout {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
 }
 
-.users-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
+.store-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.store-content {
+  width: 100%;
+  min-width: 1200px;
+  max-width: 85%;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 2.5rem 3rem;
+  animation: fade-in 0.6s ease-out;
+  overflow-y: auto;
+  max-height: calc(100vh - 4rem);
+}
+
+.page-header {
+  text-align: left;
+  margin-bottom: 2rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #eaeaea;
 }
 
-.users-header h1 {
+.page-header h1 {
   color: #142C4D;
   font-size: 2.2rem;
   font-weight: 700;
@@ -250,35 +262,59 @@ export default {
   font-size: 1.1rem;
 }
 
+.sections-row {
+  display: flex;
+  gap: 2.5rem;
+  margin-bottom: 2rem;
+}
+
 .section-card {
   background-color: #f9f9f9;
   border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: 1.8rem;
+  flex: 1;
+}
+
+.create-section {
+  flex-basis: 42%;
+}
+
+.users-section {
+  flex-basis: 58%;
 }
 
 .section-card h2 {
   color: #204578;
-  font-size: 1.4rem;
-  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
   border-bottom: 1px solid #e1e1e1;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.8rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
 }
 
 .user-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
 }
 
 .form-group {
-  margin-bottom: 0.8rem;
+  margin-bottom: 1.2rem;
+  text-align: left;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #333;
 }
@@ -304,24 +340,34 @@ export default {
 .checkbox-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
 }
 
 .checkbox-group input {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
 }
 
 .checkbox-group label {
   display: inline;
   margin-bottom: 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
 }
 
 .users-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-height: 300px;
+  gap: 0.8rem;
+  max-height: 350px;
   overflow-y: auto;
 }
 
@@ -329,27 +375,33 @@ export default {
   background-color: #fff;
   border-radius: 6px;
   border: 1px solid #eaeaea;
-  padding: 0.8rem 1rem;
+  padding: 1rem 1.2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.2s ease;
+}
+
+.user-item:hover {
+  border-color: #d0d0d0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .user-name {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: #142C4D;
   display: block;
 }
 
 .user-type {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #666;
   background-color: #f0f0f0;
-  padding: 0.2rem 0.5rem;
+  padding: 0.3rem 0.7rem;
   border-radius: 12px;
   display: inline-block;
-  margin-top: 0.3rem;
+  margin-top: 0.5rem;
 }
 
 .admin-type {
@@ -358,7 +410,7 @@ export default {
 }
 
 .action-button {
-  padding: 0.9rem;
+  padding: 0.9rem 2rem;
   background: linear-gradient(to right, #142C4D, #204578);
   border: none;
   border-radius: 8px;
@@ -367,6 +419,7 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: 200px;
 }
 
 .action-button:hover {
@@ -376,12 +429,12 @@ export default {
 }
 
 .secondary-button {
-  padding: 0.8rem 1.5rem;
+  padding: 0.9rem 2rem;
   background-color: #f0f0f0;
   border: 1px solid #ddd;
   border-radius: 8px;
   color: #333;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -389,6 +442,7 @@ export default {
 
 .secondary-button:hover {
   background-color: #e0e0e0;
+  transform: translateY(-2px);
 }
 
 .users-actions {
@@ -398,13 +452,13 @@ export default {
 }
 
 .error-alert, .success-alert {
-  padding: 0.8rem;
+  padding: 1rem 1.5rem;
   border-radius: 8px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.9rem;
+  font-size: 1rem;
   animation: fade-in 0.3s ease;
 }
 
@@ -422,7 +476,7 @@ export default {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   padding: 0 0.5rem;
 }
 
@@ -439,23 +493,24 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 2rem 0;
   text-align: center;
 }
 
 .loading-spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #204578;
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(32, 69, 120, 0.1);
+  border-top: 4px solid #204578;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 0.8rem;
+  margin-bottom: 1rem;
 }
 
 .empty-state p {
   color: #666;
   font-style: italic;
+  font-size: 1.1rem;
 }
 
 /* Animações */
@@ -467,28 +522,5 @@ export default {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-/* Responsividade */
-@media (max-width: 650px) {
-  .users-card {
-    max-width: 90%;
-    padding: 2rem 1.5rem;
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-    max-height: 95vh;
-  }
-  
-  .users-header h1 {
-    font-size: 1.8rem;
-  }
-  
-  .section-card {
-    padding: 1rem;
-  }
-  
-  .section-card h2 {
-    font-size: 1.2rem;
-  }
 }
 </style>
