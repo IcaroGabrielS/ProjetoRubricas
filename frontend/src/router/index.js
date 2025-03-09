@@ -49,6 +49,12 @@ const routes = [
     name: 'company-detail',
     component: CompanyDetailView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/groups/:id',  // Alterado de :name para :id para ficar mais claro
+    name: 'group-detail',
+    component: GroupDetailView,
+    meta: { requiresAuth: true }
   }
 ]
 

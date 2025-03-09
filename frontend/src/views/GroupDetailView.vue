@@ -155,42 +155,39 @@ export default {
   name: 'GroupDetailView',
   data() {
     return {
-      group: {
-        id: null,
-        name: '',
-        created_at: null,
-        created_by: null,
-        companies: []
-      },
+      groupId: null,
+      group: {},
       loading: true,
-      error: null,
+      error: '',
       isAdmin: false,
+      showNewCompanyForm: false,
       newCompany: {
         name: '',
         cnpj: ''
       },
-      companyLoading: false,
-      companyError: null,
-      companySuccess: null,
-      currentDateTime: new Date().toLocaleString(),
-      currentUser: 'IcaroGabrielS'
+      creatingCompany: false
     }
   },
   created() {
-    this.checkAdmin();
-    this.fetchGroupDetails();
-    this.updateDateTime();
+    this.checkAccess();
+    // Corrigido para usar o ID do grupo corretamente
+    this.groupId = parseInt(this.$route.params.id);
+    this.fetchGroupData();
   },
   methods: {
-    checkAdmin() {
+    checkAccess() {
       const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        this.isAdmin = user.is_admin === true;
+      if (!userStr) {
+        this.$router.push('/login');
+        return;
       }
+      
+      const user = JSON.parse(userStr);
+      this.isAdmin = user.is_admin === true;
     },
-    async fetchGroupDetails() {
+    async fetchGroupData() {
       try {
+        this.loading = true;
         const userStr = localStorage.getItem('user');
         if (!userStr) {
           this.$router.push('/login');
@@ -198,9 +195,8 @@ export default {
         }
         
         const user = JSON.parse(userStr);
-        const groupId = this.$route.params.name;
         
-        const response = await fetch(`/api/groups/${groupId}`, {
+        const response = await fetch(`/api/groups/${this.groupId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -208,33 +204,25 @@ export default {
           }
         });
         
-        const data = await response.json();
-        
         if (!response.ok) {
-          this.error = data.message || 'Erro ao carregar detalhes do grupo';
+          const data = await response.json();
+          this.error = data.message || 'Erro ao carregar dados do grupo';
           this.loading = false;
           return;
         }
         
+        const data = await response.json();
         this.group = data.group;
         this.loading = false;
       } catch (error) {
         this.error = 'Erro ao conectar ao servidor';
         this.loading = false;
-        console.error('Error fetching group details:', error);
+        console.error('Error fetching group data:', error);
       }
     },
-    async addCompany() {
-      if (!this.newCompany.name || !this.newCompany.cnpj) {
-        this.companyError = 'Por favor, preencha todos os campos.';
-        return;
-      }
-      
-      this.companyLoading = true;
-      this.companyError = null;
-      this.companySuccess = null;
-      
+    async createCompany() {
       try {
+        this.creatingCompany = true;
         const userStr = localStorage.getItem('user');
         if (!userStr) {
           this.$router.push('/login');
@@ -243,7 +231,7 @@ export default {
         
         const user = JSON.parse(userStr);
         
-        const response = await fetch(`/api/groups/${this.group.id}/companies`, {
+        const response = await fetch(`/api/groups/${this.groupId}/companies`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -252,44 +240,53 @@ export default {
           body: JSON.stringify(this.newCompany)
         });
         
-        const data = await response.json();
-        
         if (!response.ok) {
-          this.companyError = data.message || 'Erro ao adicionar empresa';
-          this.companyLoading = false;
+          const data = await response.json();
+          this.error = data.message || 'Erro ao criar empresa';
+          this.creatingCompany = false;
           return;
         }
         
-        this.companySuccess = 'Empresa adicionada com sucesso!';
-        this.companyLoading = false;
+        // Limpar o formulário e atualizar os dados do grupo
         this.newCompany = {
           name: '',
           cnpj: ''
         };
+        this.showNewCompanyForm = false;
         
-        // Atualiza a lista de empresas
-        this.fetchGroupDetails();
+        await this.fetchGroupData();
+        this.creatingCompany = false;
       } catch (error) {
-        this.companyError = 'Erro ao conectar ao servidor';
-        this.companyLoading = false;
-        console.error('Error adding company:', error);
+        this.error = 'Erro ao conectar ao servidor';
+        this.creatingCompany = false;
+        console.error('Error creating company:', error);
       }
     },
     formatDate(dateString) {
       if (!dateString) return '';
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).format(date);
+      
+      const options = { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      };
+      
+      try {
+        return new Date(dateString).toLocaleDateString('pt-BR', options);
+      } catch (error) {
+        return dateString;
+      }
     },
-    updateDateTime() {
-      setInterval(() => {
-        this.currentDateTime = new Date().toLocaleString();
-      }, 1000);
+    manageAccess(groupId) {
+      this.$router.push(`/groups/manage/${groupId}`);
+    },
+    goBack() {
+      this.$router.push('/');
+    },
+    goToCompanyDetail(companyId) {
+      this.$router.push(`/companies/${companyId}`);
     }
   }
 }

@@ -376,3 +376,39 @@ def upload_file(company_id):
         
         db.session.add(new_file)
         db
+        
+# Rota para obter detalhes de uma empresa específica
+@app.route('/api/companies/<int:company_id>', methods=['GET'])
+def get_company(company_id):
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    company = Company.query.get_or_404(company_id)
+    
+    # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
+    if not user.is_admin and not user_has_group_access(user_id, company.group_id):
+        return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
+    
+    return jsonify({'company': company.to_dict()}), 200
+
+# Rota para listar arquivos de uma empresa
+@app.route('/api/companies/<int:company_id>/files', methods=['GET'])
+def list_company_files(company_id):
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    company = Company.query.get_or_404(company_id)
+    
+    # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
+    if not user.is_admin and not user_has_group_access(user_id, company.group_id):
+        return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
+    
+    files = CompanyFile.query.filter_by(company_id=company_id).all()
+    
+    return jsonify({'files': [file.to_dict() for file in files]}), 200
