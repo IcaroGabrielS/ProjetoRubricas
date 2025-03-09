@@ -9,37 +9,36 @@
       
       <div class="dashboard-summary">
         <div class="dashboard-item">
-          <h3>Suas Empresas</h3>
-          <p>Selecione uma empresa abaixo para acessar seus detalhes e arquivos.</p>
+          <h3>Seus Grupos</h3>
+          <p>Selecione um grupo abaixo para acessar seus detalhes e arquivos.</p>
         </div>
       </div>
       
-      <!-- Lista de empresas -->
+      <!-- Lista de grupos -->
       <div class="stores-section">
-        <div v-if="companiesLoading" class="loading-indicator">
+        <div v-if="groupsLoading" class="loading-indicator">
           <div class="loading-spinner"></div>
-          <p>Carregando empresas...</p>
+          <p>Carregando grupos...</p>
         </div>
         
-        <div v-else-if="companiesError" class="error-message">
+        <div v-else-if="groupsError" class="error-message">
           <div class="error-icon">!</div>
-          <p>{{ companiesError }}</p>
+          <p>{{ groupsError }}</p>
         </div>
         
-        <div v-else-if="companies.length === 0" class="empty-state">
-          <p>Você não tem acesso a nenhuma empresa no momento.</p>
+        <div v-else-if="groups.length === 0" class="empty-state">
+          <p>Você não tem acesso a nenhum grupo no momento.</p>
         </div>
         
         <div v-else class="stores-list">
           <div 
-            v-for="company in companies" 
-            :key="company.id" 
+            v-for="group in groups" 
+            :key="group.id" 
             class="store-item"
-            @click="goToCompanyDetail(company.id)"
+            @click="goToGroupDetail(group.id)"
           >
             <div class="store-item-details">
-              <span class="store-name">{{ company.name }}</span>
-              <span class="store-number">CNPJ: {{ company.cnpj }}</span>
+              <span class="store-name">{{ group.name }}</span>
             </div>
             <div class="store-item-arrow">
               <span>›</span>
@@ -49,7 +48,7 @@
       </div>
       
       <div class="quick-actions">
-        <button v-if="isAdmin" class="action-button admin" @click="createCompany">Nova Empresa</button>
+        <button v-if="isAdmin" class="action-button admin" @click="createGroup">Novo Grupo</button>
         <button v-if="isAdmin" class="action-button admin" @click="manageAccounts">Gerenciar Contas</button>
         <button class="action-button logout" @click="logout">Sair</button>
       </div>
@@ -68,15 +67,16 @@ export default {
     return {
       username: 'Usuário',
       isAdmin: false,
-      companies: [],
-      companiesLoading: true,
-      companiesError: null,
-      currentDateTime: '2025-03-06 13:38:16'
+      groups: [],
+      groupsLoading: true,
+      groupsError: null,
+      currentDateTime: new Date().toLocaleString()
     }
   },
   created() {
     this.loadUserInfo();
-    this.fetchCompanies();
+    this.fetchGroups();
+    this.updateDateTime();
   },
   methods: {
     loadUserInfo() {
@@ -89,7 +89,7 @@ export default {
         this.$router.push('/login');
       }
     },
-    async fetchCompanies() {
+    async fetchGroups() {
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -99,7 +99,7 @@ export default {
         
         const user = JSON.parse(userStr);
         
-        const response = await fetch('/api/companies', {
+        const response = await fetch('/api/groups', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -110,24 +110,24 @@ export default {
         const data = await response.json();
         
         if (!response.ok) {
-          this.companiesError = data.message || 'Erro ao carregar empresas';
-          this.companiesLoading = false;
+          this.groupsError = data.message || 'Erro ao carregar grupos';
+          this.groupsLoading = false;
           return;
         }
         
-        this.companies = data.companies;
-        this.companiesLoading = false;
+        this.groups = data.groups;
+        this.groupsLoading = false;
       } catch (error) {
-        this.companiesError = 'Erro ao conectar ao servidor';
-        this.companiesLoading = false;
-        console.error('Error fetching companies:', error);
+        this.groupsError = 'Erro ao conectar ao servidor';
+        this.groupsLoading = false;
+        console.error('Error fetching groups:', error);
       }
     },
-    goToCompanyDetail(companyId) {
-      this.$router.push(`/companies/${companyId}`);
+    goToGroupDetail(groupId) {
+      this.$router.push(`/groups/${groupId}`);
     },
-    createCompany() {
-      this.$router.push('/companies/create');
+    createGroup() {
+      this.$router.push('/groups/create');
     },
     manageAccounts() {
       // Navegar para a página de gerenciamento de contas
@@ -136,6 +136,11 @@ export default {
     logout() {
       localStorage.removeItem('user');
       this.$router.push('/login');
+    },
+    updateDateTime() {
+      setInterval(() => {
+        this.currentDateTime = new Date().toLocaleString();
+      }, 1000);
     }
   }
 }
@@ -306,11 +311,6 @@ body {
   font-weight: 600;
   font-size: 0.95rem;
   color: #142C4D;
-}
-
-.store-number {
-  font-size: 0.8rem;
-  color: #666;
 }
 
 .store-item-arrow {

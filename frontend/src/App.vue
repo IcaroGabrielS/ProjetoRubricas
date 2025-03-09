@@ -11,9 +11,9 @@
             <i class="nav-icon">🏠</i>
             <span>Home</span>
           </router-link>
-          <router-link v-if="isAdmin" to="/companies/create" class="nav-link">
+          <router-link v-if="isAdmin" to="/groups/create" class="nav-link">
             <i class="nav-icon">➕</i>
-            <span>Criar Empresa</span>
+            <span>Criar Grupo</span>
           </router-link>
           <router-link v-if="isAdmin" to="/users" class="nav-link">
             <i class="nav-icon">👥</i>
@@ -334,7 +334,7 @@ button:focus {
 
 .secondary-button:hover {
   border-color: var(--primary-light);
-  color: var(--primary);
+  color: var (--primary);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 

@@ -26,25 +26,40 @@ class User(db.Model):
             "is_admin": self.is_admin
         }
 
-class Company(db.Model):
+class Group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    state_registration = db.Column(db.String(50), nullable=False)  # Inscrição Estadual
-    cnpj = db.Column(db.String(18), nullable=False)
+    name = db.Column(db.String(100), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # Relacionamento com o criador (usuário administrador)
-    creator = db.relationship('User', foreign_keys=[created_by], backref='created_companies')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_groups')
     
     def to_dict(self):
         return {
             "id": self.id,
             "name": self.name,
-            "state_registration": self.state_registration,
-            "cnpj": self.cnpj,
             "created_at": self.created_at.isoformat(),
             "created_by": self.created_by
+        }
+
+class Company(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    cnpj = db.Column(db.String(18), unique=True, nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    
+    # Relacionamento com o grupo
+    group = db.relationship('Group', backref='companies')
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "cnpj": self.cnpj,
+            "group_id": self.group_id,
+            "created_at": self.created_at.isoformat()
         }
 
 class CompanyFile(db.Model):

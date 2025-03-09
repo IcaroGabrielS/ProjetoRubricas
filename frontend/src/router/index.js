@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
-import CreateCompanyView from '../views/CreateCompanyView.vue'
-import CompanyDetailView from '../views/CompanyDetailView.vue'
+import CreateGroupView from '../views/CreateGroupView.vue'
+import GroupDetailView from '../views/GroupDetailView.vue'
 import UsersView from '../views/UsersView.vue'
 
 const routes = [
@@ -19,15 +19,15 @@ const routes = [
     meta: { redirectIfLoggedIn: true }
   },
   {
-    path: '/companies/create',
-    name: 'create-company',
-    component: CreateCompanyView,
+    path: '/groups/create',
+    name: 'create-group',
+    component: CreateGroupView,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
-    path: '/companies/:id',
-    name: 'company-detail',
-    component: CompanyDetailView,
+    path: '/groups/:name',
+    name: 'group-detail',
+    component: GroupDetailView,
     meta: { requiresAuth: true }
   },
   {

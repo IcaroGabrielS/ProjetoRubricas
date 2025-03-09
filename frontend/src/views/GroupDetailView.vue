@@ -13,7 +13,7 @@
       
       <div v-else class="store-content">
         <div class="page-header">
-          <h1>{{ company.name }}</h1>
+          <h1>{{ group.name }}</h1>
           <div class="header-info">
             <div class="date-info">{{ currentDateTime }}</div>
             <div class="user-info">{{ currentUser }}</div>
@@ -22,24 +22,16 @@
         
         <div class="store-info-card">
           <div class="card-header">
-            <h2>Informações da Empresa</h2>
+            <h2>Informações do Grupo</h2>
           </div>
           
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">
                 <i class="info-icon">🏢</i>
-                CNPJ
+                Nome do Grupo
               </div>
-              <div class="info-value">{{ company.cnpj }}</div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-label">
-                <i class="info-icon">📝</i>
-                Inscrição Estadual
-              </div>
-              <div class="info-value">{{ company.state_registration }}</div>
+              <div class="info-value">{{ group.name }}</div>
             </div>
             
             <div class="info-item">
@@ -47,92 +39,97 @@
                 <i class="info-icon">🗓️</i>
                 Data de Criação
               </div>
-              <div class="info-value">{{ formatDate(company.created_at) }}</div>
+              <div class="info-value">{{ formatDate(group.created_at) }}</div>
             </div>
           </div>
         </div>
         
         <div class="file-section">
           <div class="file-section-header">
-            <h2>Arquivos da Empresa</h2>
-            <div class="file-count" v-if="company.files">
-              {{ company.files.length }} arquivo(s)
+            <h2>Empresas do Grupo</h2>
+            <div class="file-count" v-if="group.companies">
+              {{ group.companies.length }} empresa(s)
             </div>
           </div>
           
           <div v-if="isAdmin" class="upload-card">
             <div class="upload-header">
-              <h3>Upload de Arquivo</h3>
+              <h3>Adicionar Empresa</h3>
             </div>
             
-            <form @submit.prevent="uploadFile" class="upload-form">
+            <form @submit.prevent="addCompany" class="upload-form">
               <div class="form-group">
-                <label for="file" class="file-label">
-                  <span class="file-icon">📄</span>
-                  <span class="file-text">{{ selectedFile ? selectedFile.name : 'Selecione um arquivo' }}</span>
+                <label for="companyName" class="file-label">
+                  Nome da Empresa
                   <input 
-                    type="file" 
-                    id="file" 
-                    class="file-input"
-                    @change="handleFileChange" 
-                    accept=".csv,.xls,.xlsx,.pdf"
+                    type="text" 
+                    id="companyName" 
+                    v-model="newCompany.name" 
                     required
+                    placeholder="Digite o nome da empresa"
                   >
                 </label>
-                <small>Formatos aceitos: CSV, Excel, PDF (max: 16MB)</small>
               </div>
               
-              <button type="submit" :disabled="fileLoading" class="upload-btn">
-                <span v-if="fileLoading" class="loading-indicator small"></span>
-                {{ fileLoading ? 'Enviando...' : 'Enviar Arquivo' }}
+              <div class="form-group">
+                <label for="companyCnpj" class="file-label">
+                  CNPJ
+                  <input 
+                    type="text" 
+                    id="companyCnpj" 
+                    v-model="newCompany.cnpj" 
+                    required
+                    placeholder="Digite o CNPJ da empresa"
+                  >
+                </label>
+              </div>
+              
+              <button type="submit" :disabled="companyLoading" class="upload-btn">
+                <span v-if="companyLoading" class="loading-indicator small"></span>
+                {{ companyLoading ? 'Adicionando...' : 'Adicionar Empresa' }}
               </button>
             </form>
             
-            <div v-if="fileError" class="error-message">
+            <div v-if="companyError" class="error-message">
               <div class="error-icon small">!</div>
-              <p>{{ fileError }}</p>
-              <button class="close-btn" @click="fileError = null" aria-label="Fechar">×</button>
+              <p>{{ companyError }}</p>
+              <button class="close-btn" @click="companyError = null" aria-label="Fechar">×</button>
             </div>
             
-            <div v-if="fileSuccess" class="success-message">
+            <div v-if="companySuccess" class="success-message">
               <div class="success-icon small">✓</div>
-              <p>{{ fileSuccess }}</p>
+              <p>{{ companySuccess }}</p>
             </div>
           </div>
           
           <div class="files-card">
             <div class="files-header">
-              <h3>Arquivos Disponíveis</h3>
+              <h3>Empresas Disponíveis</h3>
             </div>
             
-            <div v-if="company.files && company.files.length === 0" class="no-files">
+            <div v-if="group.companies && group.companies.length === 0" class="no-files">
               <div class="empty-icon">📂</div>
-              <p>Nenhum arquivo disponível para esta empresa.</p>
+              <p>Nenhuma empresa disponível para este grupo.</p>
             </div>
             
             <div v-else class="files-table-container">
               <table class="files-table">
                 <thead>
                   <tr>
-                    <th>Nome do Arquivo</th>
-                    <th>Tipo</th>
-                    <th>Data de Upload</th>
+                    <th>Nome da Empresa</th>
+                    <th>CNPJ</th>
+                    <th>Data de Criação</th>
                     <th>Ação</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="file in company.files" :key="file.id">
+                  <tr v-for="company in group.companies" :key="company.id">
+                    <td>{{ company.name }}</td>
+                    <td>{{ company.cnpj }}</td>
+                    <td>{{ formatDate(company.created_at) }}</td>
                     <td>
-                      <div class="file-name">
-                        <span class="file-type-icon">{{ getFileIcon(file.file_type) }}</span>
-                        {{ file.filename }}
-                      </div>
-                    </td>
-                    <td>{{ file.file_type.toUpperCase() }}</td>
-                    <td>{{ formatDate(file.uploaded_at) }}</td>
-                    <td>
-                      <a :href="`/api/files/${file.id}`" target="_blank" class="download-btn">
-                        Download
+                      <a :href="`/companies/${company.id}`" class="view-btn">
+                        Ver Detalhes
                       </a>
                     </td>
                   </tr>
@@ -155,32 +152,34 @@
 
 <script>
 export default {
-  name: 'CompanyDetailView',
+  name: 'GroupDetailView',
   data() {
     return {
-      company: {
+      group: {
         id: null,
         name: '',
-        state_registration: '',
-        cnpj: '',
         created_at: null,
         created_by: null,
-        files: []
+        companies: []
       },
       loading: true,
       error: null,
       isAdmin: false,
-      selectedFile: null,
-      fileLoading: false,
-      fileError: null,
-      fileSuccess: null,
-      currentDateTime: '2025-03-06 13:34:24',
+      newCompany: {
+        name: '',
+        cnpj: ''
+      },
+      companyLoading: false,
+      companyError: null,
+      companySuccess: null,
+      currentDateTime: new Date().toLocaleString(),
       currentUser: 'IcaroGabrielS'
     }
   },
   created() {
     this.checkAdmin();
-    this.fetchCompanyDetails();
+    this.fetchGroupDetails();
+    this.updateDateTime();
   },
   methods: {
     checkAdmin() {
@@ -190,7 +189,7 @@ export default {
         this.isAdmin = user.is_admin === true;
       }
     },
-    async fetchCompanyDetails() {
+    async fetchGroupDetails() {
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -199,9 +198,9 @@ export default {
         }
         
         const user = JSON.parse(userStr);
-        const companyId = this.$route.params.id;
+        const groupId = this.$route.params.name;
         
-        const response = await fetch(`/api/companies/${companyId}`, {
+        const response = await fetch(`/api/groups/${groupId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -212,17 +211,68 @@ export default {
         const data = await response.json();
         
         if (!response.ok) {
-          this.error = data.message || 'Erro ao carregar detalhes da empresa';
+          this.error = data.message || 'Erro ao carregar detalhes do grupo';
           this.loading = false;
           return;
         }
         
-        this.company = data.company;
+        this.group = data.group;
         this.loading = false;
       } catch (error) {
         this.error = 'Erro ao conectar ao servidor';
         this.loading = false;
-        console.error('Error fetching company details:', error);
+        console.error('Error fetching group details:', error);
+      }
+    },
+    async addCompany() {
+      if (!this.newCompany.name || !this.newCompany.cnpj) {
+        this.companyError = 'Por favor, preencha todos os campos.';
+        return;
+      }
+      
+      this.companyLoading = true;
+      this.companyError = null;
+      this.companySuccess = null;
+      
+      try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(`/api/groups/${this.group.id}/companies`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          },
+          body: JSON.stringify(this.newCompany)
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          this.companyError = data.message || 'Erro ao adicionar empresa';
+          this.companyLoading = false;
+          return;
+        }
+        
+        this.companySuccess = 'Empresa adicionada com sucesso!';
+        this.companyLoading = false;
+        this.newCompany = {
+          name: '',
+          cnpj: ''
+        };
+        
+        // Atualiza a lista de empresas
+        this.fetchGroupDetails();
+      } catch (error) {
+        this.companyError = 'Erro ao conectar ao servidor';
+        this.companyLoading = false;
+        console.error('Error adding company:', error);
       }
     },
     formatDate(dateString) {
@@ -236,69 +286,10 @@ export default {
         minute: '2-digit'
       }).format(date);
     },
-    handleFileChange(event) {
-      this.selectedFile = event.target.files[0];
-      this.fileError = null;
-      this.fileSuccess = null;
-    },
-    getFileIcon(fileType) {
-      switch(fileType.toLowerCase()) {
-        case 'pdf': return '📕';
-        case 'csv': return '📊';
-        case 'xls': 
-        case 'xlsx': return '📈';
-        default: return '📄';
-      }
-    },
-    async uploadFile() {
-      if (!this.selectedFile) {
-        this.fileError = 'Por favor, selecione um arquivo para enviar.';
-        return;
-      }
-      
-      this.fileLoading = true;
-      this.fileError = null;
-      this.fileSuccess = null;
-      
-      try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        const formData = new FormData();
-        formData.append('file', this.selectedFile);
-        
-        const response = await fetch(`/api/companies/${this.company.id}/files`, {
-          method: 'POST',
-          headers: {
-            'User-ID': user.id
-          },
-          body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.fileError = data.message || 'Erro ao enviar arquivo';
-          this.fileLoading = false;
-          return;
-        }
-        
-        this.fileSuccess = 'Arquivo enviado com sucesso!';
-        this.fileLoading = false;
-        this.selectedFile = null;
-        document.getElementById('file').value = '';
-        
-        // Atualiza a lista de arquivos
-        this.fetchCompanyDetails();
-      } catch (error) {
-        this.fileError = 'Erro ao conectar ao servidor';
-        this.fileLoading = false;
-        console.error('Error uploading file:', error);
-      }
+    updateDateTime() {
+      setInterval(() => {
+        this.currentDateTime = new Date().toLocaleString();
+      }, 1000);
     }
   }
 }

@@ -3,43 +3,19 @@
     <div class="store-container">
       <div class="store-content">
         <div class="page-header">
-          <h1>Criar Nova Empresa</h1>
+          <h1>Criar Novo Grupo</h1>
         </div>
 
-        <form @submit.prevent="handleCreateCompany" class="store-form">
+        <form @submit.prevent="handleCreateGroup" class="store-form">
           <div class="form-row">
             <div class="form-group">
-              <label for="name">Nome da Empresa:</label>
+              <label for="name">Nome do Grupo:</label>
               <input 
                 type="text" 
                 id="name" 
-                v-model="company.name" 
+                v-model="group.name" 
                 required
-                placeholder="Digite o nome da empresa"
-              >
-            </div>
-            
-            <div class="form-group">
-              <label for="state_registration">Inscrição Estadual:</label>
-              <input 
-                type="text" 
-                id="state_registration" 
-                v-model="company.state_registration" 
-                required
-                placeholder="Digite a inscrição estadual"
-              >
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group full-width">
-              <label for="cnpj">CNPJ:</label>
-              <input 
-                type="text" 
-                id="cnpj" 
-                v-model="company.cnpj" 
-                required
-                placeholder="Digite o CNPJ da empresa"
+                placeholder="Digite o nome do grupo"
               >
             </div>
           </div>
@@ -47,7 +23,7 @@
           <div class="button-container">
             <button type="submit" :disabled="loading" class="submit-btn">
               <span v-if="loading" class="loading-indicator"></span>
-              {{ loading ? 'Criando...' : 'Criar Empresa' }}
+              {{ loading ? 'Criando...' : 'Criar Grupo' }}
             </button>
           </div>
         </form>
@@ -63,7 +39,7 @@
           <p>{{ successMessage }}</p>
           <div class="success-actions">
             <router-link to="/" class="action-btn view-btn">Voltar para Home</router-link>
-            <button @click="resetForm" class="action-btn reset-btn">Criar outra empresa</button>
+            <button @click="resetForm" class="action-btn reset-btn">Criar outro grupo</button>
           </div>
         </div>
       </div>
@@ -73,13 +49,11 @@
 
 <script>
 export default {
-  name: 'CreateCompanyView',
+  name: 'CreateGroupView',
   data() {
     return {
-      company: {
-        name: '',
-        state_registration: '',
-        cnpj: ''
+      group: {
+        name: ''
       },
       loading: false,
       error: null,
@@ -102,7 +76,7 @@ export default {
         this.$router.push('/');
       }
     },
-    async handleCreateCompany() {
+    async handleCreateGroup() {
       this.loading = true;
       this.error = null;
       
@@ -115,36 +89,35 @@ export default {
         
         const user = JSON.parse(userStr);
         
-        const response = await fetch('/api/companies', {
+        const response = await fetch('/api/groups', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'User-ID': user.id
           },
-          body: JSON.stringify(this.company)
+          body: JSON.stringify(this.group)
         });
         
         const data = await response.json();
         
         if (!response.ok) {
-          this.error = data.message || 'Erro ao criar empresa';
+          console.error('Erro no servidor:', data);
+          this.error = data.message || 'Erro ao criar grupo';
           this.loading = false;
           return;
         }
         
-        this.successMessage = 'Empresa criada com sucesso!';
+        this.successMessage = 'Grupo criado com sucesso!';
         this.loading = false;
       } catch (error) {
+        console.error('Erro ao conectar ao servidor:', error);
         this.error = 'Erro ao conectar ao servidor';
         this.loading = false;
-        console.error('Error creating company:', error);
       }
     },
     resetForm() {
-      this.company = {
-        name: '',
-        state_registration: '',
-        cnpj: ''
+      this.group = {
+        name: ''
       };
       this.successMessage = '';
     }

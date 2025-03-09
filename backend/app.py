@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from models import db, User, Company, CompanyFile, bcrypt
+from models import db, User, Group, Company, CompanyFile, bcrypt
 from config import Config
 import os
 from werkzeug.utils import secure_filename
 from functools import wraps
+import datetime
 
 # Inicializa a aplicação Flask
 app = Flask(__name__)
@@ -123,13 +124,13 @@ def delete_user(user_id):
     if int(admin_id) == user_id:
         return jsonify({'message': 'Não é possível excluir seu próprio usuário'}), 400
     
-    # Verifica se existem empresas criadas por este usuário
-    companies_created = Company.query.filter_by(created_by=user_id).all()
+    # Verifica se existem grupos criados por este usuário
+    groups_created = Group.query.filter_by(created_by=user_id).all()
     
     # Podemos decidir se queremos impedir a exclusão ou transferir a propriedade
-    # Neste exemplo, impedimos a exclusão se o usuário criou empresas
-    if companies_created:
-        return jsonify({'message': 'Não é possível excluir este usuário porque ele criou empresas'}), 400
+    # Neste exemplo, impedimos a exclusão se o usuário criou grupos
+    if groups_created:
+        return jsonify({'message': 'Não é possível excluir este usuário porque ele criou grupos'}), 400
     
     # Exclui o usuário
     db.session.delete(user_to_delete)
@@ -137,61 +138,96 @@ def delete_user(user_id):
     
     return jsonify({'message': 'Usuário excluído com sucesso'}), 200
 
-# Rota para criar empresas (apenas admin)
-@app.route('/api/companies', methods=['POST'])
+# Rota para criar grupos (apenas admin)
+@app.route('/api/groups', methods=['POST'])
 @admin_required
-def create_company():
+def create_group():
+    data = request.get_json()
+    user_id = request.headers.get('User-ID')
+    
+    new_group = Group(
+        name=data['name'],
+        created_by=user_id
+    )
+    
+    db.session.add(new_group)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Grupo criado com sucesso!',
+        'group': new_group.to_dict()
+    }), 201
+
+# Rota para listar grupos
+@app.route('/api/groups', methods=['GET'])
+def list_groups():
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    # Todos os usuários podem ver todos os grupos
+    groups = Group.query.all()
+    
+    return jsonify({
+        'groups': [group.to_dict() for group in groups]
+    }), 200
+
+# Rota para obter detalhes de um grupo
+@app.route('/api/groups/<int:group_id>', methods=['GET'])
+def get_group(group_id):
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    group = Group.query.get_or_404(group_id)
+    group_dict = group.to_dict()
+    
+    # Adicionar empresas associadas
+    companies = Company.query.filter_by(group_id=group_id).all()
+    group_dict['companies'] = [company.to_dict() for company in companies]
+    
+    return jsonify({'group': group_dict}), 200
+
+# Rota para criar empresas dentro de um grupo (apenas admin)
+@app.route('/api/groups/<int:group_id>/companies', methods=['POST'])
+@admin_required
+def create_company(group_id):
     data = request.get_json()
     user_id = request.headers.get('User-ID')
     
     new_company = Company(
         name=data['name'],
-        state_registration=data['state_registration'],
         cnpj=data['cnpj'],
-        created_by=user_id
+        group_id=group_id
     )
     
     db.session.add(new_company)
     db.session.commit()
     
     return jsonify({
-        'message': 'Company created successfully',
+        'message': 'Empresa criada com sucesso!',
         'company': new_company.to_dict()
     }), 201
 
-# Rota para listar empresas
-@app.route('/api/companies', methods=['GET'])
-def list_companies():
+# Rota para listar empresas de um grupo
+@app.route('/api/groups/<int:group_id>/companies', methods=['GET'])
+def list_companies(group_id):
     user_id = request.headers.get('User-ID')
     user = User.query.get(user_id)
     
     if not user:
         return jsonify({'message': 'Usuário não encontrado'}), 404
     
-    # Todos os usuários podem ver todas as empresas
-    companies = Company.query.all()
+    # Todos os usuários podem ver todas as empresas de um grupo
+    companies = Company.query.filter_by(group_id=group_id).all()
     
     return jsonify({
         'companies': [company.to_dict() for company in companies]
     }), 200
-
-# Rota para obter detalhes de uma empresa
-@app.route('/api/companies/<int:company_id>', methods=['GET'])
-def get_company(company_id):
-    user_id = request.headers.get('User-ID')
-    user = User.query.get(user_id)
-    
-    if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
-    
-    company = Company.query.get_or_404(company_id)
-    company_dict = company.to_dict()
-    
-    # Adicionar arquivos associados
-    files = CompanyFile.query.filter_by(company_id=company_id).all()
-    company_dict['files'] = [file.to_dict() for file in files]
-    
-    return jsonify({'company': company_dict}), 200
 
 # Rota para upload de arquivos para uma empresa
 @app.route('/api/companies/<int:company_id>/files', methods=['POST'])
