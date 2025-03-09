@@ -375,40 +375,30 @@ def upload_file(company_id):
         )
         
         db.session.add(new_file)
-        db
+        db.session.commit()
         
-# Rota para obter detalhes de uma empresa específica
-@app.route('/api/companies/<int:company_id>', methods=['GET'])
-def get_company(company_id):
-    user_id = request.headers.get('User-ID')
-    user = User.query.get(user_id)
+        return jsonify({
+            'message': 'Arquivo enviado com sucesso',
+            'file': new_file.to_dict()
+        }), 201
     
-    if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
-    
-    company = Company.query.get_or_404(company_id)
-    
-    # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
-    if not user.is_admin and not user_has_group_access(user_id, company.group_id):
-        return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
-    
-    return jsonify({'company': company.to_dict()}), 200
+    return jsonify({'message': 'Tipo de arquivo não permitido'}), 400
 
-# Rota para listar arquivos de uma empresa
-@app.route('/api/companies/<int:company_id>/files', methods=['GET'])
-def list_company_files(company_id):
+# Rota para download de arquivos
+@app.route('/api/files/<int:file_id>/download', methods=['GET'])
+def download_file(file_id):
     user_id = request.headers.get('User-ID')
     user = User.query.get(user_id)
     
     if not user:
         return jsonify({'message': 'Usuário não encontrado'}), 404
     
-    company = Company.query.get_or_404(company_id)
+    file_obj = CompanyFile.query.get_or_404(file_id)
+    company = Company.query.get(file_obj.company_id)
     
     # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
     if not user.is_admin and not user_has_group_access(user_id, company.group_id):
-        return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
+        return jsonify({'message': 'Acesso não autorizado a este arquivo'}), 403
     
-    files = CompanyFile.query.filter_by(company_id=company_id).all()
-    
-    return jsonify({'files': [file.to_dict() for file in files]}), 200
+    company_folder = os.path.join(app.config['UPLOAD_FOLDER'], f'company_{file_obj.company_id}')
+    return send_from_directory(company_folder, file_obj.filename, as_attachment=True)

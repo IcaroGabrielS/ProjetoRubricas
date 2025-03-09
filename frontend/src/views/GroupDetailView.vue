@@ -1,149 +1,116 @@
 <template>
-  <div class="store-detail-container">
-    <div class="store-detail-content">
-      <div v-if="loading" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>Carregando...</p>
-      </div>
-      
-      <div v-else-if="error" class="error-state">
-        <div class="error-icon">!</div>
-        <p>{{ error }}</p>
-      </div>
-      
-      <div v-else class="store-content">
+  <div class="store-layout">
+    <div class="store-container">
+      <div class="store-content">
         <div class="page-header">
           <h1>{{ group.name }}</h1>
-          <div class="header-info">
-            <div class="date-info">{{ currentDateTime }}</div>
-            <div class="user-info">{{ currentUser }}</div>
-          </div>
+          <p class="subtitle">Detalhes e empresas do grupo</p>
         </div>
         
-        <div class="store-info-card">
-          <div class="card-header">
-            <h2>Informações do Grupo</h2>
-          </div>
-          
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">
-                <i class="info-icon">🏢</i>
-                Nome do Grupo
-              </div>
-              <div class="info-value">{{ group.name }}</div>
-            </div>
-            
-            <div class="info-item">
-              <div class="info-label">
-                <i class="info-icon">🗓️</i>
-                Data de Criação
-              </div>
-              <div class="info-value">{{ formatDate(group.created_at) }}</div>
-            </div>
-          </div>
+        <div v-if="error" class="error-alert">
+          <span>{{ error }}</span>
+          <button class="close-btn" @click="error = ''" aria-label="Fechar">&times;</button>
         </div>
-        
-        <div class="file-section">
-          <div class="file-section-header">
-            <h2>Empresas do Grupo</h2>
-            <div class="file-count" v-if="group.companies">
-              {{ group.companies.length }} empresa(s)
+
+        <div v-if="loading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Carregando informações do grupo...</p>
+        </div>
+
+        <div v-else>
+          <!-- Informações do Grupo -->
+          <div class="section-card">
+            <h2>Informações Gerais</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Código do Grupo:</div>
+                <div class="info-value">{{ group.id }}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Criado em:</div>
+                <div class="info-value">{{ formatDate(group.created_at) }}</div>
+              </div>
+              <div v-if="isAdmin" class="info-item">
+                <div class="info-label">Gerenciar Acesso:</div>
+                <div class="info-value">
+                  <button class="manage-btn" @click="manageAccess(group.id)">Permissões de Usuários</button>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div v-if="isAdmin" class="upload-card">
-            <div class="upload-header">
-              <h3>Adicionar Empresa</h3>
+
+          <!-- Lista de Empresas -->
+          <div class="section-card">
+            <div class="section-header">
+              <h2>Empresas</h2>
+              <button v-if="isAdmin" class="action-button" @click="toggleNewCompanyForm">
+                {{ showNewCompanyForm ? 'Cancelar' : 'Nova Empresa' }}
+              </button>
             </div>
-            
-            <form @submit.prevent="addCompany" class="upload-form">
-              <div class="form-group">
-                <label for="companyName" class="file-label">
-                  Nome da Empresa
+
+            <!-- Formulário de Nova Empresa -->
+            <div v-if="showNewCompanyForm && isAdmin" class="new-company-form">
+              <form @submit.prevent="createCompany">
+                <div class="form-group">
+                  <label for="companyName">Nome da Empresa:</label>
                   <input 
                     type="text" 
                     id="companyName" 
                     v-model="newCompany.name" 
-                    required
-                    placeholder="Digite o nome da empresa"
+                    required 
+                    placeholder="Nome da Empresa"
                   >
-                </label>
-              </div>
-              
-              <div class="form-group">
-                <label for="companyCnpj" class="file-label">
-                  CNPJ
+                </div>
+                <div class="form-group">
+                  <label for="companyCNPJ">CNPJ:</label>
                   <input 
                     type="text" 
-                    id="companyCnpj" 
+                    id="companyCNPJ" 
                     v-model="newCompany.cnpj" 
-                    required
-                    placeholder="Digite o CNPJ da empresa"
+                    required 
+                    placeholder="XX.XXX.XXX/XXXX-XX"
                   >
-                </label>
+                </div>
+                <button type="submit" class="submit-btn" :disabled="creatingCompany">
+                  {{ creatingCompany ? 'Criando...' : 'Criar Empresa' }}
+                </button>
+              </form>
+            </div>
+
+            <div v-if="!group.companies || group.companies.length === 0" class="empty-state">
+              <p>Nenhuma empresa foi adicionada a este grupo.</p>
+            </div>
+
+            <div v-else class="companies-grid">
+              <div 
+                v-for="company in group.companies" 
+                :key="company.id" 
+                class="company-card"
+                @click="goToCompanyDetail(company.id)"
+              >
+                <div class="company-header">
+                  <h3>{{ company.name }}</h3>
+                </div>
+                <div class="company-body">
+                  <div class="company-info-row">
+                    <span class="info-label">CNPJ:</span>
+                    <span class="info-value">{{ company.cnpj }}</span>
+                  </div>
+                  <div class="company-info-row">
+                    <span class="info-label">Criado em:</span>
+                    <span class="info-value">{{ formatDate(company.created_at) }}</span>
+                  </div>
+                </div>
+                <div class="company-footer">
+                  <button class="detail-btn">Ver Detalhes</button>
+                </div>
               </div>
-              
-              <button type="submit" :disabled="companyLoading" class="upload-btn">
-                <span v-if="companyLoading" class="loading-indicator small"></span>
-                {{ companyLoading ? 'Adicionando...' : 'Adicionar Empresa' }}
-              </button>
-            </form>
-            
-            <div v-if="companyError" class="error-message">
-              <div class="error-icon small">!</div>
-              <p>{{ companyError }}</p>
-              <button class="close-btn" @click="companyError = null" aria-label="Fechar">×</button>
-            </div>
-            
-            <div v-if="companySuccess" class="success-message">
-              <div class="success-icon small">✓</div>
-              <p>{{ companySuccess }}</p>
             </div>
           </div>
-          
-          <div class="files-card">
-            <div class="files-header">
-              <h3>Empresas Disponíveis</h3>
-            </div>
-            
-            <div v-if="group.companies && group.companies.length === 0" class="no-files">
-              <div class="empty-icon">📂</div>
-              <p>Nenhuma empresa disponível para este grupo.</p>
-            </div>
-            
-            <div v-else class="files-table-container">
-              <table class="files-table">
-                <thead>
-                  <tr>
-                    <th>Nome da Empresa</th>
-                    <th>CNPJ</th>
-                    <th>Data de Criação</th>
-                    <th>Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="company in group.companies" :key="company.id">
-                    <td>{{ company.name }}</td>
-                    <td>{{ company.cnpj }}</td>
-                    <td>{{ formatDate(company.created_at) }}</td>
-                    <td>
-                      <a :href="`/companies/${company.id}`" class="view-btn">
-                        Ver Detalhes
-                      </a>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+
+          <div class="group-actions">
+            <button class="secondary-button" @click="goBack">Voltar para Home</button>
           </div>
-        </div>
-        
-        <div class="actions">
-          <router-link to="/" class="back-btn">
-            <span class="back-icon">←</span>
-            Voltar para Home
-          </router-link>
         </div>
       </div>
     </div>
@@ -170,8 +137,13 @@ export default {
   },
   created() {
     this.checkAccess();
-    // Corrigido para usar o ID do grupo corretamente
     this.groupId = parseInt(this.$route.params.id);
+    if (isNaN(this.groupId)) {
+      console.error('ID de grupo inválido:', this.$route.params.id);
+      this.error = 'ID de grupo inválido';
+      this.loading = false;
+      return;
+    }
     this.fetchGroupData();
   },
   methods: {
@@ -185,6 +157,16 @@ export default {
       const user = JSON.parse(userStr);
       this.isAdmin = user.is_admin === true;
     },
+    toggleNewCompanyForm() {
+      this.showNewCompanyForm = !this.showNewCompanyForm;
+      if (!this.showNewCompanyForm) {
+        // Reset form when closing
+        this.newCompany = {
+          name: '',
+          cnpj: ''
+        };
+      }
+    },
     async fetchGroupData() {
       try {
         this.loading = true;
@@ -195,6 +177,7 @@ export default {
         }
         
         const user = JSON.parse(userStr);
+        console.log('Fetching data for group:', this.groupId);
         
         const response = await fetch(`/api/groups/${this.groupId}`, {
           method: 'GET',
@@ -213,6 +196,7 @@ export default {
         
         const data = await response.json();
         this.group = data.group;
+        console.log('Group data loaded:', this.group);
         this.loading = false;
       } catch (error) {
         this.error = 'Erro ao conectar ao servidor';
@@ -222,6 +206,12 @@ export default {
     },
     async createCompany() {
       try {
+        console.log('Creating company...');
+        if (!this.newCompany.name || !this.newCompany.cnpj) {
+          this.error = 'Preencha todos os campos obrigatórios';
+          return;
+        }
+        
         this.creatingCompany = true;
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -230,6 +220,8 @@ export default {
         }
         
         const user = JSON.parse(userStr);
+        console.log('Sending request to create company in group:', this.groupId);
+        console.log('Company data:', this.newCompany);
         
         const response = await fetch(`/api/groups/${this.groupId}/companies`, {
           method: 'POST',
@@ -240,13 +232,15 @@ export default {
           body: JSON.stringify(this.newCompany)
         });
         
+        const data = await response.json();
+        
         if (!response.ok) {
-          const data = await response.json();
           this.error = data.message || 'Erro ao criar empresa';
           this.creatingCompany = false;
           return;
         }
         
+        console.log('Company created successfully');
         // Limpar o formulário e atualizar os dados do grupo
         this.newCompany = {
           name: '',
@@ -293,505 +287,280 @@ export default {
 </script>
   
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Sarala:wght@400;700&display=swap');
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-.store-detail-container {
-  margin-top: 60px; /* Altura da navbar */
-  height: calc(100vh - 60px); /* Altura total da viewport menos a altura da navbar */
+.store-layout {
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  font-family: 'Sarala', sans-serif;
-  padding: 20px;
-  overflow-y: auto; /* Habilita a rolagem vertical */
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
 }
 
-.store-detail-content {
-  width: 1200px; /* Largura fixa para desktop */
+.store-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 3rem;
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(135deg, #142C4D, #204578);
+}
+
+.store-content {
+  width: 100%;
+  max-width: 1200px;
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  padding: 2rem;
-  animation: fade-in 0.8s ease-out;
-  overflow: visible; /* Mantém o conteúdo visível */
-  margin-bottom: 20px; /* Espaço no final */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 2.5rem 3rem;
+  animation: fade-in 0.6s ease-out;
 }
 
-/* Estado de carregamento */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem;
-  text-align: center;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #204578;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-/* Estado de erro */
-.error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem;
-  text-align: center;
-}
-
-.error-icon {
-  width: 60px;
-  height: 60px;
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 2rem;
-  margin-bottom: 1rem;
-}
-
-.error-state p {
-  color: #b91c1c;
-  font-weight: 500;
-  font-size: 1.1rem;
-}
-
-/* Cabeçalho da página */
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  text-align: left;
   margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #204578;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eaeaea;
 }
 
 .page-header h1 {
   color: #142C4D;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  margin: 0;
+  margin-bottom: 0.5rem;
 }
 
-.header-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-size: 0.9rem;
-}
-
-.date-info {
+.subtitle {
   color: #666;
-  margin-bottom: 0.2rem;
-}
-
-.user-info {
-  color: #142C4D;
-  font-weight: 600;
-}
-
-/* Card de informações da loja */
-.store-info-card {
-  background: linear-gradient(to right bottom, #ffffff, #f8f9fa);
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  margin-bottom: 2rem;
-}
-
-.card-header {
-  background: linear-gradient(to right, #142C4D, #204578);
-  padding: 1rem 1.5rem;
-}
-
-.card-header h2 {
-  color: white;
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Sempre duas colunas para desktop */
-  gap: 1.5rem;
-  padding: 1.5rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-label {
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-  color: #495057;
-  font-size: 0.95rem;
-}
-
-.info-icon {
-  margin-right: 0.5rem;
-  font-style: normal;
-}
-
-.info-value {
   font-size: 1.1rem;
-  color: #333;
-  padding: 0.5rem;
-  background-color: #f8f9fa;
-  border-radius: 5px;
-  border-left: 3px solid #204578;
 }
 
-/* Seção de arquivos */
-.file-section {
-  margin-top: 2rem;
-}
-
-.file-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.file-section-header h2 {
-  color: #142C4D;
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.file-count {
-  background-color: #e9ecef;
-  color: #495057;
-  padding: 0.3rem 0.8rem;
-  border-radius: 15px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-/* Card de upload */
-.upload-card {
-  background-color: #f8f9fa;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-}
-
-.upload-header {
-  background: linear-gradient(to right, #204578, #3c72c2);
+.error-alert {
   padding: 1rem 1.5rem;
-}
-
-.upload-header h3 {
-  color: white;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.upload-form {
-  padding: 1.5rem;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.file-label {
+  border-radius: 8px;
+  margin-bottom: 2rem;
   display: flex;
   align-items: center;
-  padding: 0.8rem 1rem;
-  background-color: white;
-  border: 2px dashed #ced4da;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.file-label:hover {
-  border-color: #204578;
-  background-color: #f0f4f8;
-}
-
-.file-icon {
-  font-size: 1.5rem;
-  margin-right: 0.8rem;
-}
-
-.file-text {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.file-input {
-  position: absolute;
-  left: -9999px;
-}
-
-small {
-  display: block;
-  margin-top: 0.5rem;
-  color: #6c757d;
-  font-size: 0.85rem;
-}
-
-.upload-btn {
-  width: 100%;
-  padding: 0.8rem;
-  background: linear-gradient(to right, #204578, #3c72c2);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.upload-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(32, 69, 120, 0.2);
-}
-
-.upload-btn:disabled {
-  background: linear-gradient(to right, #6c757d, #495057);
-  cursor: not-allowed;
-}
-
-.loading-indicator.small {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 0.5rem;
-}
-
-/* Mensagens de erro e sucesso */
-.error-message, .success-message {
-  margin-top: 1rem;
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  display: flex;
-  align-items: flex-start;
-}
-
-.error-message {
+  justify-content: space-between;
+  font-size: 1rem;
   background-color: #fee2e2;
   color: #b91c1c;
+  animation: fade-in 0.3s ease;
 }
 
-.success-message {
-  background-color: #d1fae5;
-  color: #065f46;
-  align-items: center;
-}
-
-.error-icon.small, .success-icon.small {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+.success-alert {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-right: 0.8rem;
-  flex-shrink: 0;
-}
-
-.error-icon.small {
-  background-color: #b91c1c;
-  color: white;
-  font-weight: bold;
+  justify-content: space-between;
   font-size: 1rem;
-}
-
-.success-icon.small {
-  background-color: #059669;
-  color: white;
-  font-weight: bold;
-  font-size: 1rem;
+  background-color: #d1fae5;
+  color: #065f46;
+  animation: fade-in 0.3s ease;
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: #b91c1c;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   padding: 0 0.5rem;
-  margin-left: auto;
 }
 
-/* Card de arquivos */
-.files-card {
-  background-color: #f8f9fa;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+.close-btn.error {
+  color: #b91c1c;
 }
 
-.files-header {
-  background: linear-gradient(to right, #204578, #3c72c2);
-  padding: 1rem 1.5rem;
+.close-btn.success {
+  color: #065f46;
 }
 
-.files-header h3 {
-  color: white;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.files-table-container {
-  padding: 1rem;
-  max-height: 300px; /* Altura máxima para a tabela */
-  overflow-y: auto; /* Adiciona rolagem vertical apenas para a tabela */
-}
-
-.files-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.files-table th, .files-table td {
-  padding: 0.8rem;
-  text-align: left;
-}
-
-.files-table th {
-  background-color: #e9ecef;
-  color: #495057;
-  font-weight: 600;
-  position: sticky;
-  top: 0; /* Mantém o cabeçalho da tabela fixo durante rolagem */
-}
-
-.files-table tr {
-  border-bottom: 1px solid #dee2e6;
-  transition: background-color 0.2s ease;
-}
-
-.files-table tr:hover {
-  background-color: #f0f4f8;
-}
-
-.file-name {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.file-type-icon {
-  font-size: 1.2rem;
-}
-
-.download-btn {
-  display: inline-block;
-  background-color: #204578;
-  color: white;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.download-btn:hover {
-  background-color: #142C4D;
-  transform: translateY(-2px);
-  box-shadow: 0 3px 8px rgba(32, 69, 120, 0.3);
-}
-
-/* Estado vazio */
-.no-files {
+.loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 3rem 0;
   text-align: center;
 }
 
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  color: #6c757d;
-}
-
-.no-files p {
-  color: #6c757d;
-  font-size: 1rem;
-}
-
-/* Botão de voltar */
-.actions {
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  background: linear-gradient(to right, #6c757d, #495057);
-  color: white;
-  padding: 0.7rem 1.2rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.back-btn:hover {
-  background: linear-gradient(to right, #5a6268, #3d4246);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
-}
-
-.back-icon {
-  margin-right: 0.5rem;
-  font-size: 1.1rem;
-}
-
-/* Animações */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid rgba(32, 69, 120, 0.1);
+  border-top: 5px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
 }
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.section-card {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.8rem;
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-card h2 {
+  color: #204578;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.user-selection-container {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-end;
+}
+
+.form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background-color: white;
+  cursor: pointer;
+  transition: border 0.2s ease;
+  appearance: auto; /* Use native select appearance */
+}
+
+select:focus {
+  border-color: #204578;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
+}
+
+.action-button {
+  padding: 0.8rem 1.2rem;
+  background: linear-gradient(to right, #142C4D, #204578);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: fit-content;
+}
+
+.action-button:hover {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+}
+
+.action-button:disabled {
+  background: #c0c0c0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.users-table th {
+  padding: 1rem;
+  text-align: left;
+  background-color: #e9effa;
+  color: #204578;
+  font-weight: 600;
+  border-bottom: 2px solid #d1ddf0;
+}
+
+.users-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #eaecef;
+  color: #333;
+}
+
+.users-table tr:hover {
+  background-color: #f5f8fc;
+}
+
+.remove-btn {
+  padding: 0.5rem 0.8rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+}
+
+.remove-btn:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.group-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.secondary-button {
+  padding: 0.8rem 1.5rem;
+  background: transparent;
+  border: 2px solid #204578;
+  border-radius: 8px;
+  color: #204578;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.secondary-button:hover {
+  background-color: rgba(32, 69, 120, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
 }
 </style>
