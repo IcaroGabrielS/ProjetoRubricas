@@ -42,6 +42,41 @@ class Group(db.Model):
             "created_at": self.created_at.isoformat(),
             "created_by": self.created_by
         }
+    
+    def to_dict_with_permissions(self):
+        # Retorna o dicionário básico
+        group_dict = self.to_dict()
+        
+        # Adiciona a lista de permissões
+        group_dict["allowed_users"] = [
+            permission.user_id for permission in GroupPermission.query.filter_by(group_id=self.id).all()
+        ]
+        
+        return group_dict
+
+# Nova tabela para controlar as permissões de visualização de grupos
+class GroupPermission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    
+    # Relações
+    group = db.relationship('Group', backref='permissions')
+    user = db.relationship('User', backref='group_permissions')
+    
+    # Garante que não exista duplicidade de permissão para o mesmo usuário no mesmo grupo
+    __table_args__ = (
+        db.UniqueConstraint('group_id', 'user_id', name='unique_group_permission'),
+    )
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "group_id": self.group_id,
+            "user_id": self.user_id,
+            "created_at": self.created_at.isoformat()
+        }
 
 class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)

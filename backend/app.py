@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from models import db, User, Group, Company, CompanyFile, bcrypt
+from models import db, User, Group, Company, CompanyFile, GroupPermission, bcrypt
 from config import Config
 import os
 from werkzeug.utils import secure_filename
@@ -55,6 +55,18 @@ def admin_required(f):
         
         return f(*args, **kwargs)
     return decorated_function
+
+# Função auxiliar para verificar se um usuário tem acesso a um grupo
+def user_has_group_access(user_id, group_id):
+    user = User.query.get(user_id)
+    
+    # Admin tem acesso a todos os grupos
+    if user and user.is_admin:
+        return True
+    
+    # Verifica se o usuário comum tem permissão específica para o grupo
+    permission = GroupPermission.query.filter_by(user_id=user_id, group_id=group_id).first()
+    return permission is not None
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -132,6 +144,9 @@ def delete_user(user_id):
     if groups_created:
         return jsonify({'message': 'Não é possível excluir este usuário porque ele criou grupos'}), 400
     
+    # Exclui as permissões de grupo associadas a este usuário
+    GroupPermission.query.filter_by(user_id=user_id).delete()
+    
     # Exclui o usuário
     db.session.delete(user_to_delete)
     db.session.commit()
@@ -167,11 +182,19 @@ def list_groups():
     if not user:
         return jsonify({'message': 'Usuário não encontrado'}), 404
     
-    # Todos os usuários podem ver todos os grupos
-    groups = Group.query.all()
+    # Se for admin, obtém todos os grupos
+    if user.is_admin:
+        groups = Group.query.all()
+        group_list = [group.to_dict_with_permissions() for group in groups]
+    else:
+        # Para usuários comuns, busca apenas os grupos para os quais tem permissão
+        permissions = GroupPermission.query.filter_by(user_id=user_id).all()
+        allowed_group_ids = [permission.group_id for permission in permissions]
+        groups = Group.query.filter(Group.id.in_(allowed_group_ids)).all()
+        group_list = [group.to_dict() for group in groups]
     
     return jsonify({
-        'groups': [group.to_dict() for group in groups]
+        'groups': group_list
     }), 200
 
 # Rota para obter detalhes de um grupo
@@ -183,8 +206,17 @@ def get_group(group_id):
     if not user:
         return jsonify({'message': 'Usuário não encontrado'}), 404
     
+    # Verifica se o usuário tem acesso ao grupo
+    if not user.is_admin and not user_has_group_access(user_id, group_id):
+        return jsonify({'message': 'Acesso não autorizado a este grupo'}), 403
+    
     group = Group.query.get_or_404(group_id)
-    group_dict = group.to_dict()
+    
+    # Se for admin, inclui informações de permissão
+    if user.is_admin:
+        group_dict = group.to_dict_with_permissions()
+    else:
+        group_dict = group.to_dict()
     
     # Adicionar empresas associadas
     companies = Company.query.filter_by(group_id=group_id).all()
@@ -192,91 +224,12 @@ def get_group(group_id):
     
     return jsonify({'group': group_dict}), 200
 
-# Rota para criar empresas dentro de um grupo (apenas admin)
-@app.route('/api/groups/<int:group_id>/companies', methods=['POST'])
+# Nova rota para gerenciar permissões de visualização de grupos (apenas admin)
+@app.route('/api/groups/<int:group_id>/permissions', methods=['GET', 'POST', 'DELETE'])
 @admin_required
-def create_company(group_id):
-    data = request.get_json()
-    user_id = request.headers.get('User-ID')
+def manage_group_permissions(group_id):
+    group = Group.query.get_or_404(group_id)
     
-    new_company = Company(
-        name=data['name'],
-        cnpj=data['cnpj'],
-        group_id=group_id
-    )
-    
-    db.session.add(new_company)
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Empresa criada com sucesso!',
-        'company': new_company.to_dict()
-    }), 201
-
-# Rota para listar empresas de um grupo
-@app.route('/api/groups/<int:group_id>/companies', methods=['GET'])
-def list_companies(group_id):
-    user_id = request.headers.get('User-ID')
-    user = User.query.get(user_id)
-    
-    if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
-    
-    # Todos os usuários podem ver todas as empresas de um grupo
-    companies = Company.query.filter_by(group_id=group_id).all()
-    
-    return jsonify({
-        'companies': [company.to_dict() for company in companies]
-    }), 200
-
-# Rota para upload de arquivos para uma empresa
-@app.route('/api/companies/<int:company_id>/files', methods=['POST'])
-@admin_required
-def upload_file(company_id):
-    company = Company.query.get_or_404(company_id)
-    
-    if 'file' not in request.files:
-        return jsonify({'message': 'No file part'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'message': 'No selected file'}), 400
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        # Criar pasta para a empresa se não existir
-        company_folder = os.path.join(app.config['UPLOAD_FOLDER'], f'company_{company_id}')
-        os.makedirs(company_folder, exist_ok=True)
-        
-        file_path = os.path.join(company_folder, filename)
-        file.save(file_path)
-        
-        # Salvar referência no banco
-        file_type = filename.rsplit('.', 1)[1].lower()
-        new_file = CompanyFile(
-            company_id=company_id,
-            filename=filename,
-            file_path=file_path,
-            file_type=file_type
-        )
-        
-        db.session.add(new_file)
-        db.session.commit()
-        
-        return jsonify({
-            'message': 'File uploaded successfully',
-            'file': new_file.to_dict()
-        }), 201
-    
-    return jsonify({'message': 'File type not allowed'}), 400
-
-# Rota para download de arquivos
-@app.route('/api/files/<int:file_id>', methods=['GET'])
-def download_file(file_id):
-    file = CompanyFile.query.get_or_404(file_id)
-    directory = os.path.dirname(file.file_path)
-    filename = os.path.basename(file.file_path)
-    return send_from_directory(directory, filename, as_attachment=True)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    # GET - Listar permissões atuais
+    if request.method == 'GET':
+        permissions = GroupPermission.query.filter_by(group_id=group_id).all

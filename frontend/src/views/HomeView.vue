@@ -35,13 +35,20 @@
             v-for="group in groups" 
             :key="group.id" 
             class="store-item"
-            @click="goToGroupDetail(group.id)"
           >
-            <div class="store-item-details">
+            <div class="store-item-details" @click="goToGroupDetail(group.id)">
               <span class="store-name">{{ group.name }}</span>
             </div>
-            <div class="store-item-arrow">
-              <span>›</span>
+            <div class="store-item-actions">
+              <button 
+                v-if="isAdmin" 
+                class="manage-button" 
+                @click="manageGroupAccess(group.id)" 
+                title="Gerenciar acesso de usuários"
+              >
+                👥
+              </button>
+              <span class="store-item-arrow" @click="goToGroupDetail(group.id)">›</span>
             </div>
           </div>
         </div>
@@ -125,6 +132,9 @@ export default {
     },
     goToGroupDetail(groupId) {
       this.$router.push(`/groups/${groupId}`);
+    },
+    manageGroupAccess(groupId) {
+      this.$router.push(`/groups/manage/${groupId}`);
     },
     createGroup() {
       this.$router.push('/groups/create');
@@ -305,6 +315,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  flex: 1;
+  cursor: pointer;
 }
 
 .store-name {
@@ -313,10 +325,39 @@ body {
   color: #142C4D;
 }
 
+.store-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .store-item-arrow {
   font-size: 1.5rem;
   font-weight: bold;
   color: #204578;
+  cursor: pointer;
+}
+
+.manage-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-size: 0.9rem;
+  box-shadow: none;
+}
+
+.manage-button:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 /* Estados de loading, erro e vazio */

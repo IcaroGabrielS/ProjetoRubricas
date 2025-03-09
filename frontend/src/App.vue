@@ -48,11 +48,14 @@ export default {
       isLoggedIn: false,
       isAdmin: false,
       username: 'IcaroGabrielS',
-      currentDateTime: '2025-03-06 13:45:11'
+      currentDateTime: '2025-03-09 19:45:56'
     }
   },
   created() {
     this.checkLoginStatus();
+    this.updateDateTime();
+    // Atualiza o horário a cada minuto
+    setInterval(this.updateDateTime, 60000);
   },
   methods: {
     checkLoginStatus() {
@@ -62,12 +65,22 @@ export default {
         this.isLoggedIn = true;
         this.isAdmin = user.is_admin === true;
         this.username = user.username || 'IcaroGabrielS';
-        this.currentDateTime = '2025-03-06 13:45:11';
       } else {
         this.isLoggedIn = false;
         this.isAdmin = false;
         this.username = '';
       }
+    },
+    updateDateTime() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      
+      this.currentDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     },
     logout() {
       localStorage.removeItem('user');
