@@ -124,6 +124,15 @@ def list_users():
         'users': [user.to_dict() for user in users]
     }), 200
 
+# Rota para obter detalhes de um usuário específico (apenas admin)
+@app.route('/api/users/<int:user_id>', methods=['GET'])
+@admin_required
+def get_user(user_id):
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'user': user.to_dict()
+    }), 200
+
 # Rota para excluir usuários (apenas admin)
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 @admin_required
@@ -232,4 +241,138 @@ def manage_group_permissions(group_id):
     
     # GET - Listar permissões atuais
     if request.method == 'GET':
-        permissions = GroupPermission.query.filter_by(group_id=group_id).all
+        permissions = GroupPermission.query.filter_by(group_id=group_id).all()
+        users_with_access = []
+        
+        for permission in permissions:
+            user = User.query.get(permission.user_id)
+            if user:
+                users_with_access.append(user.to_dict())
+        
+        return jsonify({
+            'group_id': group_id,
+            'users': users_with_access
+        }), 200
+    
+    # POST - Adicionar permissão para um usuário
+    elif request.method == 'POST':
+        data = request.get_json()
+        if not data or 'user_id' not in data:
+            return jsonify({'message': 'user_id é necessário'}), 400
+        
+        user_id = data['user_id']
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'message': 'Usuário não encontrado'}), 404
+        
+        # Verifica se já existe permissão
+        existing = GroupPermission.query.filter_by(group_id=group_id, user_id=user_id).first()
+        if existing:
+            return jsonify({'message': 'Usuário já tem acesso a este grupo'}), 400
+        
+        # Adiciona permissão
+        new_permission = GroupPermission(group_id=group_id, user_id=user_id)
+        db.session.add(new_permission)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Acesso concedido com sucesso',
+            'permission': new_permission.to_dict()
+        }), 201
+    
+    # DELETE - Remover permissão de um usuário
+    elif request.method == 'DELETE':
+        data = request.get_json()
+        if not data or 'user_id' not in data:
+            return jsonify({'message': 'user_id é necessário'}), 400
+        
+        user_id = data['user_id']
+        
+        # Verifica se existe permissão
+        permission = GroupPermission.query.filter_by(group_id=group_id, user_id=user_id).first()
+        if not permission:
+            return jsonify({'message': 'Usuário não tem acesso a este grupo'}), 404
+        
+        # Remove permissão
+        db.session.delete(permission)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Acesso removido com sucesso'
+        }), 200
+
+# Rota para criar empresas dentro de um grupo (apenas admin)
+@app.route('/api/groups/<int:group_id>/companies', methods=['POST'])
+@admin_required
+def create_company(group_id):
+    data = request.get_json()
+    user_id = request.headers.get('User-ID')
+    
+    new_company = Company(
+        name=data['name'],
+        cnpj=data['cnpj'],
+        group_id=group_id
+    )
+    
+    db.session.add(new_company)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Empresa criada com sucesso!',
+        'company': new_company.to_dict()
+    }), 201
+
+# Rota para listar empresas de um grupo
+@app.route('/api/groups/<int:group_id>/companies', methods=['GET'])
+def list_companies(group_id):
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    # Verifica se o usuário tem acesso ao grupo
+    if not user.is_admin and not user_has_group_access(user_id, group_id):
+        return jsonify({'message': 'Acesso não autorizado a este grupo'}), 403
+    
+    # Lista empresas do grupo
+    companies = Company.query.filter_by(group_id=group_id).all()
+    
+    return jsonify({
+        'companies': [company.to_dict() for company in companies]
+    }), 200
+
+# Rota para upload de arquivos para uma empresa
+@app.route('/api/companies/<int:company_id>/files', methods=['POST'])
+@admin_required
+def upload_file(company_id):
+    company = Company.query.get_or_404(company_id)
+    
+    if 'file' not in request.files:
+        return jsonify({'message': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Criar pasta para a empresa se não existir
+        company_folder = os.path.join(app.config['UPLOAD_FOLDER'], f'company_{company_id}')
+        os.makedirs(company_folder, exist_ok=True)
+        
+        file_path = os.path.join(company_folder, filename)
+        file.save(file_path)
+        
+        # Salvar referência no banco
+        file_type = filename.rsplit('.', 1)[1].lower()
+        new_file = CompanyFile(
+            company_id=company_id,
+            filename=filename,
+            file_path=file_path,
+            file_type=file_type
+        )
+        
+        db.session.add(new_file)
+        db

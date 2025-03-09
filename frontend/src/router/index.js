@@ -5,6 +5,7 @@ import CreateGroupView from '../views/CreateGroupView.vue'
 import GroupDetailView from '../views/GroupDetailView.vue'
 import UsersView from '../views/UsersView.vue'
 import GroupManageView from '../views/GroupManageView.vue'
+import CompanyDetailView from '../views/CompanyDetailView.vue'
 
 const routes = [
   {
@@ -42,6 +43,12 @@ const routes = [
     name: 'group-manage',
     component: GroupManageView,
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/companies/:id',
+    name: 'company-detail',
+    component: CompanyDetailView,
+    meta: { requiresAuth: true }
   }
 ]
 
