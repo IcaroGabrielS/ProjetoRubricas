@@ -13,8 +13,8 @@
       <div class="right-panel">
         <div class="content-wrapper">
           <div class="home-header">
-            <h1>Bem-vindo, {{ username }}!</h1>
-            <p class="welcome-text">Você está logado com sucesso.</p>
+            <h1>Olá, {{ username }}!</h1>
+            <p class="welcome-text">Você logou com sucesso.</p>
           </div>
           
           <div class="dashboard-summary">
@@ -283,7 +283,7 @@ export default {
 .left-panel {
   width: 50%;
   height: 100%;
-  background-color: #f9f9fb;
+  background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%); /* Degradê em tons de azul escuro e mais marcado */
   display: flex;
   align-items: center;
   justify-content: center;
