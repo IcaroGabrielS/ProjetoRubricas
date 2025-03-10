@@ -3,8 +3,8 @@
     <nav v-if="isLoggedIn" class="app-navbar">
       <div class="nav-container">
         <div class="nav-logo">
-          <div class="logo-circle">PR</div>
-          <span class="logo-text">ProjetoRúbricas</span>
+          <img src="@/assets/logo.svg" alt="Logo" class="logo-image" />
+          <span class="logo-text">Portal do Cliente</span>
         </div>
         <div class="nav-links">
           <router-link to="/" class="nav-link">
@@ -21,12 +21,9 @@
           </router-link>
         </div>
         <div class="user-info">
-          <div class="user-details">
-            <div class="username">
-              <div class="avatar">{{ username.charAt(0) }}</div>
-              {{ username }}
-            </div>
-            <div class="datetime">{{ currentDateTime }}</div>
+          <div class="username">
+            <div class="avatar">{{ username.charAt(0) }}</div>
+            {{ username }}
           </div>
           <button @click="logout" class="logout-btn">
             <span>Sair</span>
@@ -47,15 +44,11 @@ export default {
     return {
       isLoggedIn: false,
       isAdmin: false,
-      username: 'IcaroGabrielS',
-      currentDateTime: '2025-03-09 19:45:56'
+      username: 'IcaroGabrielS'
     }
   },
   created() {
     this.checkLoginStatus();
-    this.updateDateTime();
-    // Atualiza o horário a cada minuto
-    setInterval(this.updateDateTime, 60000);
   },
   methods: {
     checkLoginStatus() {
@@ -70,17 +63,6 @@ export default {
         this.isAdmin = false;
         this.username = '';
       }
-    },
-    updateDateTime() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      
-      this.currentDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     },
     logout() {
       localStorage.removeItem('user');
@@ -104,14 +86,10 @@ export default {
   /* Paleta de cores flat e elegante */
   --primary: #6c5ce7;           /* Roxo elegante */
   --primary-light: #8a7ef5;     /* Roxo claro */
-  --primary-gradient: linear-gradient(135deg, #6c5ce7, #8a7ef5); 
   --accent: #00cec9;            /* Turquesa */
   --accent-light: #81ecec;      /* Turquesa claro */
-  --accent-gradient: linear-gradient(135deg, #00cec9, #81ecec);
   --danger: #ff7675;            /* Vermelho suave */
-  --danger-gradient: linear-gradient(135deg, #ff7675, #fab1a0);
   --success: #55efc4;           /* Verde menta */
-  --success-gradient: linear-gradient(135deg, #55efc4, #81ecec);
   --dark: #2d3436;              /* Cinza escuro */
   --dark-light: #636e72;        /* Cinza médio */
   --light: #dfe6e9;             /* Cinza claro */
@@ -125,13 +103,8 @@ export default {
   --radius-lg: 24px;            /* Raio grande */
   --radius-full: 100px;         /* Raio completo */
   
-  /* Sombras suaves */
+  /* Sombras */
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 5px 20px rgba(0, 0, 0, 0.08);
-  
-  /* Transições */
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
 }
 
 * {
@@ -180,18 +153,9 @@ body {
   gap: 12px;
 }
 
-.logo-circle {
+.logo-image {
   width: 38px;
   height: 38px;
-  border-radius: var(--radius-full);
-  background: var(--primary-gradient);
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: -0.5px;
 }
 
 .logo-text {
@@ -214,7 +178,6 @@ body {
   text-decoration: none;
   padding: 10px 18px;
   border-radius: var(--radius-full);
-  transition: all var(--transition-normal);
   font-weight: 500;
   font-size: 0.95rem;
 }
@@ -222,13 +185,11 @@ body {
 .nav-link:hover {
   background-color: var(--light);
   color: var(--primary);
-  transform: translateY(-1px);
 }
 
 .nav-link.router-link-exact-active {
-  background: var(--primary-gradient);
+  background-color: var(--primary);
   color: var(--white);
-  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.3);
 }
 
 .nav-icon {
@@ -242,10 +203,6 @@ body {
   gap: 16px;
 }
 
-.user-details {
-  text-align: right;
-}
-
 .username {
   display: flex;
   align-items: center;
@@ -253,25 +210,19 @@ body {
   font-weight: 600;
   color: var(--dark);
   font-size: 0.95rem;
-  margin-bottom: 2px;
 }
 
 .avatar {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-full);
-  background: var(--accent-gradient);
+  background-color: var(--accent);
   color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 1rem;
-}
-
-.datetime {
-  font-size: 0.75rem;
-  color: var(--dark-light);
 }
 
 .logout-btn {
@@ -283,15 +234,11 @@ body {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: all var(--transition-normal);
 }
 
 .logout-btn:hover {
-  background: var(--danger-gradient);
+  background-color: var(--danger);
   color: var(--white);
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(255, 118, 117, 0.3);
-  transform: translateY(-2px);
 }
 
 .app-content {
@@ -301,7 +248,7 @@ body {
 
 /* Estilos globais para botões */
 button {
-  background: var(--primary-gradient);
+  background-color: var(--primary);
   color: var(--white);
   border: none;
   padding: 12px 24px;
@@ -309,18 +256,11 @@ button {
   cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
-  transition: all var(--transition-normal);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-family: 'Outfit', sans-serif;
   letter-spacing: 0.3px;
-  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.2);
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.3);
 }
 
 button:focus {
@@ -329,12 +269,7 @@ button:focus {
 
 /* Botões de ação principal */
 .action-button {
-  background: var(--accent-gradient);
-  box-shadow: 0 4px 16px rgba(0, 206, 201, 0.2);
-}
-
-.action-button:hover {
-  box-shadow: 0 6px 20px rgba(0, 206, 201, 0.3);
+  background-color: var(--accent);
 }
 
 /* Botões secundários */
@@ -342,13 +277,11 @@ button:focus {
   background: var(--white);
   color: var(--dark);
   border: 1.5px solid var(--light);
-  box-shadow: var(--shadow-sm);
 }
 
 .secondary-button:hover {
   border-color: var(--primary-light);
-  color: var (--primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  color: var(--primary);
 }
 
 /* Estilos globais para inputs */
@@ -358,7 +291,6 @@ input {
   border-radius: var(--radius-md);
   padding: 12px 16px;
   font-size: 1rem;
-  transition: all var(--transition-normal);
   background-color: var(--white);
   color: var(--dark);
 }
@@ -373,13 +305,13 @@ input:focus {
 .card {
   background-color: var(--card-bg);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   border: 1px solid rgba(230, 235, 245, 0.5);
 }
 
 .card-header {
-  background: var(--primary-gradient);
+  background-color: var(--primary);
   color: var(--white);
   padding: 18px 24px;
   font-weight: 600;
@@ -406,12 +338,6 @@ input:focus {
   letter-spacing: -0.5px;
 }
 
-/* Animações globais */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 /* Alertas */
 .error-alert, .success-alert {
   padding: 14px 20px;
@@ -421,7 +347,6 @@ input:focus {
   align-items: center;
   justify-content: space-between;
   font-size: 0.95rem;
-  animation: fade-in 0.3s ease;
 }
 
 .error-alert {
