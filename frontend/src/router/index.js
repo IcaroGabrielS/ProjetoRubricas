@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
-import CreateGroupView from '../views/CreateGroupView.vue'
 import GroupDetailView from '../views/GroupDetailView.vue'
 import UsersView from '../views/UsersView.vue'
 import GroupManageView from '../views/GroupManageView.vue'
@@ -19,12 +18,6 @@ const routes = [
     name: 'login',
     component: LoginView,
     meta: { redirectIfLoggedIn: true }
-  },
-  {
-    path: '/groups/create',
-    name: 'create-group',
-    component: CreateGroupView,
-    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/groups/:name',

@@ -11,10 +11,6 @@
             <i class="nav-icon">🏠</i>
             <span>Home</span>
           </router-link>
-          <router-link v-if="isAdmin" to="/groups/create" class="nav-link">
-            <i class="nav-icon">➕</i>
-            <span>Criar Grupo</span>
-          </router-link>
           <router-link v-if="isAdmin" to="/users" class="nav-link">
             <i class="nav-icon">👥</i>
             <span>Usuários</span>

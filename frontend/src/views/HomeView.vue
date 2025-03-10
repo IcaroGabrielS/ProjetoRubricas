@@ -83,7 +83,7 @@
           
           <!-- Botões de ação -->
           <div class="quick-actions">
-            <button v-if="isAdmin" class="action-button admin" @click="createGroup">Novo Grupo</button>
+            <button v-if="isAdmin" class="action-button admin" @click="showCreateGroupModal = true">Novo Grupo</button>
             <button v-if="isAdmin" class="action-button admin" @click="manageAccounts">Gerenciar Contas</button>
           </div>
         </div>
@@ -93,6 +93,53 @@
       <div class="illustration-panel">
         <div class="large-svg-container">
           <img src="@/assets/task-animate.svg" alt="Task Illustration" class="large-svg">
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para criar novo grupo (visível apenas para admin) -->
+    <div v-if="showCreateGroupModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>Criar Novo Grupo</h2>
+          <button class="close-modal-btn" @click="closeModal">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <form @submit.prevent="handleCreateGroup" class="create-group-form">
+            <div class="form-group">
+              <label for="name">Nome do Grupo:</label>
+              <input 
+                type="text" 
+                id="name" 
+                v-model="newGroup.name" 
+                required
+                placeholder="Digite o nome do grupo"
+              >
+            </div>
+            
+            <div class="button-container">
+              <button type="submit" :disabled="createGroupLoading" class="submit-btn">
+                <span v-if="createGroupLoading" class="loading-indicator"></span>
+                {{ createGroupLoading ? 'Criando...' : 'Criar Grupo' }}
+              </button>
+            </div>
+          </form>
+          
+          <div v-if="createGroupError" class="error-message">
+            <div class="error-icon">!</div>
+            <p>{{ createGroupError }}</p>
+            <button class="close-btn" @click="createGroupError = null" aria-label="Fechar">×</button>
+          </div>
+          
+          <div v-if="createGroupSuccess" class="success-message">
+            <div class="success-icon">✓</div>
+            <p>{{ createGroupSuccess }}</p>
+            <div class="success-actions">
+              <button @click="closeModal" class="action-btn view-btn">Voltar para Home</button>
+              <button @click="resetCreateGroupForm" class="action-btn reset-btn">Criar outro grupo</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -110,7 +157,16 @@ export default {
       groupsLoading: true,
       groupsError: null,
       searchQuery: '',
-      isMobileDevice: false
+      isMobileDevice: false,
+      
+      // Novo Grupo Modal
+      showCreateGroupModal: false,
+      newGroup: {
+        name: ''
+      },
+      createGroupLoading: false,
+      createGroupError: null,
+      createGroupSuccess: ''
     }
   },
   computed: {
@@ -134,9 +190,9 @@ export default {
     window.addEventListener('resize', this.checkDeviceType);
   },
   beforeUnmount() {
-  // Remover listener ao destruir componente
-  window.removeEventListener('resize', this.checkDeviceType);
-},
+    // Remover listener ao destruir componente
+    window.removeEventListener('resize', this.checkDeviceType);
+  },
   methods: {
     checkDeviceType() {
       this.isMobileDevice = window.innerWidth < 1024;
@@ -192,7 +248,7 @@ export default {
       this.$router.push(`/groups/manage/${groupId}`);
     },
     createGroup() {
-      this.$router.push('/groups/create');
+      this.showCreateGroupModal = true;
     },
     manageAccounts() {
       this.$router.push('/users');
@@ -200,6 +256,68 @@ export default {
     logout() {
       localStorage.removeItem('user');
       this.$router.push('/login');
+    },
+    
+    // Métodos para o modal de criação de grupo
+    closeModal() {
+      if (!this.createGroupLoading) {
+        this.showCreateGroupModal = false;
+        
+        // Se houver sucesso, recarrega os grupos ao fechar
+        if (this.createGroupSuccess) {
+          this.fetchGroups();
+        }
+        
+        // Reseta o formulário e as mensagens
+        this.resetCreateGroupForm();
+        this.createGroupError = null;
+        this.createGroupSuccess = '';
+      }
+    },
+    resetCreateGroupForm() {
+      this.newGroup = {
+        name: ''
+      };
+      this.createGroupSuccess = '';
+    },
+    async handleCreateGroup() {
+      this.createGroupLoading = true;
+      this.createGroupError = null;
+      
+      try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch('/api/groups', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          },
+          body: JSON.stringify(this.newGroup)
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          console.error('Erro no servidor:', data);
+          this.createGroupError = data.message || 'Erro ao criar grupo';
+          this.createGroupLoading = false;
+          return;
+        }
+        
+        this.createGroupSuccess = 'Grupo criado com sucesso!';
+        this.createGroupLoading = false;
+      } catch (error) {
+        console.error('Erro ao conectar ao servidor:', error);
+        this.createGroupError = 'Erro ao conectar ao servidor';
+        this.createGroupLoading = false;
+      }
     }
   }
 }
@@ -541,9 +659,259 @@ export default {
   box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
 }
 
+/* Modal para criação de grupo */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fade-in 0.3s ease;
+}
+
+.modal-container {
+  width: 90%;
+  max-width: 600px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: slide-up 0.4s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.modal-header h2 {
+  color: #142C4D;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  color: #142C4D;
+  transform: scale(1.1);
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.create-group-form {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.9rem;
+  border: 2px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+  background-color: #f9f9f9;
+  font-family: 'Sarala', sans-serif;
+}
+
+.form-group input:focus {
+  border-color: #204578;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
+  outline: none;
+  background-color: #fff;
+}
+
+.form-group input::placeholder {
+  color: #aaa;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.submit-btn {
+  padding: 1rem 2.5rem;
+  background: linear-gradient(to right, #142C4D, #204578);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(32, 69, 120, 0.3);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  background: linear-gradient(to right, #6c757d, #495057);
+  cursor: not-allowed;
+}
+
+.loading-indicator {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 10px;
+}
+
+.error-message, .success-message {
+  margin-top: 1.5rem;
+  padding: 1.2rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.success-message {
+  background-color: #d1fae5;
+  color: #065f46;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.error-icon, .success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.error-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #b91c1c;
+  color: white;
+  font-weight: bold;
+}
+
+.success-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #059669;
+  color: white;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+  margin-left: auto;
+}
+
+.success-actions {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
+
+.action-btn {
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  min-width: 180px;
+  text-align: center;
+  border: none;
+}
+
+.view-btn {
+  background-color: #204578;
+  color: white;
+}
+
+.view-btn:hover {
+  background-color: #142C4D;
+  transform: translateY(-2px);
+}
+
+.reset-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.reset-btn:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+}
+
 /* Animações */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
