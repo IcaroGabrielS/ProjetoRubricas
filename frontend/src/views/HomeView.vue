@@ -1,67 +1,99 @@
 <template>
-  <div class="home-container">
-    <div class="home-card">
-      <div class="home-header">
-        <h1>Bem-vindo, {{ username }}!</h1>
-        <p class="welcome-text">Você está logado com sucesso.</p>
-        <div class="datetime">{{ currentDateTime }}</div>
-      </div>
-      
-      <div class="dashboard-summary">
-        <div class="dashboard-item">
-          <h3>Seus Grupos</h3>
-          <p>Selecione um grupo abaixo para acessar seus detalhes e arquivos.</p>
-        </div>
-      </div>
-      
-      <!-- Lista de grupos -->
-      <div class="stores-section">
-        <div v-if="groupsLoading" class="loading-indicator">
-          <div class="loading-spinner"></div>
-          <p>Carregando grupos...</p>
-        </div>
-        
-        <div v-else-if="groupsError" class="error-message">
-          <div class="error-icon">!</div>
-          <p>{{ groupsError }}</p>
-        </div>
-        
-        <div v-else-if="groups.length === 0" class="empty-state">
-          <p>Você não tem acesso a nenhum grupo no momento.</p>
-        </div>
-        
-        <div v-else class="stores-list">
-          <div 
-            v-for="group in groups" 
-            :key="group.id" 
-            class="store-item"
-          >
-            <div class="store-item-details" @click="goToGroupDetail(group.id)">
-              <span class="store-name">{{ group.name }}</span>
+  <div>
+    <!-- Alerta para dispositivos móveis -->
+    <div v-if="isMobileDevice" class="mobile-warning">
+      <div class="warning-icon">⚠️</div>
+      <h2>Acesso não recomendado</h2>
+      <p>Este site não foi projetado para dispositivos móveis. Por favor, acesse através de um computador para uma melhor experiência.</p>
+    </div>
+
+    <!-- Conteúdo principal - visível apenas em desktop -->
+    <div v-else class="home-container">
+      <!-- Painel direito (agora à esquerda visualmente) para o conteúdo existente -->
+      <div class="right-panel">
+        <div class="content-wrapper">
+          <div class="home-header">
+            <h1>Bem-vindo, {{ username }}!</h1>
+            <p class="welcome-text">Você está logado com sucesso.</p>
+          </div>
+          
+          <div class="dashboard-summary">
+            <div class="dashboard-item">
+              <h3>Seus Grupos</h3>
+              <p>Selecione um grupo abaixo para acessar seus detalhes e arquivos.</p>
             </div>
-            <div class="store-item-actions">
-              <button 
-                v-if="isAdmin" 
-                class="manage-button" 
-                @click="manageGroupAccess(group.id)" 
-                title="Gerenciar acesso de usuários"
+          </div>
+          
+          <!-- Caixa de busca para grupos -->
+          <div class="search-container">
+            <div class="search-box">
+              <input 
+                type="text" 
+                v-model="searchQuery" 
+                placeholder="Pesquisar grupos..."
+                class="search-input"
               >
-                👥
-              </button>
-              <span class="store-item-arrow" @click="goToGroupDetail(group.id)">›</span>
+              <span class="search-icon">🔍</span>
             </div>
+          </div>
+          
+          <!-- Lista de grupos -->
+          <div class="stores-section">
+            <div v-if="groupsLoading" class="loading-indicator">
+              <div class="loading-spinner"></div>
+              <p>Carregando grupos...</p>
+            </div>
+            
+            <div v-else-if="groupsError" class="error-message">
+              <div class="error-icon">!</div>
+              <p>{{ groupsError }}</p>
+            </div>
+            
+            <div v-else-if="filteredGroups.length === 0 && groups.length === 0" class="empty-state">
+              <p>Você não tem acesso a nenhum grupo no momento.</p>
+            </div>
+            
+            <div v-else-if="filteredGroups.length === 0" class="empty-state">
+              <p>Nenhum grupo encontrado com esse nome.</p>
+            </div>
+            
+            <div v-else class="stores-list">
+              <div 
+                v-for="group in filteredGroups" 
+                :key="group.id" 
+                class="store-item"
+              >
+                <div class="store-item-details" @click="goToGroupDetail(group.id)">
+                  <span class="store-name">{{ group.name }}</span>
+                </div>
+                <div class="store-item-actions">
+                  <button 
+                    v-if="isAdmin" 
+                    class="manage-button" 
+                    @click="manageGroupAccess(group.id)" 
+                    title="Gerenciar acesso de usuários"
+                  >
+                    👥
+                  </button>
+                  <span class="store-item-arrow" @click="goToGroupDetail(group.id)">›</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botões de ação - removido o botão de logout -->
+          <div class="quick-actions">
+            <button v-if="isAdmin" class="action-button admin" @click="createGroup">Novo Grupo</button>
+            <button v-if="isAdmin" class="action-button admin" @click="manageAccounts">Gerenciar Contas</button>
           </div>
         </div>
       </div>
       
-      <div class="quick-actions">
-        <button v-if="isAdmin" class="action-button admin" @click="createGroup">Novo Grupo</button>
-        <button v-if="isAdmin" class="action-button admin" @click="manageAccounts">Gerenciar Contas</button>
-        <button class="action-button logout" @click="logout">Sair</button>
-      </div>
-      
-      <div class="home-footer">
-        <span class="user-info">{{ username }} | {{ isAdmin ? 'Administrador' : 'Usuário Padrão' }}</span>
+      <!-- Painel esquerdo (agora à direita visualmente) para o SVG -->
+      <div class="left-panel">
+        <div class="large-svg-container">
+          <img src="@/assets/task-animate.svg" alt="Task Illustration" class="large-svg">
+        </div>
       </div>
     </div>
   </div>
@@ -77,15 +109,38 @@ export default {
       groups: [],
       groupsLoading: true,
       groupsError: null,
-      currentDateTime: new Date().toLocaleString()
+      searchQuery: '',
+      isMobileDevice: false
+    }
+  },
+  computed: {
+    filteredGroups() {
+      if (!this.searchQuery) {
+        return this.groups;
+      }
+      
+      const query = this.searchQuery.toLowerCase();
+      return this.groups.filter(group => 
+        group.name.toLowerCase().includes(query)
+      );
     }
   },
   created() {
+    this.checkDeviceType();
     this.loadUserInfo();
     this.fetchGroups();
-    this.updateDateTime();
+    
+    // Adicionar listener para verificar redimensionamento
+    window.addEventListener('resize', this.checkDeviceType);
   },
+  beforeUnmount() {
+  // Remover listener ao destruir componente
+  window.removeEventListener('resize', this.checkDeviceType);
+},
   methods: {
+    checkDeviceType() {
+      this.isMobileDevice = window.innerWidth < 1024;
+    },
     loadUserInfo() {
       const userStr = localStorage.getItem('user');
       if (userStr) {
@@ -140,17 +195,11 @@ export default {
       this.$router.push('/groups/create');
     },
     manageAccounts() {
-      // Navegar para a página de gerenciamento de contas
       this.$router.push('/users');
     },
     logout() {
       localStorage.removeItem('user');
       this.$router.push('/login');
-    },
-    updateDateTime() {
-      setInterval(() => {
-        this.currentDateTime = new Date().toLocaleString();
-      }, 1000);
     }
   }
 }
@@ -158,28 +207,6 @@ export default {
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarala:wght@400;700&display=swap');
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden; /* Previne rolagem em toda a página */
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Sarala', sans-serif;
-  background: linear-gradient(135deg, #142C4D, #204578);
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* Estilo da barra de rolagem */
 ::-webkit-scrollbar {
@@ -203,30 +230,98 @@ body {
 </style>
 
 <style scoped>
-.home-container {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* Alerta para dispositivos móveis */
+.mobile-warning {
   position: fixed;
   top: 0;
   left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #142C4D, #204578);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  z-index: 9999;
 }
 
-.home-card {
-  width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  padding: 2.5rem;
+.warning-icon {
+  font-size: 50px;
+  margin-bottom: 20px;
+}
+
+.mobile-warning h2 {
+  font-size: 24px;
+  margin-bottom: 15px;
+}
+
+.mobile-warning p {
+  font-size: 16px;
+  max-width: 280px;
+}
+
+/* Layout principal - versão desktop */
+.home-container {
+  position: fixed;
+  top: 100px; /* Ajustado conforme solicitado */
+  left: 50px;  /* Ajustado conforme solicitado */
+  right: 50px; /* Ajustado conforme solicitado */
+  bottom: 30px; /* Ajustado conforme solicitado */
+  overflow: hidden;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   animation: fade-in 0.8s ease-out;
-  position: relative;
+  display: flex;
+  flex-direction: row-reverse; /* Inverte a ordem dos filhos diretos */
+}
+
+/* Painel esquerdo - para o SVG (agora será visualmente à direita) */
+.left-panel {
+  width: 50%;
+  height: 100%;
+  background-color: #f9f9fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+  border-right: 1px solid #eaeaea; /* Divisor sutil */
+}
+
+/* Container e estilos para o SVG grande */
+.large-svg-container {
+  width: 90%;
+  height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.large-svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Painel direito - para o conteúdo existente (agora será visualmente à esquerda) */
+.right-panel {
+  width: 50%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+}
+
+/* Container do conteúdo original */
+.content-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .home-header {
@@ -247,14 +342,6 @@ body {
 .welcome-text {
   color: #666;
   font-size: 1.1rem;
-}
-
-.datetime {
-  position: absolute;
-  top: 0;
-  right: 0;
-  font-size: 0.8rem;
-  color: #666;
 }
 
 .dashboard-summary {
@@ -279,12 +366,49 @@ body {
   font-size: 0.95rem;
 }
 
+/* Caixa de Busca */
+.search-container {
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 15px;
+  border: 2px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+  background-color: #f9f9f9;
+}
+
+.search-input:focus {
+  border-color: #204578;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
+  outline: none;
+  background-color: #fff;
+}
+
+.search-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 1.2rem;
+}
+
 /* Seção de lojas */
 .stores-section {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 1.5rem;
-  max-height: 250px;
+  margin-bottom: 1rem; /* Reduzido de 1.5rem para 1rem */
+  max-height: calc(100% - 250px); /* Aumentado o espaço disponível */
 }
 
 .stores-list {
@@ -406,7 +530,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0; /* Removido o margin-bottom */
+  margin-top: auto;
 }
 
 .action-button {
@@ -462,25 +587,5 @@ body {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-/* Responsividade */
-@media (max-width: 650px) {
-  .home-card {
-    max-width: 90%;
-    padding: 2rem 1.5rem;
-  }
-  
-  .home-header h1 {
-    font-size: 1.8rem;
-  }
-  
-  .quick-actions {
-    flex-direction: column;
-  }
-  
-  .action-button {
-    width: 100%;
-  }
 }
 </style>

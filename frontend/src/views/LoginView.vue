@@ -2,8 +2,8 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1>Login</h1>
-        <p class="welcome-text">Bem-vindo ao sistema</p>
+        <h1>CLIENTE CONTÁGIL</h1>
+        <h2 class="welcome-text">Login</h2>
       </div>
       
       <div v-if="error" class="error-alert">
@@ -41,11 +41,7 @@
       </form>
       
       <div class="login-footer">
-        <!-- Removed the registration link since only admins can create users now -->
-        <p class="current-info">
-          <span>{{ currentDateTime }}</span>
-          <span class="user-info">{{ currentUser }}</span>
-        </p>
+        <!-- Footer content -->
       </div>
     </div>
   </div>
@@ -58,9 +54,7 @@ export default {
     return {
       username: '',
       password: '',
-      error: '',
-      currentDateTime: '2025-03-06 13:41:43',
-      currentUser: 'IcaroGabrielS'
+      error: ''
     }
   },
   methods: {
@@ -130,7 +124,6 @@ body {
 </style>
 
 <style scoped>
-/* Scoped CSS styles remain unchanged */
 .login-container {
   width: 100vw;
   height: 100vh;
@@ -150,7 +143,7 @@ body {
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   animation: fade-in 0.8s ease-out;
-  position: absolute;
+  position: relative;
 }
 
 .login-header {
@@ -236,6 +229,7 @@ body {
   text-align: center;
   font-size: 0.9rem;
   color: #666;
+  margin-top: 1.5rem;
 }
 
 .login-footer a {
@@ -248,18 +242,6 @@ body {
 .login-footer a:hover {
   color: #3c72c2;
   text-decoration: underline;
-}
-
-.current-info {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 1.2rem;
-  font-size: 0.8rem;
-  color: #999;
-}
-
-.user-info {
-  font-weight: 500;
 }
 
 .error-alert {
