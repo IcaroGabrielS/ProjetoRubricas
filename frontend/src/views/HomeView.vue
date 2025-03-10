@@ -8,9 +8,9 @@
     </div>
 
     <!-- Conteúdo principal - visível apenas em desktop -->
-    <div v-else class="home-container">
-      <!-- Painel direito (agora à esquerda visualmente) para o conteúdo existente -->
-      <div class="right-panel">
+    <div v-else class="home-layout">
+      <!-- Painel com o conteúdo (visualmente à esquerda) -->
+      <div class="content-panel">
         <div class="content-wrapper">
           <div class="home-header">
             <h1>Olá, {{ username }}!</h1>
@@ -81,7 +81,7 @@
             </div>
           </div>
           
-          <!-- Botões de ação - removido o botão de logout -->
+          <!-- Botões de ação -->
           <div class="quick-actions">
             <button v-if="isAdmin" class="action-button admin" @click="createGroup">Novo Grupo</button>
             <button v-if="isAdmin" class="action-button admin" @click="manageAccounts">Gerenciar Contas</button>
@@ -89,8 +89,8 @@
         </div>
       </div>
       
-      <!-- Painel esquerdo (agora à direita visualmente) para o SVG -->
-      <div class="left-panel">
+      <!-- Painel com a ilustração (visualmente à direita) -->
+      <div class="illustration-panel">
         <div class="large-svg-container">
           <img src="@/assets/task-animate.svg" alt="Task Illustration" class="large-svg">
         </div>
@@ -205,30 +205,6 @@ export default {
 }
 </script>
 
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Sarala:wght@400;700&display=swap');
-
-/* Estilo da barra de rolagem */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #204578;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #142C4D;
-}
-</style>
-
 <style scoped>
 /* Alerta para dispositivos móveis */
 .mobile-warning {
@@ -264,32 +240,39 @@ export default {
 }
 
 /* Layout principal - versão desktop */
-.home-container {
+.home-layout {
   position: fixed;
-  top: 100px; /* Ajustado conforme solicitado */
-  left: 50px;  /* Ajustado conforme solicitado */
-  right: 50px; /* Ajustado conforme solicitado */
-  bottom: 30px; /* Ajustado conforme solicitado */
-  overflow: hidden;
+  top: 100px;
+  left: 50px;
+  right: 50px;
+  bottom: 30px;
+  display: flex;
+  flex-direction: row-reverse; /* Mantém a ordem inversa (ilustração à direita) */
+  gap: 20px; /* Espaçamento entre os containers */
+}
+
+/* Painel de conteúdo (visualmente à esquerda) */
+.content-panel {
+  width: calc(50% - 10px); /* 50% da largura menos metade do gap */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   animation: fade-in 0.8s ease-out;
-  display: flex;
-  flex-direction: row-reverse; /* Inverte a ordem dos filhos diretos */
+  overflow: hidden;
 }
 
-/* Painel esquerdo - para o SVG (agora será visualmente à direita) */
-.left-panel {
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%); /* Degradê em tons de azul escuro e mais marcado */
+/* Painel de ilustração (visualmente à direita) */
+.illustration-panel {
+  width: calc(50% - 10px); /* 50% da largura menos metade do gap */
+  background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%);
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   overflow: hidden;
-  border-right: 1px solid #eaeaea; /* Divisor sutil */
+  animation: fade-in 0.8s ease-out;
 }
 
 /* Container e estilos para o SVG grande */
@@ -306,22 +289,14 @@ export default {
   max-height: 100%;
 }
 
-/* Painel direito - para o conteúdo existente (agora será visualmente à esquerda) */
-.right-panel {
-  width: 50%;
-  height: 100%;
-  overflow-y: auto;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Container do conteúdo original */
+/* Container do conteúdo para o painel de conteúdo */
 .content-wrapper {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+  padding: 2rem;
+  overflow-y: auto;
 }
 
 .home-header {
@@ -407,8 +382,8 @@ export default {
 .stores-section {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 1rem; /* Reduzido de 1.5rem para 1rem */
-  max-height: calc(100% - 250px); /* Aumentado o espaço disponível */
+  margin-bottom: 1rem;
+  max-height: calc(100% - 250px);
 }
 
 .stores-list {
@@ -530,7 +505,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 0; /* Removido o margin-bottom */
+  margin-bottom: 0;
   margin-top: auto;
 }
 
@@ -564,18 +539,6 @@ export default {
 .action-button.logout:hover {
   background: linear-gradient(to right, #c0392b, #d63031);
   box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
-}
-
-.home-footer {
-  text-align: center;
-  font-size: 0.9rem;
-  color: #666;
-  padding-top: 1rem;
-  border-top: 1px solid #eaeaea;
-}
-
-.user-info {
-  font-weight: 500;
 }
 
 /* Animações */
