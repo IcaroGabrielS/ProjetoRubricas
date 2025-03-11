@@ -80,7 +80,7 @@ def register():
     
     # Verifica se o usuário já existe
     existing_user = User.query.filter_by(username=data['username']).first()
-    if existing_user:
+    if (existing_user):
         return jsonify({'message': 'Username already exists'}), 400
     
     # Cria um novo usuário (admin pode definir se é admin ou não)
@@ -402,3 +402,62 @@ def download_file(file_id):
     
     company_folder = os.path.join(app.config['UPLOAD_FOLDER'], f'company_{file_obj.company_id}')
     return send_from_directory(company_folder, file_obj.filename, as_attachment=True)
+
+# Rota para excluir uma empresa
+@app.route('/api/companies/<int:company_id>', methods=['DELETE'])
+@admin_required
+def delete_company(company_id):
+    company = Company.query.get_or_404(company_id)
+    
+    # Exclui todos os arquivos associados à empresa
+    CompanyFile.query.filter_by(company_id=company_id).delete()
+    
+    # Exclui a empresa
+    db.session.delete(company)
+    db.session.commit()
+    
+    return jsonify({'message': 'Empresa excluída com sucesso'}), 200
+
+# Rota para excluir um grupo e todas as suas empresas
+@app.route('/api/groups/<int:group_id>', methods=['DELETE'])
+@admin_required
+def delete_group(group_id):
+    group = Group.query.get_or_404(group_id)
+    
+    # Exclui todas as empresas associadas ao grupo
+    companies = Company.query.filter_by(group_id=group_id).all()
+    for company in companies:
+        CompanyFile.query.filter_by(company_id=company.id).delete()
+        db.session.delete(company)
+    
+    # Exclui o grupo
+    db.session.delete(group)
+    db.session.commit()
+    
+    return jsonify({'message': 'Grupo excluído com sucesso'}), 200
+
+# Rota para trocar a senha de um usuário (admin pode trocar a senha de qualquer usuário, usuário comum pode trocar sua própria senha)
+@app.route('/api/users/<int:user_id>/password', methods=['PUT'])
+def change_password(user_id):
+    data = request.get_json()
+    current_user_id = request.headers.get('User-ID')
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    user_to_change = User.query.get_or_404(user_id)
+    
+    # Verifica se o usuário é admin ou se está tentando mudar sua própria senha
+    if not current_user.is_admin and current_user_id != user_id:
+        return jsonify({'message': 'Acesso não autorizado'}), 403
+    
+    # Verifica se a nova senha foi fornecida
+    if 'new_password' not in data:
+        return jsonify({'message': 'Nova senha é necessária'}), 400
+    
+    # Atualiza a senha do usuário
+    user_to_change.password = bcrypt.generate_password_hash(data['new_password']).decode('utf-8')
+    db.session.commit()
+    
+    return jsonify({'message': 'Senha alterada com sucesso'}), 200

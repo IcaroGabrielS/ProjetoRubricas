@@ -1,50 +1,74 @@
 <template>
-  <div class="store-layout">
-    <div class="store-container">
-      <div class="store-content">
-        <div class="page-header">
-          <h1>{{ group.name }}</h1>
-        </div>
-        
-        <div v-if="error" class="error-alert">
-          <span>{{ error }}</span>
-          <button class="close-btn" @click="error = ''" aria-label="Fechar">&times;</button>
-        </div>
+  <div>
+    <!-- Alerta para dispositivos móveis (copiado do HomeView) -->
+    <div v-if="isMobileDevice" class="mobile-warning">
+      <div class="warning-icon">⚠️</div>
+      <h2>Acesso não recomendado</h2>
+      <p>Este site não foi projetado para dispositivos móveis. Por favor, acesse através de um computador para uma melhor experiência.</p>
+    </div>
 
-        <div v-if="loading" class="loading-container">
-          <div class="loading-spinner"></div>
-          <p>Carregando informações do grupo...</p>
-        </div>
+    <!-- Conteúdo principal - visível apenas em desktop -->
+    <div v-else class="home-layout">
+      <!-- Painel com o conteúdo (visualmente à esquerda) -->
+      <div class="content-panel">
+        <div class="content-wrapper">
+          <div class="home-header">
+            <h1>{{ group.name }}</h1>
+          </div>
 
-        <div v-else>
-          <!-- Informações do Grupo -->
-          <div class="section-card">
-            <h2>Informações Gerais</h2>
-            <div class="info-grid">
-              <div class="info-item">
-                <div class="info-label">Código do Grupo:</div>
-                <div class="info-value">{{ group.id }}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Criado em:</div>
-                <div class="info-value">{{ formatDate(group.created_at) }}</div>
-              </div>
-              <div v-if="isAdmin" class="info-item">
-                <div class="info-label">Gerenciar Acesso:</div>
-                <div class="info-value">
-                  <button class="manage-btn" @click="manageAccess(group.id)">Permissões de Usuários</button>
+          <div v-if="error" class="error-message">
+            <div class="error-icon">!</div>
+            <p>{{ error }}</p>
+            <button class="close-btn" @click="error = ''" aria-label="Fechar">×</button>
+          </div>
+
+          <div v-if="success" class="success-message">
+            <div class="success-icon">✓</div>
+            <p>{{ success }}</p>
+            <button class="close-btn" @click="success = ''" aria-label="Fechar">×</button>
+          </div>
+
+          <div v-if="loading" class="loading-indicator">
+            <div class="loading-spinner"></div>
+            <p>Carregando informações do grupo...</p>
+          </div>
+
+          <div v-else>
+            <!-- Informações do Grupo -->
+            <div class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>Informações Gerais</h3>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <div class="info-label">Código do Grupo:</div>
+                    <div class="info-value">{{ group.id }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Criado em:</div>
+                    <div class="info-value">{{ formatDate(group.created_at) }}</div>
+                  </div>
+                  <div v-if="isAdmin" class="info-item">
+                    <div class="info-label">Gerenciar Acesso:</div>
+                    <div class="info-value">
+                      <button class="manage-btn" @click="manageAccess(group.id)">Permissões de Usuários</button>
+                    </div>
+                  </div>
+                  <div v-if="isAdmin" class="info-item">
+                    <div class="info-label">Ações Administrativas:</div>
+                    <div class="info-value">
+                      <button class="delete-btn" @click="showDeleteConfirmation = true">Excluir Grupo</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Lista de Empresas -->
-          <div class="section-card">
-            <div class="section-header">
-              <h2>Empresas</h2>
-              <button v-if="isAdmin" class="action-button" @click="toggleNewCompanyForm">
-                {{ showNewCompanyForm ? 'Cancelar' : 'Nova Empresa' }}
-              </button>
+            <!-- Lista de Empresas -->
+            <div class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>Empresas</h3>
+                <p>Selecione uma empresa abaixo para acessar seus detalhes.</p>
+              </div>
             </div>
             
             <!-- Caixa de busca para empresas -->
@@ -89,44 +113,89 @@
               </form>
             </div>
 
-            <div v-if="!group.companies || group.companies.length === 0" class="empty-state">
-              <p>Nenhuma empresa foi adicionada a este grupo.</p>
-            </div>
-            
-            <div v-else-if="filteredCompanies.length === 0" class="empty-state">
-              <p>Nenhuma empresa encontrada com esse nome.</p>
-            </div>
+            <!-- Lista de empresas (estilo similar ao de grupos em HomeView) -->
+            <div class="stores-section">
+              <div v-if="!group.companies || group.companies.length === 0" class="empty-state">
+                <p>Nenhuma empresa foi adicionada a este grupo.</p>
+              </div>
+              
+              <div v-else-if="filteredCompanies.length === 0" class="empty-state">
+                <p>Nenhuma empresa encontrada com esse nome.</p>
+              </div>
 
-            <div v-else class="companies-grid">
-              <div 
-                v-for="company in filteredCompanies" 
-                :key="company.id" 
-                class="company-card"
-                @click="goToCompanyDetail(company.id)"
-              >
-                <div class="company-header">
-                  <h3>{{ company.name }}</h3>
-                </div>
-                <div class="company-body">
-                  <div class="company-info-row">
-                    <span class="info-label">CNPJ:</span>
-                    <span class="info-value">{{ company.cnpj }}</span>
+              <div v-else class="stores-list">
+                <div 
+                  v-for="company in filteredCompanies" 
+                  :key="company.id" 
+                  class="store-item"
+                >
+                  <div class="store-item-details" @click="goToCompanyDetail(company.id)">
+                    <span class="store-name">{{ company.name }}</span>
+                    <span class="store-info">CNPJ: {{ company.cnpj }}</span>
                   </div>
-                  <div class="company-info-row">
-                    <span class="info-label">Criado em:</span>
-                    <span class="info-value">{{ formatDate(company.created_at) }}</span>
+                  <div class="store-item-actions">
+                    <button 
+                      v-if="isAdmin" 
+                      class="manage-button" 
+                      title="Gerenciar empresa"
+                    >
+                      ⚙️
+                    </button>
+                    <span class="store-item-arrow" @click="goToCompanyDetail(company.id)">›</span>
                   </div>
-                </div>
-                <div class="company-footer">
-                  <button class="detail-btn">Ver Detalhes</button>
                 </div>
               </div>
             </div>
+            
+            <!-- Botões de ação -->
+            <div class="quick-actions">
+              <button v-if="isAdmin" class="action-button admin" @click="toggleNewCompanyForm">
+                {{ showNewCompanyForm ? 'Cancelar' : 'Nova Empresa' }}
+              </button>
+              <button class="secondary-button" @click="goBack">Voltar para Home</button>
+            </div>
           </div>
+        </div>
+      </div>
+      
+      <!-- Painel com a ilustração (visualmente à direita) -->
+      <div class="illustration-panel">
+        <div class="large-svg-container">
+          <img src="@/assets/task-animate.svg" alt="Task Illustration" class="large-svg">
+        </div>
+      </div>
+    </div>
 
-          <div class="group-actions">
-            <button class="secondary-button" @click="goBack">Voltar para Home</button>
+    <!-- Modal de Confirmação de Exclusão -->
+    <div v-if="showDeleteConfirmation" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>Confirmação de Exclusão</h3>
+        </div>
+        <div class="modal-body">
+          <div class="warning-icon modal-icon">⚠️</div>
+          <p>Você está prestes a excluir o grupo <strong>{{ group.name }}</strong> e todas as suas empresas.</p>
+          <p class="warning-text">Esta ação não pode ser desfeita!</p>
+          
+          <div class="confirmation-input">
+            <label for="confirmText">Digite "EXCLUIR" para confirmar:</label>
+            <input 
+              type="text" 
+              id="confirmText" 
+              v-model="confirmDeleteText" 
+              placeholder="EXCLUIR" 
+            />
           </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" @click="cancelDelete">Cancelar</button>
+          <button 
+            class="delete-btn"
+            :disabled="confirmDeleteText !== 'EXCLUIR' || deletingGroup"
+            @click="deleteGroup"
+          >
+            {{ deletingGroup ? 'Excluindo...' : 'Confirmar Exclusão' }}
+          </button>
         </div>
       </div>
     </div>
@@ -142,6 +211,7 @@ export default {
       group: {},
       loading: true,
       error: '',
+      success: '',
       isAdmin: false,
       showNewCompanyForm: false,
       newCompany: {
@@ -149,7 +219,11 @@ export default {
         cnpj: ''
       },
       creatingCompany: false,
-      searchQuery: ''
+      searchQuery: '',
+      isMobileDevice: false,
+      showDeleteConfirmation: false,
+      confirmDeleteText: '',
+      deletingGroup: false
     }
   },
   computed: {
@@ -168,6 +242,7 @@ export default {
     }
   },
   created() {
+    this.checkDeviceType();
     this.checkAccess();
     this.groupId = parseInt(this.$route.params.id);
     if (isNaN(this.groupId)) {
@@ -177,8 +252,18 @@ export default {
       return;
     }
     this.fetchGroupData();
+    
+    // Adicionar listener para verificar redimensionamento (copiado do HomeView)
+    window.addEventListener('resize', this.checkDeviceType);
+  },
+  beforeUnmount() {
+    // Remover listener ao destruir componente (copiado do HomeView)
+    window.removeEventListener('resize', this.checkDeviceType);
   },
   methods: {
+    checkDeviceType() {
+      this.isMobileDevice = window.innerWidth < 1024;
+    },
     checkAccess() {
       const userStr = localStorage.getItem('user');
       if (!userStr) {
@@ -313,60 +398,194 @@ export default {
     },
     goToCompanyDetail(companyId) {
       this.$router.push(`/companies/${companyId}`);
+    },
+    cancelDelete() {
+      this.showDeleteConfirmation = false;
+      this.confirmDeleteText = '';
+    },
+    async deleteGroup() {
+      try {
+        if (this.confirmDeleteText !== 'EXCLUIR') {
+          return;
+        }
+        
+        this.deletingGroup = true;
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        const user = JSON.parse(userStr);
+        console.log('Deleting group:', this.groupId);
+        
+        const response = await fetch(`/api/groups/${this.groupId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          }
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          this.error = data.message || 'Erro ao excluir o grupo';
+          this.deletingGroup = false;
+          this.showDeleteConfirmation = false;
+          return;
+        }
+        
+        console.log('Group deleted successfully');
+        this.success = 'Grupo excluído com sucesso. Redirecionando...';
+        this.deletingGroup = false;
+        this.showDeleteConfirmation = false;
+        
+        // Redirecionar após 2 segundos
+        setTimeout(() => {
+          this.$router.push('/');
+        }, 2000);
+      } catch (error) {
+        this.error = 'Erro ao conectar ao servidor';
+        this.deletingGroup = false;
+        this.showDeleteConfirmation = false;
+        console.error('Error deleting group:', error);
+      }
     }
   }
 }
 </script>
   
 <style scoped>
-/* Layout básico ajustado para as margens específicas, sem barra de rolagem na página principal */
-.store-layout {
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
+/* Alerta para dispositivos móveis */
+.mobile-warning {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background: linear-gradient(135deg, #142C4D, #204578);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  z-index: 9999;
 }
 
-.store-container {
-  position: absolute;
-  top: 110px;
-  left: 30px;
-  right: 30px;
+.warning-icon {
+  font-size: 50px;
+  margin-bottom: 20px;
+}
+
+.mobile-warning h2 {
+  font-size: 24px;
+  margin-bottom: 15px;
+}
+
+.mobile-warning p {
+  font-size: 16px;
+  max-width: 280px;
+}
+
+/* Layout principal - versão desktop */
+.home-layout {
+  position: fixed;
+  top: 100px;
+  left: 50px;
+  right: 50px;
   bottom: 30px;
-  overflow-y: auto;
   display: flex;
+  flex-direction: row-reverse; /* Mantém a ordem inversa (ilustração à direita) */
+  gap: 20px; /* Espaçamento entre os containers */
+}
+
+/* Painel de conteúdo (visualmente à esquerda) */
+.content-panel {
+  width: calc(50% - 10px); /* 50% da largura menos metade do gap */
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  animation: fade-in 0.8s ease-out;
+  overflow: hidden;
+}
+
+/* Painel de ilustração (visualmente à direita) */
+.illustration-panel {
+  width: calc(50% - 10px); /* 50% da largura menos metade do gap */
+  background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%);
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+  animation: fade-in 0.8s ease-out;
+}
+
+/* Container e estilos para o SVG grande */
+.large-svg-container {
+  width: 90%;
+  height: 90%;
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 
-.store-content {
-  width: 100%;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  padding: 2.5rem 3rem;
-  animation: fade-in 0.6s ease-out;
+.large-svg {
+  max-width: 100%;
+  max-height: 100%;
 }
 
-.page-header {
-  text-align: left;
-  margin-bottom: 2rem;
+/* Container do conteúdo para o painel de conteúdo */
+.content-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.home-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #eaeaea;
+  position: relative;
 }
 
-.page-header h1 {
+.home-header h1 {
   color: #142C4D;
   font-size: 2.2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
-/* Caixa de pesquisa */
+.dashboard-summary {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-item {
+  padding: 1.2rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.dashboard-item h3 {
+  color: #204578;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-item p {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* Caixa de Busca */
 .search-container {
   margin-bottom: 1.5rem;
 }
@@ -403,123 +622,163 @@ export default {
   font-size: 1.2rem;
 }
 
-.error-alert {
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1rem;
-  background-color: #fee2e2;
-  color: #b91c1c;
-  animation: fade-in 0.3s ease;
+/* Seção de empresas */
+.stores-section {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  max-height: calc(100% - 250px);
 }
 
-.success-alert {
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1rem;
-  background-color: #d1fae5;
-  color: #065f46;
-  animation: fade-in 0.3s ease;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.3rem;
-  padding: 0 0.5rem;
-}
-
-.close-btn.error {
-  color: #b91c1c;
-}
-
-.close-btn.success {
-  color: #065f46;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 0;
-  text-align: center;
-}
-
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 5px solid rgba(32, 69, 120, 0.1);
-  border-top: 5px solid #204578;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1.5rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes fade-in {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-.section-card {
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  padding: 1.8rem;
-  margin-bottom: 2rem;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.section-card h2 {
-  color: #204578;
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.info-item {
+.stores-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.info-label {
-  font-size: 0.9rem;
+.store-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.store-item:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.store-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  cursor: pointer;
+}
+
+.store-name {
   font-weight: 600;
+  font-size: 0.95rem;
+  color: #142C4D;
+}
+
+.store-info {
+  font-size: 0.85rem;
   color: #666;
 }
 
-.info-value {
-  font-size: 1.1rem;
-  color: #333;
+.store-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.manage-btn {
-  padding: 0.7rem 1.2rem;
-  background: linear-gradient(to right, #142C4D, #204578);
+.store-item-arrow {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #204578;
+  cursor: pointer;
+}
+
+.manage-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-size: 0.9rem;
+  box-shadow: none;
+}
+
+.manage-button:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Estados de loading, erro e sucesso */
+.loading-indicator, .error-message, .empty-state, .success-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.8rem;
+}
+
+.error-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.success-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #d1fae5;
+  color: #065f46;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.error-message p {
+  color: #b91c1c;
+}
+
+.success-message p {
+  color: #065f46;
+}
+
+.empty-state p {
+  color: #666;
+  font-style: italic;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0;
+  margin-top: auto;
+}
+
+.action-button {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.8rem;
   border: none;
   border-radius: 8px;
   color: white;
@@ -529,18 +788,44 @@ export default {
   transition: all 0.3s ease;
 }
 
-.manage-btn:hover {
+.action-button.admin {
+  background: linear-gradient(to right, #142C4D, #204578);
+}
+
+.action-button.admin:hover {
   background: linear-gradient(to right, #1a3760, #2a5b9e);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
 }
 
+.secondary-button {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.8rem;
+  background: transparent;
+  border: 2px solid #204578;
+  border-radius: 8px;
+  color: #204578;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.secondary-button:hover {
+  background-color: rgba(32, 69, 120, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
+}
+
+/* Formulário de Nova Empresa */
 .new-company-form {
   background-color: white;
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eaeaea;
 }
 
 .form-group {
@@ -594,103 +879,58 @@ export default {
   cursor: not-allowed;
 }
 
-.companies-grid {
+/* Informações do grupo */
+.info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
 }
 
-.company-card {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.company-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.company-header {
-  padding: 1.2rem;
-  background-color: #204578;
-  color: white;
-}
-
-.company-header h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.company-body {
-  padding: 1.2rem;
-}
-
-.company-info-row {
+.info-item {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.8rem;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.company-info-row:last-child {
-  margin-bottom: 0;
+.info-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
 }
 
-.company-footer {
-  padding: 1rem;
-  background-color: #f5f5f5;
-  text-align: center;
+.info-value {
+  font-size: 1.1rem;
+  color: #333;
 }
 
-.detail-btn {
-  padding: 0.6rem 1.2rem;
-  background-color: transparent;
-  border: 1.5px solid #204578;
-  border-radius: 6px;
-  color: #204578;
+/* Botão de exclusão */
+.delete-btn {
+  padding: 0.7rem 1.2rem;
+  background: linear-gradient(to right, #991b1b, #b91c1c);
+  border: none;
+  border-radius: 8px;
+  color: white;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
-.detail-btn:hover {
-  background-color: #204578;
-  color: white;
+.delete-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #7f1d1d, #991b1b);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
 }
 
-.user-selection-container {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  align-items: flex-end;
+.delete-btn:disabled {
+  background: #c0c0c0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-select {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  background-color: white;
-  cursor: pointer;
-  transition: border 0.2s ease;
-  appearance: auto; /* Use native select appearance */
-}
-
-select:focus {
-  border-color: #204578;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
-}
-
-.action-button {
-  padding: 0.8rem 1.2rem;
+.manage-btn {
+  padding: 0.7rem 1.2rem;
   background: linear-gradient(to right, #142C4D, #204578);
   border: none;
   border-radius: 8px;
@@ -699,96 +939,156 @@ select:focus {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  height: fit-content;
 }
 
-.action-button:hover {
+.manage-btn:hover {
   background: linear-gradient(to right, #1a3760, #2a5b9e);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
 }
 
-.action-button:disabled {
-  background: #c0c0c0;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+/* Modal de confirmação de exclusão */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fade-in 0.3s ease;
 }
 
-.empty-state {
-  padding: 2rem;
+.modal-container {
+  width: 90%;
+  max-width: 500px;
+  background-color: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  animation: slide-in 0.4s ease;
+}
+
+@keyframes slide-in {
+  0% { opacity: 0; transform: translateY(-30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  background-color: #f8f8f8;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
   text-align: center;
-  color: #666;
-  font-style: italic;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  margin-top: 1rem;
 }
 
-.group-actions {
+.modal-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.warning-text {
+  color: #b91c1c;
+  font-weight: 600;
+  margin: 1rem 0;
+}
+
+.confirmation-input {
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.confirmation-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.confirmation-input input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.confirmation-input input:focus {
+  border-color: #204578;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
+}
+
+.modal-footer {
+  padding: 1.2rem 1.5rem;
+  background-color: #f8f8f8;
+  border-top: 1px solid #eaeaea;
   display: flex;
   justify-content: flex-end;
-  margin-top: 2rem;
+  gap: 1rem;
 }
 
-.secondary-button {
+.cancel-btn {
   padding: 0.8rem 1.5rem;
   background: transparent;
-  border: 2px solid #204578;
+  border: 2px solid #6b7280;
   border-radius: 8px;
-  color: #204578;
+  color: #6b7280;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.secondary-button:hover {
-  background-color: rgba(32, 69, 120, 0.1);
+.cancel-btn:hover {
+  background-color: rgba(107, 114, 128, 0.1);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
+  box-shadow: 0 5px 15px rgba(107, 114, 128, 0.1);
 }
 
-/* Ajustes de responsividade para o layout reposicionado */
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 0 0.5rem;
+  color: #4b5563;
+}
+
+/* Animações */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Ajustes de responsividade */
 @media (max-width: 1024px) {
-  .store-container {
-    top: 110px;
+  .home-layout {
     left: 20px;
     right: 20px;
-    bottom: 20px;
-  }
-  
-  .store-content {
-    padding: 2rem;
-  }
-  
-  .companies-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .store-container {
-    top: 100px;
-    left: 15px;
-    right: 15px;
-    bottom: 15px;
-  }
-  
-  .store-content {
-    padding: 1.5rem;
-  }
-  
-  .page-header h1 {
-    font-size: 1.8rem;
-  }
-  
-  .companies-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .section-card {
-    padding: 1.5rem;
   }
   
   .info-grid {
@@ -796,4 +1096,26 @@ select:focus {
   }
 }
 
+@media (max-width: 768px) {
+  .home-layout {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .content-panel, .illustration-panel {
+    width: 100%;
+  }
+
+  .content-panel {
+    height: 65%;
+  }
+
+  .illustration-panel {
+    height: 35%;
+  }
+  
+  .modal-container {
+    width: 95%;
+  }
+}
 </style>
