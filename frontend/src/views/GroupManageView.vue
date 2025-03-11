@@ -1,80 +1,80 @@
 <template>
-    <div class="store-layout">
-      <div class="store-container">
-        <div class="store-content">
-          <div class="page-header">
-            <h1>Gerenciar Visibilidade do Grupo</h1>
-            <p class="subtitle">Configure quais usuários podem acessar este grupo</p>
+  <div class="store-layout">
+    <div class="store-container">
+      <div class="store-content">
+        <div class="page-header">
+          <h1>Gerenciar Visibilidade do Grupo</h1>
+          <p class="subtitle">Configure quais usuários podem acessar este grupo</p>
+          <button v-if="isAdmin" class="delete-btn" @click="showDeleteConfirmation = true">Excluir Grupo</button>
+        </div>
+        
+        <div v-if="error" class="error-alert">
+          <span>{{ error }}</span>
+          <button class="close-btn" @click="error = ''" aria-label="Fechar">&times;</button>
+        </div>
+        
+        <div v-if="success" class="success-alert">
+          <span>{{ success }}</span>
+          <button class="close-btn" @click="success = ''" aria-label="Fechar">&times;</button>
+        </div>
+
+        <div v-if="loading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Carregando informações do grupo...</p>
+        </div>
+        
+        <div v-else>
+          <!-- Informações do Grupo -->
+          <div class="section-card">
+            <h2>{{ groupName }}</h2>
+            <p class="group-description">
+              <span class="label">ID:</span> {{ groupId }}
+            </p>
+            <p class="group-description">
+              <span class="label">Criado em:</span> {{ formatDate(groupCreatedAt) }}
+            </p>
+            <p class="group-description">
+              <span class="label">Criado por:</span> {{ groupCreator }}
+            </p>
           </div>
           
-          <div v-if="error" class="error-alert">
-            <span>{{ error }}</span>
-            <button class="close-btn" @click="error = ''" aria-label="Fechar">&times;</button>
-          </div>
-          
-          <div v-if="success" class="success-alert">
-            <span>{{ success }}</span>
-            <button class="close-btn" @click="success = ''" aria-label="Fechar">&times;</button>
-          </div>
-  
-          <div v-if="loading" class="loading-container">
-            <div class="loading-spinner"></div>
-            <p>Carregando informações do grupo...</p>
-          </div>
-          
-          <div v-else class="sections-row">
-            <!-- Informações do Grupo -->
-            <div class="section-card group-info-section">
-              <h2>{{ groupName }}</h2>
-              <p class="group-description">
-                <span class="label">ID:</span> {{ groupId }}
-              </p>
-              <p class="group-description">
-                <span class="label">Criado em:</span> {{ formatDate(groupCreatedAt) }}
-              </p>
-              <p class="group-description">
-                <span class="label">Criado por:</span> {{ groupCreator }}
-              </p>
+          <!-- Usuários com Acesso -->
+          <div class="section-card">
+            <h2>Usuários com Acesso</h2>
+            
+            <div v-if="usersWithAccessLoading" class="loading-indicator">
+              <div class="loading-spinner"></div>
+              <p>Carregando usuários...</p>
             </div>
             
-            <!-- Usuários com Acesso -->
-            <div class="section-card users-section">
-              <h2>Usuários com Acesso</h2>
-              
-              <div v-if="usersWithAccessLoading" class="loading-indicator">
-                <div class="loading-spinner"></div>
-                <p>Carregando usuários...</p>
-              </div>
-              
-              <div v-else-if="usersWithAccess.length === 0" class="empty-state">
-                <p>Nenhum usuário tem acesso a este grupo ainda.</p>
-              </div>
-              
-              <div v-else class="users-list">
-                <div v-for="user in usersWithAccess" :key="user.id" class="user-item">
-                  <div class="user-item-details">
-                    <span class="user-name">{{ user.username }}</span>
-                    <span class="user-type" :class="{ 'admin-type': user.is_admin }">
-                      {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
-                    </span>
-                  </div>
-                  <div class="user-actions">
-                    <button 
-                      class="delete-button" 
-                      @click="confirmRemoveAccess(user)"
-                      title="Remover acesso"
-                      v-if="!user.is_admin"
-                    >
-                      ×
-                    </button>
-                  </div>
+            <div v-else-if="usersWithAccess.length === 0" class="empty-state">
+              <p>Nenhum usuário tem acesso a este grupo ainda.</p>
+            </div>
+            
+            <div v-else class="users-list">
+              <div v-for="user in usersWithAccess" :key="user.id" class="user-item">
+                <div class="user-item-details">
+                  <span class="user-name">{{ user.username }}</span>
+                  <span class="user-type" :class="{ 'admin-type': user.is_admin }">
+                    {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
+                  </span>
+                </div>
+                <div class="user-actions">
+                  <button 
+                    class="delete-button" 
+                    @click="confirmRemoveAccess(user)"
+                    title="Remover acesso"
+                    v-if="!user.is_admin"
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <!-- Adicionar Usuário -->
-          <div class="section-card add-user-section">
+          <div class="section-card">
             <h2>Adicionar Acesso para Usuários</h2>
             
             <div v-if="availableUsersLoading" class="loading-indicator">
@@ -122,24 +122,59 @@
           </div>
         </div>
       </div>
-  
-      <!-- Modal de Confirmação para Remover Acesso -->
-      <div class="modal" v-if="showRemoveModal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>Confirmar Remoção de Acesso</h3>
-            <button class="close-modal-btn" @click="showRemoveModal = false">&times;</button>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div v-if="showDeleteConfirmation" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>Confirmação de Exclusão</h3>
+        </div>
+        <div class="modal-body">
+          <div class="warning-icon modal-icon">⚠️</div>
+          <p>Você está prestes a excluir o grupo <strong>{{ groupName }}</strong> e todas as suas empresas.</p>
+          <p class="warning-text">Esta ação não pode ser desfeita!</p>
+          
+          <div class="confirmation-input">
+            <label for="confirmText">Digite "EXCLUIR" para confirmar:</label>
+            <input 
+              type="text" 
+              id="confirmText" 
+              v-model="confirmDeleteText" 
+              placeholder="EXCLUIR" 
+            />
           </div>
-          <div class="modal-body">
-            <p>Tem certeza que deseja remover o acesso do usuário <strong>{{ userToRemove?.username }}</strong> a este grupo?</p>
-          </div>
-          <div class="modal-actions">
-            <button class="cancel-btn" @click="showRemoveModal = false">Cancelar</button>
-            <button class="confirm-delete-btn" @click="removeUserAccess">Confirmar Remoção</button>
-          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" @click="cancelDelete">Cancelar</button>
+          <button 
+            class="delete-btn"
+            :disabled="confirmDeleteText !== 'EXCLUIR' || deletingGroup"
+            @click="deleteGroup"
+          >
+            {{ deletingGroup ? 'Excluindo...' : 'Confirmar Exclusão' }}
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- Modal de Confirmação para Remover Acesso -->
+    <div class="modal" v-if="showRemoveModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Confirmar Remoção de Acesso</h3>
+          <button class="close-modal-btn" @click="showRemoveModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Tem certeza que deseja remover o acesso do usuário <strong>{{ userToRemove?.username }}</strong> a este grupo?</p>
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="showRemoveModal = false">Cancelar</button>
+          <button class="confirm-delete-btn" @click="removeUserAccess">Confirmar Remoção</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
   
 <script>
@@ -161,7 +196,11 @@ export default {
       selectedUserId: '',
       showRemoveModal: false,
       userToRemove: null,
-      removeLoading: false
+      removeLoading: false,
+      showDeleteConfirmation: false,
+      confirmDeleteText: '',
+      deletingGroup: false,
+      isAdmin: true // Assuming isAdmin is determined elsewhere in your code
     }
   },
   created() {
@@ -475,6 +514,57 @@ export default {
         console.error('Error removing user access:', error);
       }
     },
+    async deleteGroup() {
+      try {
+        if (this.confirmDeleteText !== 'EXCLUIR') {
+          return;
+        }
+        
+        this.deletingGroup = true;
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        const user = JSON.parse(userStr);
+        console.log('Deleting group:', this.groupId);
+        
+        const response = await fetch(`/api/groups/${this.groupId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          }
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          this.error = data.message || 'Erro ao excluir o grupo';
+          this.deletingGroup = false;
+          this.showDeleteConfirmation = false;
+          return;
+        }
+        
+        console.log('Group deleted successfully');
+        this.success = 'Grupo excluído com sucesso. Redirecionando...';
+        this.deletingGroup = false;
+        this.showDeleteConfirmation = false;
+        
+        // Redirecionar após 2 segundos
+        setTimeout(() => {
+          this.$router.push('/');
+        }, 2000);
+      } catch (error) {
+        this.error = 'Erro ao conectar ao servidor';
+        this.deletingGroup = false;
+        this.showDeleteConfirmation = false;
+        console.error('Error deleting group:', error);
+      }
+    },
+    cancelDelete() {
+      this.showDeleteConfirmation = false;
+      this.confirmDeleteText = '';
+    },
     formatDate(dateString) {
       if (!dateString) return '';
       
@@ -506,25 +596,30 @@ export default {
 
 <style scoped>
 .store-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
   width: 100%;
+  height: 100vh;
   overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #142C4D, #204578);
 }
 
 .store-container {
-  flex: 1;
+  position: absolute;
+  top: 110px;
+  left: 30px;
+  right: 30px;
+  bottom: 30px;
   overflow-y: auto;
-  padding: 2rem 3rem;
   display: flex;
   justify-content: center;
 }
 
 .store-content {
   width: 100%;
-  min-width: 1200px;
-  max-width: 85%;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
@@ -553,34 +648,17 @@ export default {
   font-size: 1.1rem;
 }
 
-.sections-row {
-  display: flex;
-  gap: 2.5rem;
-  margin-bottom: 2rem;
-}
-
 .section-card {
   background-color: #f9f9f9;
   border-radius: 8px;
   padding: 1.8rem;
-  flex: 1;
   margin-bottom: 2rem;
-}
-
-.group-info-section {
-  flex-basis: 42%;
-}
-
-.users-section {
-  flex-basis: 58%;
 }
 
 .section-card h2 {
   color: #204578;
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e1e1e1;
-  padding-bottom: 0.8rem;
 }
 
 .group-description {
@@ -653,7 +731,7 @@ export default {
 
 .user-item:hover {
   border-color: #d0d0d0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .user-item-details {
@@ -923,6 +1001,26 @@ export default {
 .confirm-delete-btn:hover {
   background: linear-gradient(to right, #d63031, #e84393);
   box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
+}
+
+/* Estilos do botão de excluir grupo */
+.delete-btn {
+  padding: 0.8rem 1.2rem;
+  background: #d9534f;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+.delete-btn:hover {
+  background: #c9302c;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(217, 83, 79, 0.3);
 }
 
 /* Animações */
