@@ -192,13 +192,13 @@
           <button 
             class="delete-btn"
             :disabled="confirmDeleteText !== 'EXCLUIR' || deletingGroup"
-            @click="deleteGroup"
-          >
+@click="deleteGroup">
             {{ deletingGroup ? 'Excluindo...' : 'Confirmar Exclusão' }}
           </button>
         </div>
       </div>
     </div>
+    
   </div>
 </template>
 

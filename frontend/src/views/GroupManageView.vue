@@ -125,38 +125,36 @@
     </div>
 
     <!-- Modal de Confirmação de Exclusão -->
-    <div v-if="showDeleteConfirmation" class="modal-overlay">
-      <div class="modal-container">
-        <div class="modal-header">
-          <h3>Confirmação de Exclusão</h3>
-        </div>
-        <div class="modal-body">
-          <div class="warning-icon modal-icon">⚠️</div>
-          <p>Você está prestes a excluir o grupo <strong>{{ groupName }}</strong> e todas as suas empresas.</p>
-          <p class="warning-text">Esta ação não pode ser desfeita!</p>
-          
-          <div class="confirmation-input">
-            <label for="confirmText">Digite "EXCLUIR" para confirmar:</label>
-            <input 
-              type="text" 
-              id="confirmText" 
-              v-model="confirmDeleteText" 
-              placeholder="EXCLUIR" 
-            />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="cancel-btn" @click="cancelDelete">Cancelar</button>
-          <button 
-            class="delete-btn"
-            :disabled="confirmDeleteText !== 'EXCLUIR' || deletingGroup"
-            @click="deleteGroup"
-          >
-            {{ deletingGroup ? 'Excluindo...' : 'Confirmar Exclusão' }}
-          </button>
+  <div v-if="showDeleteConfirmation" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Confirmação de Exclusão</h3>
+      </div>
+      <div class="modal-body">
+        <div class="warning-icon modal-icon">⚠️</div>
+        <p>Você está prestes a excluir o grupo <strong>{{ groupName }}</strong> e todas as suas empresas.</p>
+        <p class="warning-text">Esta ação não pode ser desfeita!</p>
+
+        <div class="confirmation-input">
+          <label for="confirmText">Digite "EXCLUIR" para confirmar:</label>
+          <input 
+            type="text" 
+            id="confirmText" 
+            v-model="confirmDeleteText" 
+            placeholder="EXCLUIR" 
+          />
         </div>
       </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" @click="cancelDelete">Cancelar</button>
+        <button 
+          class="delete-btn"
+          :disabled="confirmDeleteText !== 'EXCLUIR' || deletingGroup" @click="deleteGroup">
+          {{ deletingGroup ? 'Excluindo...' : 'Confirmar Exclusão' }}
+        </button>
+      </div>
     </div>
+  </div>
 
     <!-- Modal de Confirmação para Remover Acesso -->
     <div class="modal" v-if="showRemoveModal">
@@ -608,7 +606,7 @@ export default {
 }
 
 .store-container {
-  position: absolute;
+  position: relative;
   top: 110px;
   left: 30px;
   right: 30px;
@@ -616,6 +614,7 @@ export default {
   overflow-y: auto;
   display: flex;
   justify-content: center;
+  z-index: 1; /* Garantir que o container principal tenha um z-index menor que o modal */
 }
 
 .store-content {
@@ -902,65 +901,73 @@ export default {
 }
 
 /* Modal styles */
-.modal {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
   animation: fade-in 0.3s ease;
 }
 
-.modal-content {
-  background-color: white;
-  border-radius: 12px;
+.modal-container {
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  animation: slide-up 0.3s ease;
+  background-color: white;
+  border-radius: 10px;
   overflow: hidden;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  animation: slide-in 0.4s ease;
+}
+
+@keyframes slide-in {
+  0% { opacity: 0; transform: translateY(-30px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
-  background: linear-gradient(to right, #ff7675, #fab1a0);
+  background-color: #f8f8f8;
   padding: 1.2rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  border-bottom: 1px solid #eaeaea;
 }
 
 .modal-header h3 {
-  color: white;
   margin: 0;
+  color: #333;
   font-size: 1.3rem;
-}
-
-.close-modal-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  box-shadow: none;
 }
 
 .modal-body {
   padding: 1.5rem;
+  text-align: center;
 }
 
-.modal-body p {
-  margin-bottom: 0.8rem;
-  font-size: 1.1rem;
+.modal-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
 }
 
-.modal-actions {
+.modal-body .warning-text {
+  color: #b91c1c;
+  margin: 1rem 0;
+}
+
+.confirmation-input label {
+  font-weight: bold;
+}
+
+.confirmation-input input {
+  width: calc(100% - 3rem);
+  padding: 0.5rem;
+  margin-top: 1rem;
+}
+
+.modal-footer {
   padding: 1rem 1.5rem;
   background-color: #f9f9f9;
   display: flex;
@@ -977,15 +984,13 @@ export default {
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: none;
 }
 
 .cancel-btn:hover {
   background-color: #e0e0e0;
-  box-shadow: none;
 }
 
-.confirm-delete-btn {
+.delete-btn {
   padding: 0.7rem 1.5rem;
   background: linear-gradient(to right, #ff7675, #fab1a0);
   border: none;
@@ -995,100 +1000,16 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: none;
 }
 
-.confirm-delete-btn:hover {
-  background: linear-gradient(to right, #d63031, #e84393);
-  box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
-}
-
-/* Estilos do botão de excluir grupo */
-.delete-btn {
-  padding: 0.8rem 1.2rem;
-  background: #d9534f;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-left: auto;
-}
-
-.delete-btn:hover {
-  background: #c9302c;
+.delete-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #7f1d1d, #991b1b);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(217, 83, 79, 0.3);
+  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
 }
 
-/* Animações */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Responsividade */
-@media (max-width: 1280px) {
-  .store-content {
-    min-width: 95%;
-    max-width: 95%;
-    padding: 2rem;
-  }
-}
-
-@media (max-width: 992px) {
-  .sections-row {
-    flex-direction: column;
-  }
-  
-  .section-card {
-    margin-bottom: 1.5rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .store-container {
-    padding: 1.5rem;
-  }
-  
-  .store-content {
-    padding: 1.5rem;
-  }
-  
-  .page-header h1 {
-    font-size: 1.8rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .store-container {
-    padding: 1rem;
-  }
-  
-  .store-content {
-    padding: 1rem;
-    border-radius: 8px;
-  }
-  
-  .button-container {
-    flex-direction: column;
-  }
-  
-  .action-button, .secondary-button {
-    width: 100%;
-    margin: 0.5rem 0;
-  }
+.delete-btn:disabled {
+  background: #c0c0c0;
+  cursor: not-allowed;
 }
 </style>
