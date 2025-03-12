@@ -424,6 +424,9 @@ def delete_company(company_id):
 def delete_group(group_id):
     group = Group.query.get_or_404(group_id)
     
+    # Exclui todas as permissões de grupo primeiro
+    GroupPermission.query.filter_by(group_id=group_id).delete()
+    
     # Exclui todas as empresas associadas ao grupo
     companies = Company.query.filter_by(group_id=group_id).all()
     for company in companies:

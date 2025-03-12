@@ -221,6 +221,7 @@ export default {
         // Redirecionar usuários não-admin para home
         this.$router.push('/');
       }
+      this.isAdmin = user.is_admin === true;
     },
     async fetchGroupData() {
       try {
@@ -568,20 +569,553 @@ export default {
     formatDate(dateString) {
       if (!dateString) return '';
       
+      const options = { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      };
+      
       try {
-        const date = new Date(dateString);
-        
-        if (isNaN(date.getTime())) {
-          return dateString; // Retorna a string original se não for uma data válida
-        }
-        
-        return date.toLocaleString('pt-BR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        });
-      } catch (error) {}}}}
-       </script>
+        return new Date(dateString).toLocaleDateString('pt-BR', options);
+      } catch (error) {
+        return dateString;
+      }
+    },
+    goBack() {
+      // Navigate back to the group detail view
+      this.$router.push(`/groups/${this.groupId}`);
+    }
+  }
+}
+</script>
+
+<style scoped>
+/* Estilos para o layout da página */
+.store-layout {
+  position: fixed;
+  top: 100px;
+  left: 50px;
+  right: 50px;
+  bottom: 30px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.store-container {
+  width: 100%;
+  max-width: 1200px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: fade-in 0.8s ease-out;
+}
+
+.store-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* Cabeçalho da página */
+.page-header {
+  position: relative;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.page-header h1 {
+  color: #142C4D;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Cartões de seção */
+.section-card {
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.section-card h2 {
+  color: #204578;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+/* Descrição do grupo */
+.group-description {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: #555;
+}
+
+.label {
+  font-weight: 600;
+  color: #333;
+  margin-right: 0.5rem;
+}
+
+/* Lista de usuários */
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #eaeaea;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.user-item:hover {
+  background-color: #f5f9ff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.user-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+}
+
+.user-type {
+  font-size: 0.85rem;
+  color: #666;
+  background-color: #f0f0f0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.admin-type {
+  background-color: #e6f0fd;
+  color: #204578;
+}
+
+/* Botões de ação */
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delete-button {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+  background-color: #fecaca;
+  transform: scale(1.1);
+}
+
+/* Formulário para adicionar usuários */
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.user-select {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 1rem;
+  color: #333;
+}
+
+.user-select:focus {
+  outline: none;
+  border-color: #204578;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.action-button {
+  padding: 0.7rem 1.2rem;
+  background: linear-gradient(to right, #142C4D, #204578);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-button:hover:not(:disabled) {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+}
+
+.action-button:disabled {
+  background: #c0c0c0;
+  cursor: not-allowed;
+}
+
+/* Botões de ação do grupo */
+.group-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.secondary-button {
+  padding: 0.8rem 2rem;
+  background: transparent;
+  border: 2px solid #204578;
+  border-radius: 6px;
+  color: #204578;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.secondary-button:hover {
+  background-color: rgba(32, 69, 120, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
+}
+
+/* Estados vazios e de carregamento */
+.empty-state {
+  background-color: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 6px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Alertas e mensagens */
+.error-alert, .success-alert {
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: fade-in 0.3s ease-out;
+}
+
+.error-alert {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.success-alert {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 10px;
+}
+
+/* Modal de confirmação de exclusão */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fade-in 0.3s ease;
+}
+
+.modal-container {
+  width: 90%;
+  max-width: 500px;
+  background-color: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  animation: slide-in 0.4s ease;
+}
+
+@keyframes slide-in {
+  0% { opacity: 0; transform: translateY(-30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  background-color: #f8f8f8;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.modal-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.warning-text {
+  color: #b91c1c;
+  font-weight: bold;
+  margin-top: 0.5rem;
+}
+
+.confirmation-input {
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.confirmation-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.confirmation-input input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  padding: 1.2rem 1.5rem;
+  background-color: #f8f8f8;
+  border-top: 1px solid #eaeaea;
+  justify-content: space-between;
+}
+
+.cancel-btn {
+  padding: 0.7rem 1.2rem;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.delete-btn {
+  padding: 0.7rem 1.2rem;
+  background: linear-gradient(to right, #991b1b, #b91c1c);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #7f1d1d, #991b1b);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
+}
+
+.delete-btn:disabled {
+  background: #c0c0c0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Modal para remover acesso */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 450px;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: fade-in 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  padding: 1rem 1.5rem;
+  background-color: #f8f8f8;
+  border-top: 1px solid #eaeaea;
+}
+
+.confirm-delete-btn {
+  padding: 0.7rem 1.2rem;
+  background-color: #b91c1c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-delete-btn:hover {
+  background-color: #991b1b;
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 1024px) {
+  .store-layout {
+    left: 20px;
+    right: 20px;
+  }
+  
+  .section-card {
+    padding: 1.2rem;
+  }
+}
+</style>

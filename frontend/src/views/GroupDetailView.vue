@@ -34,31 +34,13 @@
           </div>
 
           <div v-else>
-            <!-- Informações do Grupo -->
+            <!-- Informações do Grupo (Simplificadas) -->
             <div class="dashboard-summary">
-              <div class="dashboard-item">
-                <h3>Informações Gerais</h3>
-                <div class="info-grid">
-                  <div class="info-item">
-                    <div class="info-label">Código do Grupo:</div>
-                    <div class="info-value">{{ group.id }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-label">Criado em:</div>
-                    <div class="info-value">{{ formatDate(group.created_at) }}</div>
-                  </div>
-                  <div v-if="isAdmin" class="info-item">
-                    <div class="info-label">Gerenciar Acesso:</div>
-                    <div class="info-value">
-                      <button class="manage-btn" @click="manageAccess(group.id)">Permissões de Usuários</button>
-                    </div>
-                  </div>
-                  <div v-if="isAdmin" class="info-item">
-                    <div class="info-label">Ações Administrativas:</div>
-                    <div class="info-value">
-                      <button class="delete-btn" @click="showDeleteConfirmation = true">Excluir Grupo</button>
-                    </div>
-                  </div>
+              <div class="dashboard-item simplified">
+                <div class="info-header">
+                  <span class="info-label">ID: {{ group.id }}</span>
+                  <span class="info-label">Criado em: {{ formatDate(group.created_at) }}</span>
+                  <button v-if="isAdmin" class="manage-btn" @click="manageAccess(group.id)">Gerenciar Acesso</button>
                 </div>
               </div>
             </div>
@@ -192,7 +174,7 @@
           <button 
             class="delete-btn"
             :disabled="confirmDeleteText !== 'EXCLUIR' || deletingGroup"
-@click="deleteGroup">
+            @click="deleteGroup">
             {{ deletingGroup ? 'Excluindo...' : 'Confirmar Exclusão' }}
           </button>
         </div>
@@ -574,6 +556,24 @@ export default {
   margin-bottom: 1rem;
 }
 
+/* Estilo para o bloco simplificado de informações */
+.dashboard-item.simplified {
+  padding: 0.8rem 1.2rem;
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.info-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+}
+
 .dashboard-item h3 {
   color: #204578;
   font-size: 1.2rem;
@@ -879,66 +879,17 @@ export default {
   cursor: not-allowed;
 }
 
-/* Informações do grupo */
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #666;
-}
-
-.info-value {
-  font-size: 1.1rem;
-  color: #333;
-}
-
-/* Botão de exclusão */
-.delete-btn {
-  padding: 0.7rem 1.2rem;
-  background: linear-gradient(to right, #991b1b, #b91c1c);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.delete-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #7f1d1d, #991b1b);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
-}
-
-.delete-btn:disabled {
-  background: #c0c0c0;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
 .manage-btn {
-  padding: 0.7rem 1.2rem;
+  padding: 0.6rem 0.8rem;
   background: linear-gradient(to right, #142C4D, #204578);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: white;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-left: auto;
 }
 
 .manage-btn:hover {
@@ -1001,8 +952,8 @@ export default {
 
 .warning-text {
   color: #b91c1c;
-  font-weight: 600;
-  margin: 1rem 0;
+  font-weight: bold;
+  margin-top: 0.5rem;
 }
 
 .confirmation-input {
@@ -1013,70 +964,80 @@ export default {
 .confirmation-input label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.95rem;
   font-weight: 600;
+  color: #333;
 }
 
 .confirmation-input input {
   width: 100%;
-  padding: 0.8rem;
-  border: 2px solid #ddd;
+  padding: 0.7rem;
+  border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-}
-
-.confirmation-input input:focus {
-  border-color: #204578;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
+  font-size: 1rem;
 }
 
 .modal-footer {
+  display: flex;
   padding: 1.2rem 1.5rem;
   background-color: #f8f8f8;
   border-top: 1px solid #eaeaea;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
+  justify-content: space-between;
 }
 
 .cancel-btn {
-  padding: 0.8rem 1.5rem;
-  background: transparent;
-  border: 2px solid #6b7280;
+  padding: 0.7rem 1.2rem;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.delete-btn {
+  padding: 0.7rem 1.2rem;
+  background: linear-gradient(to right, #991b1b, #b91c1c);
+  border: none;
   border-radius: 8px;
-  color: #6b7280;
+  color: white;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.cancel-btn:hover {
-  background-color: rgba(107, 114, 128, 0.1);
+.delete-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #7f1d1d, #991b1b);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(107, 114, 128, 0.1);
+  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
+}
+
+.delete-btn:disabled {
+  background: #c0c0c0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .close-btn {
   background: none;
   border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: inherit;
   cursor: pointer;
-  font-size: 1.3rem;
-  padding: 0 0.5rem;
-  color: #4b5563;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
 }
 
-/* Animações */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.close-btn:hover {
+  opacity: 1;
 }
 
 @keyframes spin {
@@ -1084,38 +1045,23 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* Ajustes de responsividade */
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
 @media (max-width: 1024px) {
   .home-layout {
     left: 20px;
     right: 20px;
   }
   
+  .dashboard-item {
+    padding: 1rem;
+  }
+  
   .info-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .home-layout {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .content-panel, .illustration-panel {
-    width: 100%;
-  }
-
-  .content-panel {
-    height: 65%;
-  }
-
-  .illustration-panel {
-    height: 35%;
-  }
-  
-  .modal-container {
-    width: 95%;
   }
 }
 </style>
