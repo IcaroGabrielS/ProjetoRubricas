@@ -6,6 +6,7 @@ import os
 from werkzeug.utils import secure_filename
 from functools import wraps
 import datetime
+import uuid
 
 # Inicializa a aplicação Flask
 app = Flask(__name__)
@@ -71,6 +72,14 @@ def user_has_group_access(user_id, group_id):
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Validação de UUID
+def is_valid_uuid(val):
+    try:
+        uuid.UUID(str(val))
+        return True
+    except ValueError:
+        return False
 
 # Rota para registro de usuário (agora restrita a administradores)
 @app.route('/api/register', methods=['POST'])
@@ -206,9 +215,13 @@ def list_groups():
         'groups': group_list
     }), 200
 
-# Rota para obter detalhes de um grupo
-@app.route('/api/groups/<int:group_id>', methods=['GET'])
+# Rota para obter detalhes de um grupo - atualizada para UUID
+@app.route('/api/groups/<group_id>', methods=['GET'])
 def get_group(group_id):
+    # Verifica se o group_id é um UUID válido
+    if not is_valid_uuid(group_id):
+        return jsonify({'message': 'ID de grupo inválido'}), 400
+    
     user_id = request.headers.get('User-ID')
     user = User.query.get(user_id)
     
@@ -233,10 +246,14 @@ def get_group(group_id):
     
     return jsonify({'group': group_dict}), 200
 
-# Nova rota para gerenciar permissões de visualização de grupos (apenas admin)
-@app.route('/api/groups/<int:group_id>/permissions', methods=['GET', 'POST', 'DELETE'])
+# Nova rota para gerenciar permissões de visualização de grupos (apenas admin) - atualizada para UUID
+@app.route('/api/groups/<group_id>/permissions', methods=['GET', 'POST', 'DELETE'])
 @admin_required
 def manage_group_permissions(group_id):
+    # Verifica se o group_id é um UUID válido
+    if not is_valid_uuid(group_id):
+        return jsonify({'message': 'ID de grupo inválido'}), 400
+        
     group = Group.query.get_or_404(group_id)
     
     # GET - Listar permissões atuais
@@ -302,10 +319,14 @@ def manage_group_permissions(group_id):
             'message': 'Acesso removido com sucesso'
         }), 200
 
-# Rota para criar empresas dentro de um grupo (apenas admin)
-@app.route('/api/groups/<int:group_id>/companies', methods=['POST'])
+# Rota para criar empresas dentro de um grupo (apenas admin) - atualizada para UUID
+@app.route('/api/groups/<group_id>/companies', methods=['POST'])
 @admin_required
 def create_company(group_id):
+    # Verifica se o group_id é um UUID válido
+    if not is_valid_uuid(group_id):
+        return jsonify({'message': 'ID de grupo inválido'}), 400
+        
     data = request.get_json()
     user_id = request.headers.get('User-ID')
     
@@ -323,9 +344,13 @@ def create_company(group_id):
         'company': new_company.to_dict()
     }), 201
 
-# Rota para listar empresas de um grupo
-@app.route('/api/groups/<int:group_id>/companies', methods=['GET'])
+# Rota para listar empresas de um grupo - atualizada para UUID
+@app.route('/api/groups/<group_id>/companies', methods=['GET'])
 def list_companies(group_id):
+    # Verifica se o group_id é um UUID válido
+    if not is_valid_uuid(group_id):
+        return jsonify({'message': 'ID de grupo inválido'}), 400
+        
     user_id = request.headers.get('User-ID')
     user = User.query.get(user_id)
     
@@ -342,6 +367,33 @@ def list_companies(group_id):
     return jsonify({
         'companies': [company.to_dict() for company in companies]
     }), 200
+
+# Rota para excluir um grupo e todas as suas empresas - atualizada para UUID
+@app.route('/api/groups/<group_id>', methods=['DELETE'])
+@admin_required
+def delete_group(group_id):
+    # Verifica se o group_id é um UUID válido
+    if not is_valid_uuid(group_id):
+        return jsonify({'message': 'ID de grupo inválido'}), 400
+        
+    group = Group.query.get_or_404(group_id)
+    
+    # Exclui todas as permissões de grupo primeiro
+    GroupPermission.query.filter_by(group_id=group_id).delete()
+    
+    # Exclui todas as empresas associadas ao grupo
+    companies = Company.query.filter_by(group_id=group_id).all()
+    for company in companies:
+        CompanyFile.query.filter_by(company_id=company.id).delete()
+        db.session.delete(company)
+    
+    # Exclui o grupo
+    db.session.delete(group)
+    db.session.commit()
+    
+    return jsonify({'message': 'Grupo excluído com sucesso'}), 200
+
+# As demais rotas permanecem inalteradas...
 
 # Rota para upload de arquivos para uma empresa
 @app.route('/api/companies/<int:company_id>/files', methods=['POST'])
@@ -418,27 +470,6 @@ def delete_company(company_id):
     
     return jsonify({'message': 'Empresa excluída com sucesso'}), 200
 
-# Rota para excluir um grupo e todas as suas empresas
-@app.route('/api/groups/<int:group_id>', methods=['DELETE'])
-@admin_required
-def delete_group(group_id):
-    group = Group.query.get_or_404(group_id)
-    
-    # Exclui todas as permissões de grupo primeiro
-    GroupPermission.query.filter_by(group_id=group_id).delete()
-    
-    # Exclui todas as empresas associadas ao grupo
-    companies = Company.query.filter_by(group_id=group_id).all()
-    for company in companies:
-        CompanyFile.query.filter_by(company_id=company.id).delete()
-        db.session.delete(company)
-    
-    # Exclui o grupo
-    db.session.delete(group)
-    db.session.commit()
-    
-    return jsonify({'message': 'Grupo excluído com sucesso'}), 200
-
 # Rota para trocar a senha de um usuário (admin pode trocar a senha de qualquer usuário, usuário comum pode trocar sua própria senha)
 @app.route('/api/users/<int:user_id>/password', methods=['PUT'])
 def change_password(user_id):
@@ -452,7 +483,7 @@ def change_password(user_id):
     user_to_change = User.query.get_or_404(user_id)
     
     # Verifica se o usuário é admin ou se está tentando mudar sua própria senha
-    if not current_user.is_admin and current_user_id != user_id:
+    if not current_user.is_admin and int(current_user_id) != user_id:
         return jsonify({'message': 'Acesso não autorizado'}), 403
     
     # Verifica se a nova senha foi fornecida

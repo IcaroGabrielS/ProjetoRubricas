@@ -1,124 +1,165 @@
 <template>
-  <div class="store-layout">
-    <div class="store-container">
-      <div class="store-content">
-        <div class="page-header">
-          <h1>Gerenciar Visibilidade do Grupo</h1>
-          <p class="subtitle">Configure quais usuários podem acessar este grupo</p>
-          <button v-if="isAdmin" class="delete-btn" @click="showDeleteConfirmation = true">Excluir Grupo</button>
-        </div>
-        
-        <div v-if="error" class="error-alert">
-          <span>{{ error }}</span>
-          <button class="close-btn" @click="error = ''" aria-label="Fechar">&times;</button>
-        </div>
-        
-        <div v-if="success" class="success-alert">
-          <span>{{ success }}</span>
-          <button class="close-btn" @click="success = ''" aria-label="Fechar">&times;</button>
-        </div>
-
-        <div v-if="loading" class="loading-container">
-          <div class="loading-spinner"></div>
-          <p>Carregando informações do grupo...</p>
-        </div>
-        
-        <div v-else>
-          <!-- Informações do Grupo -->
-          <div class="section-card">
-            <h2>{{ groupName }}</h2>
-            <p class="group-description">
-              <span class="label">ID:</span> {{ groupId }}
-            </p>
-            <p class="group-description">
-              <span class="label">Criado em:</span> {{ formatDate(groupCreatedAt) }}
-            </p>
-            <p class="group-description">
-              <span class="label">Criado por:</span> {{ groupCreator }}
-            </p>
+  <div>
+    <!-- Conteúdo principal -->
+    <div class="home-layout">
+      <!-- Painel com informações gerais (visualmente à esquerda) -->
+      <div class="content-panel">
+        <div class="content-wrapper">
+          <div class="home-header">
+            <h1>Gerenciar Grupo</h1>
           </div>
-          
-          <!-- Usuários com Acesso -->
-          <div class="section-card">
-            <h2>Usuários com Acesso</h2>
-            
-            <div v-if="usersWithAccessLoading" class="loading-indicator">
-              <div class="loading-spinner"></div>
-              <p>Carregando usuários...</p>
-            </div>
-            
-            <div v-else-if="usersWithAccess.length === 0" class="empty-state">
-              <p>Nenhum usuário tem acesso a este grupo ainda.</p>
-            </div>
-            
-            <div v-else class="users-list">
-              <div v-for="user in usersWithAccess" :key="user.id" class="user-item">
-                <div class="user-item-details">
-                  <span class="user-name">{{ user.username }}</span>
-                  <span class="user-type" :class="{ 'admin-type': user.is_admin }">
-                    {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
-                  </span>
+
+          <div v-if="error" class="error-message">
+            <div class="error-icon">!</div>
+            <p>{{ error }}</p>
+            <button class="close-btn" @click="error = ''" aria-label="Fechar">×</button>
+          </div>
+
+          <div v-if="success" class="success-message">
+            <div class="success-icon">✓</div>
+            <p>{{ success }}</p>
+            <button class="close-btn" @click="success = ''" aria-label="Fechar">×</button>
+          </div>
+
+          <div v-if="loading" class="loading-indicator">
+            <div class="loading-spinner"></div>
+            <p>Carregando informações do grupo...</p>
+          </div>
+
+          <div v-else>
+            <!-- Informações do Grupo -->
+            <div class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>{{ groupName }}</h3>
+                <div class="info-details">
+                  <p><span class="info-label">ID:</span> {{ groupId }}</p>
+                  <p><span class="info-label">Criado em:</span> {{ formatDate(groupCreatedAt) }}</p>
+                  <p><span class="info-label">Criado por:</span> {{ groupCreator }}</p>
                 </div>
-                <div class="user-actions">
-                  <button 
-                    class="delete-button" 
-                    @click="confirmRemoveAccess(user)"
-                    title="Remover acesso"
-                    v-if="!user.is_admin"
-                  >
-                    ×
+              </div>
+            </div>
+
+            <!-- Botão de excluir grupo -->
+            <div v-if="isAdmin" class="dashboard-summary">
+              <div class="dashboard-item danger-zone">
+                <h3>Zona de Perigo</h3>
+                <p>Cuidado! As ações abaixo são irreversíveis.</p>
+                <div class="danger-actions">
+                  <button class="delete-btn" @click="showDeleteConfirmation = true">
+                    Excluir Grupo
                   </button>
                 </div>
               </div>
             </div>
+            
+            <!-- Botões de ação -->
+            <div class="quick-actions">
+              <button class="secondary-button" @click="goBack">Voltar para o Grupo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Painel de gerenciamento de acesso (visualmente à direita) -->
+      <div class="content-panel">
+        <div class="content-wrapper">
+          <div class="home-header">
+            <h1>Gerenciar Visibilidade</h1>
           </div>
 
-          <!-- Adicionar Usuário -->
-          <div class="section-card">
-            <h2>Adicionar Acesso para Usuários</h2>
-            
-            <div v-if="availableUsersLoading" class="loading-indicator">
-              <div class="loading-spinner"></div>
-              <p>Carregando usuários disponíveis...</p>
-            </div>
-            
-            <div v-else-if="availableUsers.length === 0" class="empty-state">
-              <p>Não há usuários disponíveis para adicionar.</p>
-            </div>
-            
-            <div v-else>
-              <div class="form-group">
-                <label for="user-select">Selecione um usuário:</label>
-                <select 
-                  id="user-select" 
-                  v-model="selectedUserId"
-                  class="user-select"
-                >
-                  <option value="" disabled selected>-- Selecione um usuário --</option>
-                  <option 
-                    v-for="user in availableUsers" 
-                    :key="user.id" 
-                    :value="user.id"
-                  >
-                    {{ user.username }}
-                  </option>
-                </select>
-              </div>
-              
-              <div class="button-container">
-                <button 
-                  @click="addUserAccess" 
-                  class="action-button"
-                  :disabled="!selectedUserId"
-                >
-                  Adicionar Acesso
-                </button>
-              </div>
-            </div>
+          <div v-if="loading" class="loading-indicator">
+            <div class="loading-spinner"></div>
+            <p>Carregando permissões...</p>
           </div>
-          
-          <div class="group-actions">
-            <button class="secondary-button" @click="goBack">Voltar</button>
+
+          <div v-else>
+            <!-- Usuários com Acesso -->
+            <div class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>Usuários com Acesso</h3>
+                <p>Estes usuários podem visualizar e interagir com este grupo.</p>
+              
+                <div v-if="usersWithAccessLoading" class="loading-indicator">
+                  <div class="loading-spinner"></div>
+                  <p>Carregando usuários...</p>
+                </div>
+                
+                <div v-else-if="usersWithAccess.length === 0" class="empty-state">
+                  <p>Nenhum usuário tem acesso a este grupo ainda.</p>
+                </div>
+                
+                <div v-else class="stores-list">
+                  <div 
+                    v-for="user in usersWithAccess" 
+                    :key="user.id" 
+                    class="store-item"
+                  >
+                    <div class="store-item-details">
+                      <span class="store-name">{{ user.username }}</span>
+                      <span class="store-info" :class="{ 'admin-type': user.is_admin }">
+                        {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
+                      </span>
+                    </div>
+                    <div class="store-item-actions">
+                      <button 
+                        v-if="!user.is_admin" 
+                        class="delete-button" 
+                        @click="confirmRemoveAccess(user)"
+                        title="Remover acesso"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Adicionar Usuário -->
+            <div class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>Adicionar Acesso para Usuários</h3>
+                
+                <div v-if="availableUsersLoading" class="loading-indicator">
+                  <div class="loading-spinner"></div>
+                  <p>Carregando usuários disponíveis...</p>
+                </div>
+                
+                <div v-else-if="availableUsers.length === 0" class="empty-state">
+                  <p>Não há usuários disponíveis para adicionar.</p>
+                </div>
+                
+                <div v-else>
+                  <div class="form-group">
+                    <label for="user-select">Selecione um usuário:</label>
+                    <select 
+                      id="user-select" 
+                      v-model="selectedUserId"
+                      class="user-select"
+                    >
+                      <option value="" disabled selected>-- Selecione um usuário --</option>
+                      <option 
+                        v-for="user in availableUsers" 
+                        :key="user.id" 
+                        :value="user.id"
+                      >
+                        {{ user.username }}
+                      </option>
+                    </select>
+                  </div>
+                  
+                  <div class="button-container">
+                    <button 
+                      @click="addUserAccess" 
+                      class="action-button"
+                      :disabled="!selectedUserId"
+                    >
+                      Adicionar Acesso
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -159,18 +200,23 @@
     </div>
 
     <!-- Modal de Confirmação para Remover Acesso -->
-    <div class="modal" v-if="showRemoveModal">
-      <div class="modal-content">
+    <div v-if="showRemoveModal" class="modal-overlay">
+      <div class="modal-container">
         <div class="modal-header">
           <h3>Confirmar Remoção de Acesso</h3>
-          <button class="close-modal-btn" @click="showRemoveModal = false">&times;</button>
         </div>
         <div class="modal-body">
           <p>Tem certeza que deseja remover o acesso do usuário <strong>{{ userToRemove?.username }}</strong> a este grupo?</p>
         </div>
-        <div class="modal-actions">
+        <div class="modal-footer">
           <button class="cancel-btn" @click="showRemoveModal = false">Cancelar</button>
-          <button class="confirm-delete-btn" @click="removeUserAccess">Confirmar Remoção</button>
+          <button 
+            class="delete-btn"
+            :disabled="removeLoading"
+            @click="removeUserAccess"
+          >
+            {{ removeLoading ? 'Removendo...' : 'Confirmar Remoção' }}
+          </button>
         </div>
       </div>
     </div>
@@ -592,29 +638,29 @@ export default {
 </script>
 
 <style scoped>
-/* Estilos para o layout da página */
-.store-layout {
+/* Layout principal - versão desktop */
+.home-layout {
   position: fixed;
   top: 100px;
   left: 50px;
   right: 50px;
   bottom: 30px;
   display: flex;
-  justify-content: center;
-  overflow: hidden;
+  gap: 20px; /* Espaçamento entre os containers */
 }
 
-.store-container {
-  width: 100%;
-  max-width: 1200px;
+/* Painéis de conteúdo */
+.content-panel {
+  width: 50%; /* 50% da largura menos metade do gap */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
   animation: fade-in 0.8s ease-out;
+  overflow: hidden;
 }
 
-.store-content {
+/* Container do conteúdo para o painel de conteúdo */
+.content-wrapper {
   width: 100%;
   height: 100%;
   display: flex;
@@ -623,101 +669,190 @@ export default {
   overflow-y: auto;
 }
 
-/* Cabeçalho da página */
-.page-header {
-  position: relative;
-  margin-bottom: 2rem;
+.home-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #eaeaea;
+  position: relative;
 }
 
-.page-header h1 {
+.home-header h1 {
   color: #142C4D;
   font-size: 2.2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
-.subtitle {
-  color: #666;
-  font-size: 1rem;
-  margin-top: 0.5rem;
+.dashboard-summary {
+  margin-bottom: 1.5rem;
 }
 
-/* Cartões de seção */
-.section-card {
+.dashboard-item {
+  padding: 1.2rem;
   background-color: #f9f9f9;
-  border-radius: 10px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  margin-bottom: 1rem;
 }
 
-.section-card h2 {
+.dashboard-item h3 {
   color: #204578;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 1px solid #eaeaea;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
 }
 
-/* Descrição do grupo */
-.group-description {
-  margin-bottom: 1rem;
-  font-size: 1rem;
+.dashboard-item p {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 0.8rem;
+}
+
+.info-details {
+  margin-top: 0.8rem;
   color: #555;
+  font-size: 0.95rem;
 }
 
-.label {
+.info-details p {
+  margin-bottom: 0.5rem;
+}
+
+.info-label {
   font-weight: 600;
   color: #333;
-  margin-right: 0.5rem;
+  margin-right: 0.3rem;
 }
 
-/* Lista de usuários */
-.users-list {
+/* Zona de perigo */
+.dashboard-item.danger-zone {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+}
+
+.dashboard-item.danger-zone h3 {
+  color: #b91c1c;
+}
+
+.danger-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Estados de loading, erro e sucesso */
+.loading-indicator, .error-message, .empty-state, .success-message {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  margin-top: 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
 }
 
-.user-item {
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.8rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.success-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #d1fae5;
+  color: #065f46;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.error-message p {
+  color: #b91c1c;
+}
+
+.success-message p {
+  color: #065f46;
+}
+
+.empty-state {
+  background-color: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 6px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+/* Usuários com acesso */
+.stores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.store-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.8rem 1rem;
-  background-color: white;
-  border-radius: 6px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
   border: 1px solid #eaeaea;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
 }
 
-.user-item:hover {
-  background-color: #f5f9ff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.store-item:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 }
 
-.user-item-details {
+.store-item-details {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.2rem;
+  flex: 1;
 }
 
-.user-name {
+.store-name {
   font-weight: 600;
-  font-size: 1rem;
-  color: #333;
+  font-size: 0.95rem;
+  color: #142C4D;
 }
 
-.user-type {
+.store-info {
   font-size: 0.85rem;
   color: #666;
   background-color: #f0f0f0;
   padding: 0.2rem 0.5rem;
   border-radius: 10px;
   display: inline-block;
+  width: fit-content;
 }
 
 .admin-type {
@@ -725,13 +860,13 @@ export default {
   color: #204578;
 }
 
-/* Botões de ação */
-.user-actions {
+.store-item-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
+/* Botão para remover acesso */
 .delete-button {
   width: 26px;
   height: 26px;
@@ -760,24 +895,25 @@ export default {
 
 .form-group label {
   display: block;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #333;
 }
 
 .user-select {
   width: 100%;
-  padding: 0.7rem;
+  padding: 0.8rem 1rem;
   border: 1px solid #ddd;
   border-radius: 6px;
+  font-size: 0.95rem;
   background-color: white;
-  font-size: 1rem;
-  color: #333;
+  transition: all 0.2s ease;
 }
 
 .user-select:focus {
-  outline: none;
   border-color: #204578;
+  outline: none;
   box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
 }
 
@@ -809,20 +945,24 @@ export default {
   cursor: not-allowed;
 }
 
-/* Botões de ação do grupo */
-.group-actions {
+/* Botões de ação */
+.quick-actions {
   display: flex;
-  justify-content: center;
-  margin-top: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0;
+  margin-top: auto;
 }
 
 .secondary-button {
-  padding: 0.8rem 2rem;
+  flex: 1;
+  min-width: 150px;
+  padding: 0.8rem;
   background: transparent;
   border: 2px solid #204578;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #204578;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -834,82 +974,31 @@ export default {
   box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
 }
 
-/* Estados vazios e de carregamento */
-.empty-state {
-  background-color: #f9f9f9;
-  padding: 1.5rem;
-  border-radius: 6px;
-  text-align: center;
-  color: #666;
-  font-style: italic;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 2rem;
-  text-align: center;
-}
-
-.loading-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  text-align: center;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #204578;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Alertas e mensagens */
-.error-alert, .success-alert {
-  padding: 1rem 1.5rem;
-  border-radius: 6px;
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  animation: fade-in 0.3s ease-out;
-}
-
-.error-alert {
-  background-color: #fee2e2;
-  color: #b91c1c;
-}
-
-.success-alert {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.close-btn {
-  background: none;
+.delete-btn {
+  padding: 0.7rem 1.2rem;
+  background-color: #dc2626;
   border: none;
-  color: inherit;
-  font-size: 1.2rem;
-  font-weight: bold;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0;
-  margin-left: 10px;
+  transition: all 0.3s ease;
 }
 
-/* Modal de confirmação de exclusão */
+.delete-btn:hover:not(:disabled) {
+  background-color: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
+}
+
+.delete-btn:disabled {
+  background-color: #ef4444;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Modals */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -939,6 +1028,11 @@ export default {
   100% { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
 .modal-header {
   background-color: #f8f8f8;
   padding: 1.2rem 1.5rem;
@@ -959,6 +1053,10 @@ export default {
 .modal-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
+}
+
+.warning-icon {
+  color: #b91c1c;
 }
 
 .warning-text {
@@ -1011,111 +1109,41 @@ export default {
   background-color: #e0e0e0;
 }
 
-.delete-btn {
-  padding: 0.7rem 1.2rem;
-  background: linear-gradient(to right, #991b1b, #b91c1c);
+.close-btn {
+  background: none;
   border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: inherit;
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.delete-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #7f1d1d, #991b1b);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
-}
-
-.delete-btn:disabled {
-  background: #c0c0c0;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Modal para remover acesso */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
 }
 
-.modal-content {
-  width: 90%;
-  max-width: 450px;
-  background-color: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  animation: fade-in 0.3s ease-out;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background-color: #f8f8f8;
-  border-bottom: 1px solid #eaeaea;
-}
-
-.close-modal-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  color: #666;
-  cursor: pointer;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.8rem;
-  padding: 1rem 1.5rem;
-  background-color: #f8f8f8;
-  border-top: 1px solid #eaeaea;
-}
-
-.confirm-delete-btn {
-  padding: 0.7rem 1.2rem;
-  background-color: #b91c1c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.confirm-delete-btn:hover {
-  background-color: #991b1b;
-}
-
-@keyframes fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
+/* Dispositivos móveis */
 @media (max-width: 1024px) {
-  .store-layout {
+  .home-layout {
+    flex-direction: column;
+    top: 80px;
     left: 20px;
     right: 20px;
+    bottom: 20px;
   }
   
-  .section-card {
-    padding: 1.2rem;
+  .content-panel {
+    width: 100%;
+    height: 50%;
+    min-height: 300px;
+  }
+  
+  .content-wrapper {
+    padding: 1.5rem;
+  }
+  
+  .home-header h1 {
+    font-size: 1.8rem;
   }
 }
 </style>

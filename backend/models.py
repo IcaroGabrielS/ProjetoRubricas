@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 import datetime
+import uuid
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
@@ -26,8 +27,13 @@ class User(db.Model):
             "is_admin": self.is_admin
         }
 
+def generate_uuid():
+    """Gera um UUID padrão"""
+    return str(uuid.uuid4())
+
 class Group(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    # Usando UUID como chave primária em vez de ID sequencial
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(100), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -54,10 +60,10 @@ class Group(db.Model):
         
         return group_dict
 
-# Nova tabela para controlar as permissões de visualização de grupos
+# Atualizamos a tabela de permissões para usar UUID do grupo
 class GroupPermission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
+    group_id = db.Column(db.String(36), db.ForeignKey('group.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     
@@ -78,11 +84,12 @@ class GroupPermission(db.Model):
             "created_at": self.created_at.isoformat()
         }
 
+# Atualizamos a tabela de empresas para usar UUID do grupo
 class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     cnpj = db.Column(db.String(18), unique=True, nullable=False)
-    group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
+    group_id = db.Column(db.String(36), db.ForeignKey('group.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     
     # Relacionamento com o grupo
