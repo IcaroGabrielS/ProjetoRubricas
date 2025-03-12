@@ -2,26 +2,44 @@
   <div id="app">
     <nav v-if="isLoggedIn" class="app-navbar">
       <div class="nav-container">
+        <!-- Logo posicionado mais à esquerda -->
         <div class="nav-logo">
           <img src="@/assets/logo.svg" alt="Logo" class="logo-image" />
           <span class="logo-text">Portal do Cliente</span>
         </div>
+        
+        <!-- Links de navegação centralizados -->
         <div class="nav-links">
           <router-link to="/" class="nav-link">
-            <i class="nav-icon">🏠</i>
-            <span>Home</span>
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Início</span>
           </router-link>
           <router-link v-if="isAdmin" to="/users" class="nav-link">
-            <i class="nav-icon">👥</i>
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
             <span>Usuários</span>
           </router-link>
         </div>
+        
+        <!-- Informações do usuário e botão de sair mais à direita -->
         <div class="user-info">
           <div class="username">
             <div class="avatar">{{ username.charAt(0) }}</div>
             {{ username }}
           </div>
           <button @click="logout" class="logout-btn">
+            <svg class="logout-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
             <span>Sair</span>
           </button>
         </div>
@@ -147,6 +165,8 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 220px; /* Garante espaço suficiente para o logo */
+  margin-right: auto; /* Empurra para a esquerda */
 }
 
 .logo-image {
@@ -164,7 +184,9 @@ body {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  flex: 1;
+  justify-content: center; /* Centraliza os links */
 }
 
 .nav-link {
@@ -189,14 +211,18 @@ body {
 }
 
 .nav-icon {
+  width: 20px;
+  height: 20px;
   margin-right: 8px;
-  font-style: normal;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 220px; /* Garante espaço suficiente para informações do usuário */
+  justify-content: flex-end; /* Alinha à direita */
+  margin-left: auto; /* Empurra para a direita */
 }
 
 .username {
@@ -230,6 +256,15 @@ body {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logout-icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
 }
 
 .logout-btn:hover {
@@ -368,11 +403,15 @@ input:focus {
   }
   
   .nav-links {
-    gap: 6px;
+    gap: 8px;
   }
   
   .nav-link {
     padding: 8px 16px;
+  }
+  
+  .user-info, .nav-logo {
+    min-width: auto;
   }
 }
 
@@ -420,7 +459,8 @@ input:focus {
   
   .nav-icon {
     margin-right: 0;
-    font-size: 1.2rem;
+    width: 24px;
+    height: 24px;
   }
   
   .app-navbar {

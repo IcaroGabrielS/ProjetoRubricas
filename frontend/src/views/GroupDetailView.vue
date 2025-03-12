@@ -41,7 +41,6 @@
                   <span class="info-label">ID: {{ group.id }}</span>
                   <span class="info-label">Criado em: {{ formatDate(group.created_at) }}</span>
                   <button v-if="isAdmin" class="manage-btn" @click="manageAccess(group.id)">
-                    <span class="manage-icon">👥</span>
                     <span class="manage-text">Gerenciar Acesso</span>
                   </button>
                 </div>
@@ -69,36 +68,7 @@
               </div>
             </div>
 
-            <!-- Formulário de Nova Empresa -->
-            <div v-if="showNewCompanyForm && isAdmin" class="new-company-form">
-              <form @submit.prevent="createCompany">
-                <div class="form-group">
-                  <label for="companyName">Nome da Empresa:</label>
-                  <input 
-                    type="text" 
-                    id="companyName" 
-                    v-model="newCompany.name" 
-                    required 
-                    placeholder="Nome da Empresa"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="companyCNPJ">CNPJ:</label>
-                  <input 
-                    type="text" 
-                    id="companyCNPJ" 
-                    v-model="newCompany.cnpj" 
-                    required 
-                    placeholder="XX.XXX.XXX/XXXX-XX"
-                  >
-                </div>
-                <button type="submit" class="submit-btn" :disabled="creatingCompany">
-                  {{ creatingCompany ? 'Criando...' : 'Criar Empresa' }}
-                </button>
-              </form>
-            </div>
-
-            <!-- Lista de empresas (estilo similar ao de grupos em HomeView) -->
+            <!-- Lista de empresas (estilo copiado de grupos no HomeView) -->
             <div class="stores-section">
               <div v-if="!group.companies || group.companies.length === 0" class="empty-state">
                 <p>Nenhuma empresa foi adicionada a este grupo.</p>
@@ -124,7 +94,8 @@
                       class="manage-button" 
                       title="Gerenciar empresa"
                     >
-                      ⚙️
+                      <span class="manage-icon">⚙️</span>
+                      <span class="manage-text">Gerenciar</span>
                     </button>
                     <div class="arrow-container" @click="goToCompanyDetail(company.id)" title="Ver detalhes da empresa">
                       <span class="store-item-arrow">›</span>
@@ -132,14 +103,6 @@
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <!-- Botões de ação -->
-            <div class="quick-actions">
-              <button v-if="isAdmin" class="action-button admin" @click="toggleNewCompanyForm">
-                {{ showNewCompanyForm ? 'Cancelar' : 'Nova Empresa' }}
-              </button>
-              <button class="secondary-button" @click="goBack">Voltar para Home</button>
             </div>
           </div>
         </div>
@@ -200,12 +163,6 @@ export default {
       error: '',
       success: '',
       isAdmin: false,
-      showNewCompanyForm: false,
-      newCompany: {
-        name: '',
-        cnpj: ''
-      },
-      creatingCompany: false,
       searchQuery: '',
       isMobileDevice: false,
       showDeleteConfirmation: false,
@@ -263,16 +220,6 @@ export default {
       const user = JSON.parse(userStr);
       this.isAdmin = user.is_admin === true;
     },
-    toggleNewCompanyForm() {
-      this.showNewCompanyForm = !this.showNewCompanyForm;
-      if (!this.showNewCompanyForm) {
-        // Reset form when closing
-        this.newCompany = {
-          name: '',
-          cnpj: ''
-        };
-      }
-    },
     async fetchGroupData() {
       try {
         this.loading = true;
@@ -310,58 +257,6 @@ export default {
         console.error('Error fetching group data:', error);
       }
     },
-    async createCompany() {
-      try {
-        console.log('Creating company...');
-        if (!this.newCompany.name || !this.newCompany.cnpj) {
-          this.error = 'Preencha todos os campos obrigatórios';
-          return;
-        }
-        
-        this.creatingCompany = true;
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        console.log('Sending request to create company in group:', this.groupId);
-        console.log('Company data:', this.newCompany);
-        
-        const response = await fetch(`/api/groups/${this.groupId}/companies`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': user.id
-          },
-          body: JSON.stringify(this.newCompany)
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.error = data.message || 'Erro ao criar empresa';
-          this.creatingCompany = false;
-          return;
-        }
-        
-        console.log('Company created successfully');
-        // Limpar o formulário e atualizar os dados do grupo
-        this.newCompany = {
-          name: '',
-          cnpj: ''
-        };
-        this.showNewCompanyForm = false;
-        
-        await this.fetchGroupData();
-        this.creatingCompany = false;
-      } catch (error) {
-        this.error = 'Erro ao conectar ao servidor';
-        this.creatingCompany = false;
-        console.error('Error creating company:', error);
-      }
-    },
     formatDate(dateString) {
       if (!dateString) return '';
       
@@ -381,9 +276,6 @@ export default {
     },
     manageAccess(groupId) {
       this.$router.push(`/groups/manage/${groupId}`);
-    },
-    goBack() {
-      this.$router.push('/');
     },
     goToCompanyDetail(companyId) {
       this.$router.push(`/companies/${companyId}`);
@@ -651,7 +543,6 @@ export default {
   background-color: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #eaeaea;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -666,7 +557,6 @@ export default {
   flex-direction: column;
   gap: 0.2rem;
   flex: 1;
-  cursor: pointer;
 }
 
 .store-name {
@@ -686,17 +576,38 @@ export default {
   gap: 10px;
 }
 
+/* Novo estilo para o contêiner da seta - copiado de HomeView */
+.arrow-container {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: #e8f0fe;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.arrow-container:hover {
+  background-color: #d0e1fd;
+  transform: scale(1.1);
+}
+
 .store-item-arrow {
   font-size: 1.5rem;
   font-weight: bold;
   color: #204578;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Estilo atualizado para o botão de gerenciamento - copiado de HomeView */
 .manage-button {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+  min-width: 120px;
+  height: 36px;
+  border-radius: 6px;
   background-color: #f0f0f0;
   border: 1px solid #ddd;
   display: flex;
@@ -704,15 +615,26 @@ export default {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0;
+  padding: 0 12px;
   font-size: 0.9rem;
   box-shadow: none;
+  gap: 6px;
 }
 
 .manage-button:hover {
   background-color: #e0e0e0;
-  transform: scale(1.1);
+  transform: scale(1.05);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.manage-icon {
+  font-size: 1rem;
+}
+
+.manage-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #444;
 }
 
 /* Estados de loading, erro e sucesso */
@@ -774,124 +696,21 @@ export default {
   font-style: italic;
 }
 
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0;
-  margin-top: auto;
-}
-
-.action-button {
-  flex: 1;
-  min-width: 150px;
-  padding: 0.8rem;
+.close-btn {
+  background: none;
   border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
+  color: #b91c1c;
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.action-button.admin {
-  background: linear-gradient(to right, #142C4D, #204578);
-}
-
-.action-button.admin:hover {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
-.secondary-button {
-  flex: 1;
-  min-width: 150px;
-  padding: 0.8rem;
-  background: transparent;
-  border: 2px solid #204578;
-  border-radius: 8px;
-  color: #204578;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.secondary-button:hover {
-  background-color: rgba(32, 69, 120, 0.1);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
-}
-
-/* Formulário de Nova Empresa */
-.new-company-form {
-  background-color: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid #eaeaea;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.6rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  background-color: white;
-  transition: all 0.2s ease;
-}
-
-.form-group input:focus {
-  border-color: #204578;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
-}
-
-.submit-btn {
-  padding: 0.8rem 1.5rem;
-  background: linear-gradient(to right, #142C4D, #204578);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
-.submit-btn:disabled {
-  background: #c0c0c0;
-  cursor: not-allowed;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+  margin-left: auto;
 }
 
 .manage-btn {
   padding: 0.6rem 0.8rem;
-  background: linear-gradient(to right, #142C4D, #204578);
+  background: #142C4D;
   border: none;
   border-radius: 6px;
-  color: white;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -903,6 +722,10 @@ export default {
   background: linear-gradient(to right, #1a3760, #2a5b9e);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+}
+
+.manage-btn .manage-text {
+  color: white; /* ou qualquer outra cor desejada */
 }
 
 /* Modal de confirmação de exclusão */
@@ -998,9 +821,9 @@ export default {
   border-radius: 6px;
   color: #333;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
 .cancel-btn:hover {
@@ -1009,66 +832,33 @@ export default {
 
 .delete-btn {
   padding: 0.7rem 1.2rem;
-  background: linear-gradient(to right, #991b1b, #b91c1c);
+  background-color: #dc2626;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
 .delete-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #7f1d1d, #991b1b);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
+  background-color: #b91c1c;
 }
 
 .delete-btn:disabled {
-  background: #c0c0c0;
+  background-color: #f87171;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  color: inherit;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.close-btn:hover {
-  opacity: 1;
+/* Animações */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-@keyframes fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-@media (max-width: 1024px) {
-  .home-layout {
-    left: 20px;
-    right: 20px;
-  }
-  
-  .dashboard-item {
-    padding: 1rem;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>
