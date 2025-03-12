@@ -251,7 +251,14 @@ export default {
   },
   created() {
     this.checkAdminAccess();
+    // O groupId agora é um UUID (string), então não precisamos de conversão para número
     this.groupId = this.$route.params.id;
+    if (!this.groupId) {
+      console.error('ID de grupo não fornecido:', this.$route.params.id);
+      this.error = 'ID de grupo não fornecido';
+      this.loading = false;
+      return;
+    }
     this.fetchGroupData();
   },
   methods: {
@@ -279,6 +286,7 @@ export default {
         }
         
         const user = JSON.parse(userStr);
+        console.log('Fetching data for group:', this.groupId);
         
         const response = await fetch(`/api/groups/${this.groupId}`, {
           method: 'GET',
@@ -492,6 +500,7 @@ export default {
         }
         
         // Encontrar o usuário adicionado para mostrar na mensagem de sucesso
+        // Nota: os IDs de usuário ainda são numéricos, então mantemos o parseInt aqui
         const addedUser = this.availableUsers.find(u => u.id === parseInt(this.selectedUserId));
         this.success = `Acesso concedido para ${addedUser ? addedUser.username : 'o usuário'}`;
         
@@ -630,7 +639,7 @@ export default {
       }
     },
     goBack() {
-      // Navigate back to the group detail view
+      // Navegação para o detalhe do grupo usando o UUID
       this.$router.push(`/groups/${this.groupId}`);
     }
   }

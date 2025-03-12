@@ -196,6 +196,7 @@ export default {
   created() {
     this.checkDeviceType();
     this.checkAccess();
+    // IDs de empresa ainda são numéricos, então o parseInt é mantido
     this.companyId = parseInt(this.$route.params.id);
     if (isNaN(this.companyId)) {
       this.error = 'ID de empresa inválido';
@@ -228,6 +229,7 @@ export default {
     async fetchCompanyData() {
       try {
         this.loading = true;
+        this.error = ''; // Limpar erros anteriores
         const userStr = localStorage.getItem('user');
         if (!userStr) {
           this.$router.push('/login');
@@ -250,6 +252,7 @@ export default {
           const data = await response.json();
           this.error = data.message || 'Erro ao carregar dados da empresa';
           this.loading = false;
+          console.error('API error:', response.status, data);
           return;
         }
         
@@ -257,11 +260,18 @@ export default {
         this.company = data.company;
         console.log('Company data loaded:', this.company);
         
-        // Buscar nome do grupo
-        await this.fetchGroupName();
+        // Se a API já retorna os arquivos, podemos usar diretamente
+        if (this.company.files) {
+          this.files = this.company.files;
+        } else {
+          // Caso contrário, buscar arquivos separadamente
+          await this.fetchCompanyFiles();
+        }
         
-        // Buscar arquivos da empresa
-        await this.fetchCompanyFiles();
+        // Buscar nome do grupo se necessário
+        if (this.company.group_id) {
+          await this.fetchGroupName();
+        }
         
         this.loading = false;
       } catch (error) {
@@ -279,6 +289,9 @@ export default {
         
         const user = JSON.parse(userStr);
         
+        // O ID do grupo agora é UUID, não precisa de conversão
+        console.log('Fetching group name for UUID:', this.company.group_id);
+        
         const response = await fetch(`/api/groups/${this.company.group_id}`, {
           method: 'GET',
           headers: {
@@ -287,7 +300,10 @@ export default {
           }
         });
         
-        if (!response.ok) return;
+        if (!response.ok) {
+          console.error('Failed to fetch group name, status:', response.status);
+          return;
+        }
         
         const data = await response.json();
         this.groupName = data.group.name;
@@ -438,10 +454,12 @@ export default {
       }
     },
     goToGroupDetail(groupId) {
+      // groupId agora é um UUID (string), não precisamos converter para número
       this.$router.push(`/groups/${groupId}`);
     },
     goBack() {
       if (this.company && this.company.group_id) {
+        // company.group_id agora é um UUID (string)
         this.$router.push(`/groups/${this.company.group_id}`);
       } else {
         this.$router.push('/');
@@ -465,7 +483,8 @@ export default {
         }
         
         const user = JSON.parse(userStr);
-        const groupId = this.company.group_id; // Salvar para redirecionamento após exclusão
+        // Lembre-se que groupId agora é um UUID (string)
+        const groupId = this.company.group_id; 
         
         console.log('Deleting company:', this.companyId);
         
@@ -490,7 +509,7 @@ export default {
         this.deletingCompany = false;
         this.showDeleteConfirmation = false;
         
-        // Redirecionar após 2 segundos para a página do grupo
+        // Redirecionar após 2 segundos para a página do grupo (usando UUID)
         setTimeout(() => {
           this.$router.push(`/groups/${groupId}`);
         }, 2000);

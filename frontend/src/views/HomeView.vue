@@ -1,6 +1,6 @@
 <template>
   <div>
-    <!-- Alerta para dispositivos móveis -->
+    <!-- Alerta para dispositivos móveis - sem alterações -->
     <div v-if="isMobileDevice" class="mobile-warning">
       <div class="warning-icon">⚠️</div>
       <h2>Acesso não recomendado</h2>
@@ -39,8 +39,9 @@
           
           <!-- Lista de grupos -->
           <div class="stores-section">
-            <div v-if="groupsLoading" class="loading-indicator">
-              <div class="loading-spinner"></div>
+            <!-- CORRIGIDO: Indicador de carregamento -->
+            <div v-if="groupsLoading" class="groups-loading-container">
+              <div class="groups-loading-spinner"></div>
               <p>Carregando grupos...</p>
             </div>
             
@@ -97,9 +98,10 @@
       </div>
     </div>
 
-    <!-- Modal para criar novo grupo (visível apenas para admin) -->
+    <!-- Modal para criar novo grupo - sem alterações importantes -->
     <div v-if="showCreateGroupModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-container">
+        <!-- Conteúdo do modal sem alterações -->
         <div class="modal-header">
           <h2>Criar Novo Grupo</h2>
           <button class="close-modal-btn" @click="closeModal">×</button>
@@ -120,7 +122,7 @@
             
             <div class="button-container">
               <button type="submit" :disabled="createGroupLoading" class="submit-btn">
-                <span v-if="createGroupLoading" class="loading-indicator"></span>
+                <span v-if="createGroupLoading" class="form-loading-indicator"></span>
                 {{ createGroupLoading ? 'Criando...' : 'Criar Grupo' }}
               </button>
             </div>
@@ -577,24 +579,50 @@ export default {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Estados de loading, erro e vazio */
-.loading-indicator, .error-message, .empty-state {
+/* NOVOS ESTILOS: Indicador de carregamento */
+.groups-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  width: 100%;
+  height: 150px;
+  margin: 1rem 0;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+}
+
+.groups-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(32, 69, 120, 0.1);
+  border-top: 4px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+/* Estados de erro e vazio */
+.error-message, .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
   text-align: center;
+  width: 100%;
+  margin: 1rem 0;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
 }
 
-.loading-spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #204578;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 0.8rem;
+.error-message {
+  background-color: #fee2e2;
+  border-color: #fecaca;
 }
 
 .error-icon {
@@ -794,7 +822,8 @@ export default {
   cursor: not-allowed;
 }
 
-.loading-indicator {
+/* Renomeado para evitar conflito */
+.form-loading-indicator {
   display: inline-block;
   width: 20px;
   height: 20px;
@@ -805,42 +834,17 @@ export default {
   margin-right: 10px;
 }
 
-.error-message, .success-message {
+.success-message {
   margin-top: 1.5rem;
   padding: 1.2rem;
   border-radius: 8px;
   display: flex;
   align-items: flex-start;
-}
-
-.error-message {
-  background-color: #fee2e2;
-  color: #b91c1c;
-}
-
-.success-message {
   background-color: #d1fae5;
   color: #065f46;
   flex-direction: column;
   align-items: center;
   text-align: center;
-}
-
-.error-icon, .success-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 1rem;
-  flex-shrink: 0;
-}
-
-.error-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: #b91c1c;
-  color: white;
-  font-weight: bold;
 }
 
 .success-icon {
@@ -852,6 +856,9 @@ export default {
   font-weight: bold;
   font-size: 1.2rem;
   margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-btn {

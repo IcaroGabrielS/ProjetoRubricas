@@ -226,10 +226,12 @@ export default {
   created() {
     this.checkDeviceType();
     this.checkAccess();
-    this.groupId = parseInt(this.$route.params.id);
-    if (isNaN(this.groupId)) {
-      console.error('ID de grupo inválido:', this.$route.params.id);
-      this.error = 'ID de grupo inválido';
+    // Não é mais necessário converter para inteiro, pois o ID agora é uma string UUID
+    this.groupId = this.$route.params.id;
+    // Verificar se o ID está presente, não é mais necessário verificar se é um número
+    if (!this.groupId) {
+      console.error('ID de grupo não fornecido:', this.$route.params.id);
+      this.error = 'ID de grupo não fornecido';
       this.loading = false;
       return;
     }
