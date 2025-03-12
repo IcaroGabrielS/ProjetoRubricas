@@ -64,7 +64,7 @@
                 :key="group.id" 
                 class="store-item"
               >
-                <div class="store-item-details" @click="goToGroupDetail(group.id)">
+                <div class="store-item-details">
                   <span class="store-name">{{ group.name }}</span>
                 </div>
                 <div class="store-item-actions">
@@ -74,9 +74,12 @@
                     @click="manageGroupAccess(group.id)" 
                     title="Gerenciar acesso de usuários"
                   >
-                    👥
+                    <span class="manage-icon">👥</span>
+                    <span class="manage-text">Gerenciar</span>
                   </button>
-                  <span class="store-item-arrow" @click="goToGroupDetail(group.id)">›</span>
+                  <div class="arrow-container" @click="goToGroupDetail(group.id)" title="Ver detalhes do grupo">
+                    <span class="store-item-arrow">›</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -520,7 +523,6 @@ export default {
   background-color: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #eaeaea;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -535,7 +537,6 @@ export default {
   flex-direction: column;
   gap: 0.2rem;
   flex: 1;
-  cursor: pointer;
 }
 
 .store-name {
@@ -550,17 +551,38 @@ export default {
   gap: 10px;
 }
 
+/* Novo estilo para o contêiner da seta */
+.arrow-container {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: #e8f0fe;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.arrow-container:hover {
+  background-color: #d0e1fd;
+  transform: scale(1.1);
+}
+
 .store-item-arrow {
   font-size: 1.5rem;
   font-weight: bold;
   color: #204578;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Estilo atualizado para o botão de gerenciamento */
 .manage-button {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+  min-width: 120px;
+  height: 36px;
+  border-radius: 6px;
   background-color: #f0f0f0;
   border: 1px solid #ddd;
   display: flex;
@@ -568,15 +590,26 @@ export default {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0;
+  padding: 0 12px;
   font-size: 0.9rem;
   box-shadow: none;
+  gap: 6px;
 }
 
 .manage-button:hover {
   background-color: #e0e0e0;
-  transform: scale(1.1);
+  transform: scale(1.05);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.manage-icon {
+  font-size: 1rem;
+}
+
+.manage-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #444;
 }
 
 /* NOVOS ESTILOS: Indicador de carregamento */

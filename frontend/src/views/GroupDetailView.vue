@@ -40,7 +40,10 @@
                 <div class="info-header">
                   <span class="info-label">ID: {{ group.id }}</span>
                   <span class="info-label">Criado em: {{ formatDate(group.created_at) }}</span>
-                  <button v-if="isAdmin" class="manage-btn" @click="manageAccess(group.id)">Gerenciar Acesso</button>
+                  <button v-if="isAdmin" class="manage-btn" @click="manageAccess(group.id)">
+                    <span class="manage-icon">👥</span>
+                    <span class="manage-text">Gerenciar Acesso</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -111,7 +114,7 @@
                   :key="company.id" 
                   class="store-item"
                 >
-                  <div class="store-item-details" @click="goToCompanyDetail(company.id)">
+                  <div class="store-item-details">
                     <span class="store-name">{{ company.name }}</span>
                     <span class="store-info">CNPJ: {{ company.cnpj }}</span>
                   </div>
@@ -123,7 +126,9 @@
                     >
                       ⚙️
                     </button>
-                    <span class="store-item-arrow" @click="goToCompanyDetail(company.id)">›</span>
+                    <div class="arrow-container" @click="goToCompanyDetail(company.id)" title="Ver detalhes da empresa">
+                      <span class="store-item-arrow">›</span>
+                    </div>
                   </div>
                 </div>
               </div>

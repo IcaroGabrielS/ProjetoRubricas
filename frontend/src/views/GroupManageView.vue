@@ -60,19 +60,64 @@
         </div>
       </div>
       
-      <!-- Painel de gerenciamento de acesso (visualmente à direita) -->
+      <!-- Painel direito - agora com criação de empresa e gerenciamento de acesso -->
       <div class="content-panel">
         <div class="content-wrapper">
+          <!-- Seção de Criar Nova Empresa -->
           <div class="home-header">
-            <h1>Gerenciar Visibilidade</h1>
+            <h1>Gerenciar Recursos</h1>
           </div>
 
           <div v-if="loading" class="loading-indicator">
             <div class="loading-spinner"></div>
-            <p>Carregando permissões...</p>
+            <p>Carregando recursos...</p>
           </div>
 
           <div v-else>
+            <!-- Criar nova empresa -->
+            <div class="dashboard-summary">
+              <div class="dashboard-item create-company">
+                <h3>Criar Nova Empresa</h3>
+                <p>Adicione uma nova empresa ao grupo</p>
+                
+                <form @submit.prevent="createCompany" class="company-form">
+                  <div class="form-group">
+                    <label for="companyName">Nome da Empresa:</label>
+                    <input 
+                      type="text" 
+                      id="companyName" 
+                      v-model="newCompany.name" 
+                      required 
+                      placeholder="Nome da Empresa"
+                    >
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="companyCNPJ">CNPJ:</label>
+                    <input 
+                      type="text" 
+                      id="companyCNPJ" 
+                      v-model="newCompany.cnpj" 
+                      @input="formatCNPJ"
+                      required 
+                      placeholder="XX.XXX.XXX/XXXX-XX"
+                      :class="{ 'invalid-input': cnpjError }"
+                    >
+                    <small v-if="cnpjError" class="error-text">{{ cnpjError }}</small>
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    class="submit-btn" 
+                    :disabled="creatingCompany || cnpjError !== ''"
+                  >
+                    <span v-if="creatingCompany" class="loading-spinner-small"></span>
+                    {{ creatingCompany ? 'Criando...' : 'Criar Empresa' }}
+                  </button>
+                </form>
+              </div>
+            </div>
+
             <!-- Usuários com Acesso -->
             <div class="dashboard-summary">
               <div class="dashboard-item">
@@ -246,12 +291,18 @@ export default {
       showDeleteConfirmation: false,
       confirmDeleteText: '',
       deletingGroup: false,
-      isAdmin: true // Assuming isAdmin is determined elsewhere in your code
+      isAdmin: true,
+      // Novos campos para criação de empresa
+      newCompany: {
+        name: '',
+        cnpj: ''
+      },
+      cnpjError: '',
+      creatingCompany: false
     }
   },
   created() {
     this.checkAdminAccess();
-    // O groupId agora é um UUID (string), então não precisamos de conversão para número
     this.groupId = this.$route.params.id;
     if (!this.groupId) {
       console.error('ID de grupo não fornecido:', this.$route.params.id);
@@ -285,14 +336,14 @@ export default {
           return;
         }
         
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         console.log('Fetching data for group:', this.groupId);
         
         const response = await fetch(`/api/groups/${this.groupId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'User-ID': user.id
+            'User-ID': currentUser.id
           }
         });
         
@@ -308,7 +359,9 @@ export default {
         this.groupCreatedAt = data.group.created_at;
         
         // Buscar o nome do criador
-        await this.fetchCreatorName(data.group.created_by);
+        if (data.group.created_by) {
+          await this.fetchCreatorName(data.group.created_by);
+        }
         
         // Carregar usuários com acesso e usuários disponíveis
         await this.fetchUsersWithAccess();
@@ -322,6 +375,7 @@ export default {
       }
     },
     async fetchCreatorName(creatorId) {
+      // CORREÇÃO: Usar o parâmetro creatorId
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -329,13 +383,13 @@ export default {
           return;
         }
         
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         
         const response = await fetch(`/api/users/${creatorId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'User-ID': user.id
+            'User-ID': currentUser.id
           }
         });
         
@@ -360,13 +414,13 @@ export default {
           return;
         }
         
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         
         const response = await fetch(`/api/groups/${this.groupId}/permissions`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'User-ID': user.id
+            'User-ID': currentUser.id
           }
         });
         
@@ -398,13 +452,13 @@ export default {
           return;
         }
         
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         
         const response = await fetch('/api/users', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'User-ID': user.id
+            'User-ID': currentUser.id
           }
         });
         
@@ -434,13 +488,13 @@ export default {
           return;
         }
         
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         
         const response = await fetch('/api/users', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'User-ID': user.id
+            'User-ID': currentUser.id
           }
         });
         
@@ -479,13 +533,13 @@ export default {
           return;
         }
         
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         
         const response = await fetch(`/api/groups/${this.groupId}/permissions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'User-ID': user.id
+            'User-ID': currentUser.id
           },
           body: JSON.stringify({
             user_id: this.selectedUserId
@@ -500,7 +554,6 @@ export default {
         }
         
         // Encontrar o usuário adicionado para mostrar na mensagem de sucesso
-        // Nota: os IDs de usuário ainda são numéricos, então mantemos o parseInt aqui
         const addedUser = this.availableUsers.find(u => u.id === parseInt(this.selectedUserId));
         this.success = `Acesso concedido para ${addedUser ? addedUser.username : 'o usuário'}`;
         
@@ -531,13 +584,13 @@ export default {
           return;
         }
         
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         
         const response = await fetch(`/api/groups/${this.groupId}/permissions`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'User-ID': user.id
+            'User-ID': currentUser.id
           },
           body: JSON.stringify({
             user_id: this.userToRemove.id
@@ -582,14 +635,14 @@ export default {
           this.$router.push('/login');
           return;
         }
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         console.log('Deleting group:', this.groupId);
         
         const response = await fetch(`/api/groups/${this.groupId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'User-ID': user.id
+            'User-ID': currentUser.id
           }
         });
         
@@ -622,6 +675,7 @@ export default {
       this.confirmDeleteText = '';
     },
     formatDate(dateString) {
+      // CORREÇÃO: Usar o parâmetro dateString
       if (!dateString) return '';
       
       const options = { 
@@ -641,6 +695,130 @@ export default {
     goBack() {
       // Navegação para o detalhe do grupo usando o UUID
       this.$router.push(`/groups/${this.groupId}`);
+    },
+    
+    // Métodos para criação de empresa
+    formatCNPJ() {
+      // Remove qualquer caractere que não seja dígito
+      let cnpj = this.newCompany.cnpj.replace(/\D/g, '');
+      
+      // Limita a 14 dígitos
+      cnpj = cnpj.substring(0, 14);
+      
+      // Aplica a máscara XX.XXX.XXX/XXXX-XX
+      if (cnpj.length > 0) {
+        cnpj = cnpj.replace(/^(\d{2})(\d)/, '$1.$2');
+        cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        cnpj = cnpj.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        cnpj = cnpj.replace(/(\d{4})(\d)/, '$1-$2');
+      }
+      
+      this.newCompany.cnpj = cnpj;
+      this.validateCNPJ();
+    },
+    validateCNPJ() {
+      const cnpj = this.newCompany.cnpj.replace(/\D/g, '');
+      
+      if (cnpj.length === 0) {
+        this.cnpjError = '';
+        return;
+      }
+      
+      if (cnpj.length !== 14) {
+        this.cnpjError = 'CNPJ deve conter 14 dígitos.';
+        return;
+      }
+      
+      // Verificar se todos os dígitos são iguais
+      if (/^(\d)\1+$/.test(cnpj)) {
+        this.cnpjError = 'CNPJ inválido.';
+        return;
+      }
+      
+      // Validação dos dígitos verificadores
+      // Primeiro dígito verificador
+      let soma = 0;
+      let peso = 2;
+      
+      for (let i = 11; i >= 0; i--) {
+        soma += parseInt(cnpj.charAt(i)) * peso;
+        peso = peso === 9 ? 2 : peso + 1;
+      }
+      
+      let digito = 11 - (soma % 11);
+      if (digito > 9) digito = 0;
+      
+      if (parseInt(cnpj.charAt(12)) !== digito) {
+        this.cnpjError = 'CNPJ inválido.';
+        return;
+      }
+      
+      // Segundo dígito verificador
+      soma = 0;
+      peso = 2;
+      
+      for (let i = 12; i >= 0; i--) {
+        soma += parseInt(cnpj.charAt(i)) * peso;
+        peso = peso === 9 ? 2 : peso + 1;
+      }
+      
+      digito = 11 - (soma % 11);
+      if (digito > 9) digito = 0;
+      
+      if (parseInt(cnpj.charAt(13)) !== digito) {
+        this.cnpjError = 'CNPJ inválido.';
+        return;
+      }
+      
+      this.cnpjError = '';
+    },
+    async createCompany() {
+      if (this.cnpjError) {
+        return;
+      }
+      
+      try {
+        this.creatingCompany = true;
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        
+        const currentUser = JSON.parse(userStr);
+        
+        const response = await fetch(`/api/groups/${this.groupId}/companies`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': currentUser.id
+          },
+          body: JSON.stringify(this.newCompany)
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          this.error = data.message || 'Erro ao criar empresa';
+          this.creatingCompany = false;
+          return;
+        }
+        
+        // Sucesso na criação da empresa
+        this.success = `Empresa ${this.newCompany.name} criada com sucesso!`;
+        
+        // Limpar o formulário
+        this.newCompany = {
+          name: '',
+          cnpj: ''
+        };
+        
+        this.creatingCompany = false;
+      } catch (error) {
+        this.error = 'Erro ao conectar ao servidor';
+        this.creatingCompany = false;
+        console.error('Error creating company:', error);
+      }
     }
   }
 }
@@ -650,6 +828,8 @@ export default {
 /* Layout principal - versão desktop */
 .home-layout {
   position: fixed;
+  top: 100px;
+  left: 50px;
   top: 100px;
   left: 50px;
   right: 50px;
@@ -768,9 +948,25 @@ export default {
   margin-bottom: 0.8rem;
 }
 
+.loading-spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  display: inline-block;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .error-icon {
@@ -926,6 +1122,32 @@ export default {
   box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
 }
 
+/* Estilos para o formulário de criação de empresa */
+.dashboard-item.create-company {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+}
+
+.dashboard-item.create-company h3 {
+  color: #0369a1;
+}
+
+.company-form {
+  margin-top: 1rem;
+}
+
+.invalid-input {
+  border-color: #f87171 !important;
+  background-color: #fee2e2 !important;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  display: block;
+}
+
 .button-container {
   display: flex;
   justify-content: flex-end;
@@ -998,28 +1220,51 @@ export default {
 .delete-btn:hover:not(:disabled) {
   background-color: #b91c1c;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
 }
 
 .delete-btn:disabled {
-  background-color: #ef4444;
-  opacity: 0.7;
+  background-color: #f87171;
   cursor: not-allowed;
 }
 
-/* Modals */
+.submit-btn {
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(to right, #0c4a6e, #0ea5e9);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #0369a1, #38bdf8);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+}
+
+.submit-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
-  animation: fade-in 0.3s ease;
 }
 
 .modal-container {
@@ -1035,11 +1280,6 @@ export default {
 @keyframes slide-in {
   0% { opacity: 0; transform: translateY(-30px); }
   100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
 }
 
 .modal-header {
@@ -1062,10 +1302,6 @@ export default {
 .modal-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
-}
-
-.warning-icon {
-  color: #b91c1c;
 }
 
 .warning-text {
@@ -1121,38 +1357,10 @@ export default {
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: inherit;
+  color: #b91c1c;
   cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Dispositivos móveis */
-@media (max-width: 1024px) {
-  .home-layout {
-    flex-direction: column;
-    top: 80px;
-    left: 20px;
-    right: 20px;
-    bottom: 20px;
-  }
-  
-  .content-panel {
-    width: 100%;
-    height: 50%;
-    min-height: 300px;
-  }
-  
-  .content-wrapper {
-    padding: 1.5rem;
-  }
-  
-  .home-header h1 {
-    font-size: 1.8rem;
-  }
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+  margin-left: auto;
 }
 </style>
