@@ -7,14 +7,13 @@
       <p>Este site não foi projetado para dispositivos móveis. Por favor, acesse através de um computador para uma melhor experiência.</p>
     </div>
 
-    <!-- Conteúdo principal - visível apenas em desktop -->
+    <!-- Conteúdo principal -->
     <div v-else class="home-layout">
-      <!-- Painel com as informações da empresa (visualmente à esquerda) -->
+      <!-- Painel com informações gerais (visualmente à esquerda) -->
       <div class="content-panel">
         <div class="content-wrapper">
           <div class="home-header">
             <h1>{{ company.name }}</h1>
-            <p class="welcome-text">Detalhes da empresa</p>
           </div>
 
           <div v-if="error" class="error-message">
@@ -38,38 +37,75 @@
             <!-- Informações da Empresa -->
             <div class="dashboard-summary">
               <div class="dashboard-item">
-                <h3>Informações Gerais</h3>
-                <div class="info-grid">
-                  <div class="info-item">
-                    <div class="info-label">Nome:</div>
-                    <div class="info-value">{{ company.name }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-label">CNPJ:</div>
-                    <div class="info-value">{{ company.cnpj }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-label">Criado em:</div>
-                    <div class="info-value">{{ formatDate(company.created_at) }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-label">Grupo:</div>
-                    <div class="info-value">
-                      <a @click="goToGroupDetail(company.group_id)" class="group-link">
-                        {{ groupName }}
-                      </a>
-                    </div>
-                  </div>
-                  <div v-if="isAdmin" class="info-item">
-                    <div class="info-label">Ações Administrativas:</div>
-                    <div class="info-value">
-                      <button class="delete-btn" @click="showDeleteConfirmation = true">Excluir Empresa</button>
-                    </div>
-                  </div>
+                <h3>{{ company.name }}</h3>
+                <div class="info-details">
+                  <p><span class="info-label">ID:</span> {{ companyId }}</p>
+                  <p><span class="info-label">Criado em:</span> {{ formatDate(company.created_at) }}</p>
+                  <p><span class="info-label">CNPJ:</span> {{ company.cnpj }}</p>
+                  <p><span class="info-label">Grupo:</span> 
+                    <a @click="goToGroupDetail(company.group_id)" class="group-link">
+                      {{ groupName }}
+                    </a>
+                  </p>
                 </div>
               </div>
             </div>
 
+            <!-- Zona de Edição -->
+            <div v-if="isAdmin" class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>Editar Empresa</h3>
+                <form @submit.prevent="updateCompany" class="company-form">
+                  <div class="form-group">
+                    <label for="companyName">Nome da Empresa:</label>
+                    <input 
+                      type="text" 
+                      id="companyName" 
+                      v-model="editCompany.name" 
+                      required 
+                      placeholder="Nome da Empresa"
+                    >
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="companyCNPJ">CNPJ:</label>
+                    <input 
+                      type="text" 
+                      id="companyCNPJ" 
+                      v-model="editCompany.cnpj" 
+                      @input="formatCNPJ"
+                      required 
+                      placeholder="XX.XXX.XXX/XXXX-XX"
+                      :class="{ 'invalid-input': cnpjError }"
+                    >
+                    <small v-if="cnpjError" class="error-text">{{ cnpjError }}</small>
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    class="submit-btn" 
+                    :disabled="updatingCompany || cnpjError !== ''"
+                  >
+                    <span v-if="updatingCompany" class="loading-spinner-small"></span>
+                    {{ updatingCompany ? 'Atualizando...' : 'Atualizar Empresa' }}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Botão de excluir empresa -->
+            <div v-if="isAdmin" class="dashboard-summary">
+              <div class="dashboard-item danger-zone">
+                <h3>Zona de Perigo</h3>
+                <p>Cuidado! As ações abaixo são irreversíveis.</p>
+                <div class="danger-actions">
+                  <button class="delete-btn" @click="showDeleteConfirmation = true">
+                    Excluir Empresa
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             <!-- Botões de ação -->
             <div class="quick-actions">
               <button class="secondary-button" @click="goBack">Voltar para o Grupo</button>
@@ -79,55 +115,84 @@
       </div>
       
       <!-- Painel com arquivos (visualmente à direita) -->
-      <div class="files-panel">
+      <div class="content-panel">
         <div class="content-wrapper">
-          <div class="files-header">
-            <h2>Arquivos</h2>
-            <button v-if="isAdmin" class="action-button admin" @click="showUploadForm = !showUploadForm">
-              {{ showUploadForm ? 'Cancelar' : 'Enviar Arquivo' }}
-            </button>
-          </div>
-
-          <!-- Formulário de Upload -->
-          <div v-if="showUploadForm && isAdmin" class="upload-form">
-            <form @submit.prevent="uploadFile">
-              <div class="form-group">
-                <label for="file">Selecionar Arquivo:</label>
-                <input 
-                  type="file" 
-                  id="file" 
-                  ref="fileInput"
-                  @change="handleFileChange" 
-                  required
-                >
-                <div class="file-types">Formatos permitidos: .csv, .xls, .xlsx, .pdf</div>
-              </div>
-              <button type="submit" class="submit-btn" :disabled="uploading">
-                {{ uploading ? 'Enviando...' : 'Enviar Arquivo' }}
-              </button>
-            </form>
+          <div class="home-header">
+            <h1>Arquivos</h1>
           </div>
 
           <div v-if="loading" class="loading-indicator">
             <div class="loading-spinner"></div>
             <p>Carregando arquivos...</p>
           </div>
-          <div v-else-if="!files || files.length === 0" class="empty-state">
-            <p>Nenhum arquivo foi adicionado a esta empresa.</p>
-          </div>
-          <div v-else class="files-list">
-            <div v-for="file in files" :key="file.id" class="file-item">
-              <div class="file-info">
-                <div :class="['file-icon', getFileIconClass(file.file_type)]">
-                  {{ file.file_type.toUpperCase() }}
+
+          <div v-else>
+            <!-- Upload de Arquivos -->
+            <div v-if="isAdmin" class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>Enviar Arquivo</h3>
+                <p>Adicione arquivos para esta empresa</p>
+                
+                <div v-if="!showUploadForm" class="form-actions">
+                  <button class="action-button admin" @click="showUploadForm = true">
+                    Mostrar Formulário de Upload
+                  </button>
                 </div>
-                <div class="file-details">
-                  <div class="file-name">{{ file.filename }}</div>
-                  <div class="file-date">Enviado em {{ formatDate(file.uploaded_at) }}</div>
-                </div>
+                
+                <form v-else @submit.prevent="uploadFile" class="company-form">
+                  <div class="form-group">
+                    <label for="file">Selecionar Arquivo:</label>
+                    <input 
+                      type="file" 
+                      id="file" 
+                      ref="fileInput"
+                      @change="handleFileChange" 
+                      required
+                    >
+                    <div class="file-types">Formatos permitidos: .csv, .xls, .xlsx, .pdf</div>
+                  </div>
+                  
+                  <div class="form-actions">
+                    <button type="button" class="secondary-button" @click="showUploadForm = false">
+                      Cancelar
+                    </button>
+                    <button 
+                      type="submit" 
+                      class="submit-btn" 
+                      :disabled="uploading"
+                    >
+                      <span v-if="uploading" class="loading-spinner-small"></span>
+                      {{ uploading ? 'Enviando...' : 'Enviar Arquivo' }}
+                    </button>
+                  </div>
+                </form>
               </div>
-              <div class="file-actions">
-                <button class="download-btn" @click="downloadFile(file.id)">Download</button>
+            </div>
+            
+            <!-- Lista de Arquivos -->
+            <div class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>Arquivos Disponíveis</h3>
+                
+                <div v-if="!files || files.length === 0" class="empty-state">
+                  <p>Nenhum arquivo foi adicionado a esta empresa.</p>
+                </div>
+                <div v-else class="files-list">
+                  <div v-for="file in files" :key="file.id" class="file-item">
+                    <div class="file-info">
+                      <div :class="['file-icon', getFileIconClass(file.file_type)]">
+                        {{ file.file_type.toUpperCase() }}
+                      </div>
+                      <div class="file-details">
+                        <div class="file-name">{{ file.filename }}</div>
+                        <div class="file-date">Enviado em {{ formatDate(file.uploaded_at) }}</div>
+                      </div>
+                    </div>
+                    <div class="file-actions">
+                      <button class="download-btn" @click="downloadFile(file.id)">Download</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -190,7 +255,14 @@ export default {
       isMobileDevice: false,
       showDeleteConfirmation: false,
       confirmDeleteText: '',
-      deletingCompany: false
+      deletingCompany: false,
+      // Campos para edição da empresa
+      editCompany: {
+        name: '',
+        cnpj: ''
+      },
+      cnpjError: '',
+      updatingCompany: false
     }
   },
   created() {
@@ -259,6 +331,12 @@ export default {
         const data = await response.json();
         this.company = data.company;
         console.log('Company data loaded:', this.company);
+        
+        // Preencher os campos de edição
+        this.editCompany = {
+          name: this.company.name,
+          cnpj: this.company.cnpj
+        };
         
         // Se a API já retorna os arquivos, podemos usar diretamente
         if (this.company.files) {
@@ -390,6 +468,7 @@ export default {
         this.$refs.fileInput.value = '';
         this.selectedFile = null;
         this.showUploadForm = false;
+        this.success = 'Arquivo enviado com sucesso!';
         await this.fetchCompanyFiles();
         
         this.uploading = false;
@@ -397,6 +476,127 @@ export default {
         this.error = 'Erro ao conectar ao servidor';
         this.uploading = false;
         console.error('Error uploading file:', error);
+      }
+    },
+    formatCNPJ() {
+      // Remove qualquer caractere que não seja dígito
+      let cnpj = this.editCompany.cnpj.replace(/\D/g, '');
+      
+      // Limita a 14 dígitos
+      cnpj = cnpj.substring(0, 14);
+      
+      // Aplica a máscara XX.XXX.XXX/XXXX-XX
+      if (cnpj.length > 0) {
+        cnpj = cnpj.replace(/^(\d{2})(\d)/, '$1.$2');
+        cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        cnpj = cnpj.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        cnpj = cnpj.replace(/(\d{4})(\d)/, '$1-$2');
+      }
+      
+      this.editCompany.cnpj = cnpj;
+      this.validateCNPJ();
+    },
+    validateCNPJ() {
+      const cnpj = this.editCompany.cnpj.replace(/\D/g, '');
+      
+      if (cnpj.length === 0) {
+        this.cnpjError = '';
+        return;
+      }
+      
+      if (cnpj.length !== 14) {
+        this.cnpjError = 'CNPJ deve conter 14 dígitos.';
+        return;
+      }
+      
+      // Verificar se todos os dígitos são iguais
+      if (/^(\d)\1+$/.test(cnpj)) {
+        this.cnpjError = 'CNPJ inválido.';
+        return;
+      }
+      
+      // Validação dos dígitos verificadores
+      // Primeiro dígito verificador
+      let soma = 0;
+      let peso = 2;
+      
+      for (let i = 11; i >= 0; i--) {
+        soma += parseInt(cnpj.charAt(i)) * peso;
+        peso = peso === 9 ? 2 : peso + 1;
+      }
+      
+      let digito = 11 - (soma % 11);
+      if (digito > 9) digito = 0;
+      
+      if (parseInt(cnpj.charAt(12)) !== digito) {
+        this.cnpjError = 'CNPJ inválido.';
+        return;
+      }
+      
+      // Segundo dígito verificador
+      soma = 0;
+      peso = 2;
+      
+      for (let i = 12; i >= 0; i--) {
+        soma += parseInt(cnpj.charAt(i)) * peso;
+        peso = peso === 9 ? 2 : peso + 1;
+      }
+      
+      digito = 11 - (soma % 11);
+      if (digito > 9) digito = 0;
+      
+      if (parseInt(cnpj.charAt(13)) !== digito) {
+        this.cnpjError = 'CNPJ inválido.';
+        return;
+      }
+      
+      this.cnpjError = '';
+    },
+    async updateCompany() {
+      if (this.cnpjError) {
+        return;
+      }
+      
+      try {
+        this.updatingCompany = true;
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(`/api/companies/${this.companyId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          },
+          body: JSON.stringify({
+            name: this.editCompany.name,
+            cnpj: this.editCompany.cnpj
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          this.error = data.message || 'Erro ao atualizar empresa';
+          this.updatingCompany = false;
+          return;
+        }
+        
+        // Atualizar dados da empresa
+        this.company.name = this.editCompany.name;
+        this.company.cnpj = this.editCompany.cnpj;
+        
+        this.success = 'Empresa atualizada com sucesso!';
+        this.updatingCompany = false;
+      } catch (error) {
+        this.error = 'Erro ao conectar ao servidor';
+        this.updatingCompany = false;
+        console.error('Error updating company:', error);
       }
     },
     async downloadFile(fileId) {
@@ -569,9 +769,9 @@ export default {
   gap: 20px; /* Espaçamento entre os containers */
 }
 
-/* Painel de conteúdo (visualmente à esquerda) */
+/* Painéis de conteúdo */
 .content-panel {
-  width: calc(50% - 10px); /* 50% da largura menos metade do gap */
+  width: 50%; /* 50% da largura menos metade do gap */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
@@ -579,17 +779,7 @@ export default {
   overflow: hidden;
 }
 
-/* Painel de arquivos (visualmente à direita) */
-.files-panel {
-  width: calc(50% - 10px); /* 50% da largura menos metade do gap */
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  animation: fade-in 0.8s ease-out;
-  overflow: hidden;
-}
-
-/* Container do conteúdo */
+/* Container do conteúdo para o painel de conteúdo */
 .content-wrapper {
   width: 100%;
   height: 100%;
@@ -599,7 +789,6 @@ export default {
   overflow-y: auto;
 }
 
-/* Cabeçalho da empresa */
 .home-header {
   text-align: center;
   margin-bottom: 1.5rem;
@@ -615,29 +804,6 @@ export default {
   margin-bottom: 0.5rem;
 }
 
-.welcome-text {
-  color: #666;
-  font-size: 1.1rem;
-}
-
-/* Cabeçalho de arquivos */
-.files-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eaeaea;
-}
-
-.files-header h2 {
-  color: #142C4D;
-  font-size: 1.8rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-/* Seção de resumo no dashboard */
 .dashboard-summary {
   margin-bottom: 1.5rem;
 }
@@ -652,36 +818,29 @@ export default {
 .dashboard-item h3 {
   color: #204578;
   font-size: 1.2rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .dashboard-item p {
   color: #666;
   font-size: 0.95rem;
+  margin-bottom: 0.8rem;
 }
 
-/* Grid de informações */
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+.info-details {
+  margin-top: 0.8rem;
+  color: #555;
+  font-size: 0.95rem;
 }
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.info-details p {
+  margin-bottom: 0.5rem;
 }
 
 .info-label {
-  font-size: 0.9rem;
   font-weight: 600;
-  color: #666;
-}
-
-.info-value {
-  font-size: 1.1rem;
   color: #333;
+  margin-right: 0.3rem;
 }
 
 .group-link {
@@ -694,111 +853,25 @@ export default {
   color: #142C4D;
 }
 
-/* Lista de arquivos */
-.files-list {
+/* Zona de perigo */
+.dashboard-item.danger-zone {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+}
+
+.dashboard-item.danger-zone h3 {
+  color: #b91c1c;
+}
+
+.danger-actions {
+  margin-top: 1rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  margin-top: 1.2rem;
+  justify-content: flex-end;
 }
 
-.file-item {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-  padding: 1rem 1.2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.2s ease;
-}
-
-.file-item:hover {
-  background-color: #e9ecef;
-  transform: translateY(-2px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-}
-
-.file-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.file-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.7rem;
-  color: white;
-}
-
-.csv-file {
-  background: linear-gradient(135deg, #20bf6b, #0fb9b1);
-}
-
-.excel-file {
-  background: linear-gradient(135deg, #2ecc71, #26de81);
-}
-
-.pdf-file {
-  background: linear-gradient(135deg, #eb3b5a, #fc5c65);
-}
-
-.generic-file {
-  background: linear-gradient(135deg, #4b6584, #778ca3);
-}
-
-.file-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.file-name {
-  font-weight: 600;
-  color: #142C4D;
-  font-size: 1rem;
-}
-
-.file-date {
-  color: #666;
-  font-size: 0.85rem;
-}
-
-.file-actions {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.download-btn {
-  padding: 0.5rem 1rem;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  color: #333;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.download-btn:hover {
-  background-color: #e0e0e0;
-  transform: translateY(-2px);
-}
-
-/* Formulário de upload */
-.upload-form {
-  background-color: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  border: 1px solid #eaeaea;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+/* Formulário de empresa */
+.company-form {
+  margin-top: 1rem;
 }
 
 .form-group {
@@ -808,38 +881,42 @@ export default {
 .form-group label {
   display: block;
   margin-bottom: 0.6rem;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #333;
 }
 
-.file-types {
-  font-size: 0.85rem;
-  color: #666;
-  margin-top: 0.5rem;
-}
-
-.submit-btn {
-  padding: 0.8rem 1.5rem;
-  background: linear-gradient(to right, #142C4D, #204578);
-  border: none;
-  border-radius: 8px;
-  color: white;
+.form-group input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
   font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
-.submit-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+.form-group input:focus {
+  outline: none;
+  border-color: #204578;
+  box-shadow: 0 0 0 2px rgba(32, 69, 120, 0.2);
 }
 
-.submit-btn:disabled {
-  background: #c0c0c0;
-  cursor: not-allowed;
+.form-group input.invalid-input {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+  display: block;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 /* Estados de loading, erro e sucesso */
@@ -860,6 +937,27 @@ export default {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 0.8rem;
+}
+
+.loading-spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  display: inline-block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .error-icon {
@@ -967,6 +1065,32 @@ export default {
   box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
 }
 
+.submit-btn {
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(to right, #142C4D, #204578);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+}
+
+.submit-btn:disabled {
+  background: #c0c0c0;
+  cursor: not-allowed;
+}
+
 /* Botão de exclusão */
 .delete-btn {
   padding: 0.7rem 1.2rem;
@@ -993,7 +1117,7 @@ export default {
   box-shadow: none;
 }
 
-/* Modal de confirmação de exclusão */
+/* Modal de confirmação */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1002,148 +1126,228 @@ export default {
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
   animation: fade-in 0.3s ease;
 }
 
 .modal-container {
-  width: 90%;
-  max-width: 500px;
+  width: 450px;
   background-color: white;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-  animation: slide-in 0.4s ease;
-}
-
-@keyframes slide-in {
-  0% { opacity: 0; transform: translateY(-30px); }
-  100% { opacity: 1; transform: translateY(0); }
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
-  background-color: #f8f8f8;
-  padding: 1.2rem 1.5rem;
+  background-color: #f9fafb;
+  padding: 1.2rem;
   border-bottom: 1px solid #eaeaea;
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #333;
-  font-size: 1.3rem;
+  color: #142C4D;
+  font-size: 1.2rem;
 }
 
 .modal-body {
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
 }
 
-.modal-icon {
-  font-size: 3rem;
+.modal-body p {
   margin-bottom: 1rem;
+  color: #333;
 }
 
 .warning-text {
   color: #b91c1c;
   font-weight: 600;
-  margin: 1rem 0;
+  margin-bottom: 1.5rem;
+}
+
+.modal-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
 }
 
 .confirmation-input {
-  margin-top: 1.5rem;
-  text-align: left;
+  width: 100%;
+  margin-top: 1rem;
 }
 
 .confirmation-input label {
   display: block;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
-  font-weight: 600;
+  color: #333;
 }
 
 .confirmation-input input {
   width: 100%;
   padding: 0.8rem;
-  border: 2px solid #ddd;
+  border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-}
-
-.confirmation-input input:focus {
-  border-color: #204578;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
+  font-size: 1rem;
 }
 
 .modal-footer {
-  padding: 1.2rem 1.5rem;
-  background-color: #f8f8f8;
-  border-top: 1px solid #eaeaea;
+  padding: 1rem 1.5rem;
+  background-color: #f9fafb;
   display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
+  justify-content: space-between;
+  border-top: 1px solid #eaeaea;
 }
 
 .cancel-btn {
-  padding: 0.8rem 1.5rem;
-  background: transparent;
-  border: 2px solid #6b7280;
+  padding: 0.7rem 1.2rem;
+  background-color: white;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  color: #6b7280;
+  color: #333;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .cancel-btn:hover {
-  background-color: rgba(107, 114, 128, 0.1);
+  background-color: #f9fafb;
+}
+
+/* Lista de arquivos */
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.file-item {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.file-item:hover {
+  background-color: #e9ecef;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(107, 114, 128, 0.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 }
 
-/* Animações */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.file-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: white;
 }
 
-/* Responsividade */
+.csv-file {
+  background: linear-gradient(135deg, #20bf6b, #0fb9b1);
+}
+
+.excel-file {
+  background: linear-gradient(135deg, #2ecc71, #26de81);
+}
+
+.pdf-file {
+  background: linear-gradient(135deg, #eb3b5a, #fc5c65);
+}
+
+.generic-file {
+  background: linear-gradient(135deg, #4b6584, #778ca3);
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #142C4D;
+  font-size: 0.95rem;
+}
+
+.file-date {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.file-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.download-btn {
+  padding: 0.5rem 0.8rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: #333;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* Campo de arquivos */
+.file-types {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+/* Responsividade - para tablets e dispositivos menores */
+@media (max-width: 1280px) {
+  .home-layout {
+    left: 30px;
+    right: 30px;
+    top: 100px;
+  }
+}
+
+/* Responsividade - para laptops menores */
 @media (max-width: 1024px) {
   .home-layout {
+    flex-direction: column;
     left: 20px;
     right: 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .home-layout {
-    flex-direction: column;
-    gap: 10px;
+    top: 80px;
+    bottom: 20px;
+    overflow: auto;
+    gap: 15px;
+    position: absolute;
   }
   
-  .content-panel, .files-panel {
-    width: 100%;
-  }
-
   .content-panel {
-    height: 45%;
-  }
-
-  .files-panel {
-    height: 55%;
-  }
-  
-  .modal-container {
-    width: 95%;
+    width: 100%;
+    height: auto;
+    min-height: 250px;
   }
 }
 </style>
