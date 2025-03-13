@@ -53,7 +53,7 @@
             </div>
             
             <!-- Botões de ação -->
-            <div class="quick-actions">
+            <div class="users-actions">
               <button class="secondary-button" @click="goBack">Voltar para o Grupo</button>
             </div>
           </div>
@@ -181,7 +181,6 @@
                       placeholder="Procurar por nome de usuário..."
                       class="search-input"
                     >
-                    <span class="search-icon">🔍</span>
                   </div>
                 </div>
               
@@ -226,13 +225,13 @@
     </div>
 
     <!-- Modal de Confirmação de Exclusão -->
-    <div v-if="showDeleteConfirmation" class="modal-overlay">
-      <div class="modal-container">
+    <div v-if="showDeleteConfirmation" class="modal">
+      <div class="modal-content">
         <div class="modal-header">
           <h3>Confirmação de Exclusão</h3>
+          <button class="close-modal-btn" @click="cancelDelete">&times;</button>
         </div>
         <div class="modal-body">
-          <div class="warning-icon modal-icon">⚠️</div>
           <p>Você está prestes a excluir o grupo <strong>{{ groupName }}</strong> e todas as suas empresas.</p>
           <p class="warning-text">Esta ação não pode ser desfeita!</p>
           
@@ -243,13 +242,14 @@
               id="confirmText" 
               v-model="confirmDeleteText" 
               placeholder="EXCLUIR" 
+              class="company-input"
             />
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-actions">
           <button class="cancel-btn" @click="cancelDelete">Cancelar</button>
           <button 
-            class="delete-btn"
+            class="confirm-delete-btn"
             :disabled="confirmDeleteText !== 'EXCLUIR' || deletingGroup"
             @click="deleteGroup"
           >
@@ -260,18 +260,20 @@
     </div>
 
     <!-- Modal de Confirmação para Remover Acesso -->
-    <div v-if="showRemoveModal" class="modal-overlay">
-      <div class="modal-container">
+    <div v-if="showRemoveModal" class="modal">
+      <div class="modal-content">
         <div class="modal-header">
           <h3>Confirmar Remoção de Acesso</h3>
+          <button class="close-modal-btn" @click="showRemoveModal = false">&times;</button>
         </div>
         <div class="modal-body">
           <p>Tem certeza que deseja remover o acesso do usuário <strong>{{ userToRemove?.username }}</strong> a este grupo?</p>
+          <p class="warning-text">Esta ação não pode ser desfeita.</p>
         </div>
-        <div class="modal-footer">
+        <div class="modal-actions">
           <button class="cancel-btn" @click="showRemoveModal = false">Cancelar</button>
           <button 
-            class="delete-btn"
+            class="confirm-delete-btn"
             :disabled="removeLoading"
             @click="removeUserAccess"
           >
@@ -812,7 +814,6 @@ export default {
           this.$router.push('/login');
           return;
         }
-        
         const currentUser = JSON.parse(userStr);
         
         const response = await fetch(`/api/groups/${this.groupId}/companies`, {
@@ -962,42 +963,9 @@ export default {
   display: block;
 }
 
-.info-details {
-  margin-top: 0.8rem;
-  color: #555;
-  font-size: 0.95rem;
-}
-
-.info-details p {
-  margin-bottom: 0.5rem;
-}
-
-.info-label {
-  font-weight: 600;
-  color: #333;
-  margin-right: 0.3rem;
-}
-
-/* Zona de perigo */
-.dashboard-item.danger-zone {
-  background-color: #fee2e2;
-  border: 1px solid #fca5a5;
-}
-
-.dashboard-item.danger-zone h3 {
-  color: #b91c1c;
-}
-
-.danger-actions {
-  margin-top: 1rem;
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* Pesquisa de usuários */
+/* Pesquisa */
 .search-container {
   margin-top: 0.8rem;
-  margin-bottom: 1rem;
 }
 
 .search-box {
@@ -1011,6 +979,7 @@ export default {
   border: 2px solid #e1e1e1;
   border-radius: 8px;
   font-size: 1rem;
+  margin-bottom: 15px;
   color: #333;
   transition: all 0.3s ease;
   background-color: #f9f9f9;
@@ -1032,6 +1001,81 @@ export default {
   font-size: 1.2rem;
 }
 
+/* Formulário */
+.form-group {
+  margin-bottom: 1.2rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.checkbox-group input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.checkbox-group label {
+  display: inline;
+  margin-bottom: 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Botão com gradiente igual ao de criar usuário */
+.submit-btn {
+  padding: 0.9rem 2rem;
+  background: linear-gradient(to right, #142C4D, #204578);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Loading spinner pequeno para botão de submit */
+.loading-spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  display: inline-block;
+}
+
 /* Lista de usuários */
 .users-list {
   display: flex;
@@ -1039,7 +1083,6 @@ export default {
   gap: 0.8rem;
   max-height: 350px;
   overflow-y: auto;
-  margin-top: 1rem;
 }
 
 .user-item {
@@ -1091,123 +1134,6 @@ export default {
   gap: 0.8rem;
 }
 
-/* Estados de loading, erro e sucesso */
-.loading-indicator, .error-message, .empty-state, .success-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  text-align: center;
-}
-
-.loading-spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #204578;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 0.8rem;
-}
-
-.loading-spinner-small {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid #ffffff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 8px;
-  display: inline-block;
-}
-
-/* Botão de submit com gradiente */
-.submit-btn {
-  padding: 0.9rem 2rem;
-  background: linear-gradient(to right, #142C4D, #204578);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 200px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-left: auto;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
-.submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* Botões de ação */
-.button-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-.action-button {
-  padding: 0.9rem 2rem;
-  background-color: #142C4D;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 200px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.action-button:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
-.action-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.secondary-button {
-  padding: 0.9rem 2rem;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  color: #333;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.secondary-button:hover {
-  background-color: #e0e0e0;
-  transform: translateY(-2px);
-}
-
-.quick-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
 .delete-button {
   width: 32px;
   height: 32px;
@@ -1230,26 +1156,74 @@ export default {
   transform: scale(1.1);
 }
 
-.delete-btn {
-  padding: 0.7rem 1.5rem;
-  background: linear-gradient(to right, #dc2626, #b91c1c);
-  border: none;
-  border-radius: 6px;
-  color: white;
+/* Botões */
+.secondary-button {
+  padding: 0.9rem 2rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: #333;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.delete-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #b91c1c, #991b1b);
+.secondary-button:hover {
+  background-color: #e0e0e0;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
 }
 
-.delete-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+.users-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+/* Estados de loading, erro e sucesso */
+.loading-indicator, .error-message, .empty-state, .success-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.8rem;
+}
+
+.error-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.success-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #d1fae5;
+  color: #065f46;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
 }
 
 .error-message p {
@@ -1274,8 +1248,47 @@ export default {
   padding: 0 0.5rem;
 }
 
+/* Zona de perigo */
+.dashboard-item.danger-zone {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+}
+
+.dashboard-item.danger-zone h3 {
+  color: #b91c1c;
+}
+
+.danger-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.delete-btn {
+  padding: 0.8rem 1.5rem;
+  background-color: #ef4444;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3);
+}
+
+.delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* Modal de confirmação */
-.modal-overlay {
+.modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -1289,7 +1302,7 @@ export default {
   animation: fade-in 0.3s ease;
 }
 
-.modal-container {
+.modal-content {
   background-color: white;
   border-radius: 12px;
   width: 90%;
@@ -1302,29 +1315,40 @@ export default {
 .modal-header {
   background: linear-gradient(to right, #ff7675, #fab1a0);
   padding: 1.2rem 1.5rem;
-  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .modal-header h3 {
+  color: white;
   margin: 0;
   font-size: 1.3rem;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
 }
 
 .modal-body {
   padding: 1.5rem;
 }
 
-.modal-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  display: block;
-  text-align: center;
+.modal-body p {
+  margin-bottom: 0.8rem;
+  font-size: 1.1rem;
 }
 
 .warning-text {
   color: #b91c1c;
   font-weight: 600;
-  margin-top: 0.8rem;
+  font-size: 0.95rem;
 }
 
 .confirmation-input {
@@ -1333,25 +1357,18 @@ export default {
 
 .confirmation-input label {
   display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.confirmation-input input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  margin-bottom: 0.6rem;
   font-size: 1rem;
+  font-weight: 600;
+  color: #333;
 }
 
-.modal-footer {
+.modal-actions {
+  padding: 1rem 1.5rem;
+  background-color: #f9f9f9;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  padding: 1rem 1.5rem;
-  background-color: #f8f8f8;
-  border-top: 1px solid #eaeaea;
 }
 
 .cancel-btn {
@@ -1369,19 +1386,68 @@ export default {
   background-color: #e0e0e0;
 }
 
+.confirm-delete-btn {
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(to right, #ff7675, #fab1a0);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-delete-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #d63031, #e84393);
+  box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
+}
+
+.confirm-delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Informações detalhadas */
+.info-details {
+  margin-top: 0.8rem;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.info-details p {
+  margin-bottom: 0.5rem;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #333;
+  margin-right: 0.3rem;
+}
+
+/* Seleção de usuário */
+.user-select {
+  margin-bottom: 1rem;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* Animações */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>

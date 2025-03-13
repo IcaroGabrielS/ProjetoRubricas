@@ -21,27 +21,19 @@
             <button class="close-btn" @click="success = ''" aria-label="Fechar">×</button>
           </div>
 
-          <!-- Pesquisa de usuários -->
+          <!-- Lista de usuários existentes com pesquisa integrada -->
           <div class="dashboard-summary">
             <div class="dashboard-item">
-              <h3>Pesquisar usuários</h3>
+              <!-- Pesquisa integrada -->
               <div class="search-container">
-                <div class="search-box">
-                  <input 
-                    type="text" 
-                    v-model="searchQuery" 
-                    placeholder="Procurar por nome de usuário..."
-                    class="search-input"
-                  >
-                  <span class="search-icon">🔍</span>
-                </div>
+                <input 
+                  type="text" 
+                  v-model="searchQuery" 
+                  placeholder="Procurar por nome de usuário..."
+                  class="search-input"
+                >
               </div>
-            </div>
-          </div>
-
-          <!-- Lista de usuários existentes -->
-          <div class="dashboard-summary">
-            <div class="dashboard-item">
+              
               <div v-if="usersLoading" class="loading-indicator">
                 <div class="loading-spinner"></div>
                 <p>Carregando usuários...</p>
@@ -93,16 +85,27 @@
               <p>Adicione um novo usuário ao sistema</p>
               
               <form @submit.prevent="createUser" class="company-form">
-                <div class="form-group">
-                  <label for="username">Nome de Usuário:</label>
-                  <input 
-                    type="text" 
-                    id="username" 
-                    v-model="newUser.username" 
-                    required
-                    placeholder="ID do novo Usuário"
-                    class="company-input"
-                  >
+                <div class="form-group username-row">
+                  <div class="input-wrapper">
+                    <label for="username">Nome de Usuário:</label>
+                    <input 
+                      type="text" 
+                      id="username" 
+                      v-model="newUser.username" 
+                      required
+                      placeholder="ID do novo Usuário"
+                      class="company-input"
+                    >
+                  </div>
+                  
+                  <div class="admin-checkbox">
+                    <input 
+                      type="checkbox" 
+                      id="is_admin" 
+                      v-model="newUser.is_admin"
+                    >
+                    <label for="is_admin">Usuário Administrador</label>
+                  </div>
                 </div>
                 
                 <div class="form-group">
@@ -115,15 +118,6 @@
                     placeholder="Nova Senha"
                     class="company-input"
                   >
-                </div>
-                
-                <div class="form-group checkbox-group">
-                  <input 
-                    type="checkbox" 
-                    id="is_admin" 
-                    v-model="newUser.is_admin"
-                  >
-                  <label for="is_admin">Usuário Administrador</label>
                 </div>
                 
                 <button 
@@ -472,19 +466,14 @@ export default {
   display: block;
 }
 
-/* Pesquisa */
+/* Pesquisa - modificada para remover ícone e ajustar espaçamento */
 .search-container {
-  margin-top: 0.8rem;
-}
-
-.search-box {
-  position: relative;
-  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .search-input {
   width: 100%;
-  padding: 12px 40px 12px 15px;
+  padding: 12px 15px;
   border: 2px solid #e1e1e1;
   border-radius: 8px;
   font-size: 1rem;
@@ -498,15 +487,6 @@ export default {
   box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
   outline: none;
   background-color: #fff;
-}
-
-.search-icon {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #666;
-  font-size: 1.2rem;
 }
 
 /* Formulário */
@@ -523,24 +503,50 @@ export default {
   color: #333;
 }
 
-.checkbox-group {
+/* Estilo para a linha de nome de usuário com checkbox à direita */
+.username-row {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-end;  /* Alinha os elementos na parte inferior */
+  gap: 1rem;
+}
+
+.input-wrapper {
+  flex-grow: 1;
+  flex-basis: 60%; /* Ajusta a largura do campo de nome de usuário */
+}
+
+/* Estilo do checkbox de administrador */
+.admin-checkbox {
+  display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 1.5rem;
+  background-color: #edf5ff;
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #c5dbff;
+  transition: all 0.2s ease;
+  height: 52px; /* Mesma altura do campo de input */
 }
 
-.checkbox-group input {
-  width: 20px;
-  height: 20px;
+.admin-checkbox:hover {
+  background-color: #dfeaff;
+}
+
+.admin-checkbox input {
+  width: 18px;
+  height: 18px;
   cursor: pointer;
+  margin-right: 0.5rem;
 }
 
-.checkbox-group label {
+.admin-checkbox label {
   display: inline;
   margin-bottom: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
+  font-weight: 600;
+  color: #204578;
+  white-space: nowrap;
 }
 
 /* Botão com gradiente igual ao de criar empresa */
