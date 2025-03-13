@@ -89,14 +89,7 @@
                     <span class="store-info">CNPJ: {{ company.cnpj }}</span>
                   </div>
                   <div class="store-item-actions">
-                    <button 
-                      v-if="isAdmin" 
-                      class="manage-button" 
-                      title="Gerenciar empresa"
-                    >
-                      <span class="manage-icon">⚙️</span>
-                      <span class="manage-text">Gerenciar</span>
-                    </button>
+                    <!-- Botão "Gerenciar" removido daqui -->
                     <div class="arrow-container" @click="goToCompanyDetail(company.id)" title="Ver detalhes da empresa">
                       <span class="store-item-arrow">›</span>
                     </div>

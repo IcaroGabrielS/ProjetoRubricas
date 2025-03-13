@@ -89,6 +89,7 @@
                       v-model="newCompany.name" 
                       required 
                       placeholder="Nome da Empresa"
+                      class="company-input"
                     >
                   </div>
                   
@@ -102,6 +103,7 @@
                       required 
                       placeholder="XX.XXX.XXX/XXXX-XX"
                       :class="{ 'invalid-input': cnpjError }"
+                      class="company-input"
                     >
                     <small v-if="cnpjError" class="error-text">{{ cnpjError }}</small>
                   </div>
@@ -118,49 +120,7 @@
               </div>
             </div>
 
-            <!-- Usuários com Acesso -->
-            <div class="dashboard-summary">
-              <div class="dashboard-item">
-                <h3>Usuários com Acesso</h3>
-                <p>Estes usuários podem visualizar e interagir com este grupo.</p>
-              
-                <div v-if="usersWithAccessLoading" class="loading-indicator">
-                  <div class="loading-spinner"></div>
-                  <p>Carregando usuários...</p>
-                </div>
-                
-                <div v-else-if="usersWithAccess.length === 0" class="empty-state">
-                  <p>Nenhum usuário tem acesso a este grupo ainda.</p>
-                </div>
-                
-                <div v-else class="stores-list">
-                  <div 
-                    v-for="user in usersWithAccess" 
-                    :key="user.id" 
-                    class="store-item"
-                  >
-                    <div class="store-item-details">
-                      <span class="store-name">{{ user.username }}</span>
-                      <span class="store-info" :class="{ 'admin-type': user.is_admin }">
-                        {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
-                      </span>
-                    </div>
-                    <div class="store-item-actions">
-                      <button 
-                        v-if="!user.is_admin" 
-                        class="delete-button" 
-                        @click="confirmRemoveAccess(user)"
-                        title="Remover acesso"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Adicionar Usuário -->
+            <!-- Adicionar Usuário (movido para cima) -->
             <div class="dashboard-summary">
               <div class="dashboard-item">
                 <h3>Adicionar Acesso para Usuários</h3>
@@ -180,7 +140,7 @@
                     <select 
                       id="user-select" 
                       v-model="selectedUserId"
-                      class="user-select"
+                      class="user-select company-input"
                     >
                       <option value="" disabled selected>-- Selecione um usuário --</option>
                       <option 
@@ -196,11 +156,66 @@
                   <div class="button-container">
                     <button 
                       @click="addUserAccess" 
-                      class="action-button"
+                      class="submit-btn"
                       :disabled="!selectedUserId"
                     >
                       Adicionar Acesso
                     </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Usuários com Acesso -->
+            <div class="dashboard-summary">
+              <div class="dashboard-item">
+                <h3>Usuários com Acesso</h3>
+                <p>Estes usuários podem visualizar e interagir com este grupo.</p>
+                
+                <!-- Pesquisa de usuários -->
+                <div class="search-container">
+                  <div class="search-box">
+                    <input 
+                      type="text" 
+                      v-model="searchQuery" 
+                      placeholder="Procurar por nome de usuário..."
+                      class="search-input"
+                    >
+                    <span class="search-icon">🔍</span>
+                  </div>
+                </div>
+              
+                <div v-if="usersWithAccessLoading" class="loading-indicator">
+                  <div class="loading-spinner"></div>
+                  <p>Carregando usuários...</p>
+                </div>
+                
+                <div v-else-if="filteredUsersWithAccess.length === 0" class="empty-state">
+                  <p>Nenhum usuário tem acesso a este grupo ainda.</p>
+                </div>
+                
+                <div v-else class="users-list">
+                  <div 
+                    v-for="user in filteredUsersWithAccess" 
+                    :key="user.id" 
+                    class="user-item"
+                  >
+                    <div class="user-item-details">
+                      <span class="user-name">{{ user.username }}</span>
+                      <span class="user-type" :class="{ 'admin-type': user.is_admin }">
+                        {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
+                      </span>
+                    </div>
+                    <div class="user-actions">
+                      <button 
+                        v-if="!user.is_admin" 
+                        class="delete-button" 
+                        @click="confirmRemoveAccess(user)"
+                        title="Remover acesso"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -298,7 +313,22 @@ export default {
         cnpj: ''
       },
       cnpjError: '',
-      creatingCompany: false
+      creatingCompany: false,
+      // Novo campo para pesquisa de usuários
+      searchQuery: ''
+    }
+  },
+  computed: {
+    // Filtrar usuários com acesso baseado na pesquisa
+    filteredUsersWithAccess() {
+      if (!this.searchQuery) {
+        return this.usersWithAccess;
+      }
+      
+      const query = this.searchQuery.toLowerCase();
+      return this.usersWithAccess.filter(user => 
+        user.username.toLowerCase().includes(query)
+      );
     }
   },
   created() {
@@ -375,7 +405,6 @@ export default {
       }
     },
     async fetchCreatorName(creatorId) {
-      // CORREÇÃO: Usar o parâmetro creatorId
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -675,7 +704,6 @@ export default {
       this.confirmDeleteText = '';
     },
     formatDate(dateString) {
-      // CORREÇÃO: Usar o parâmetro dateString
       if (!dateString) return '';
       
       const options = { 
@@ -830,8 +858,6 @@ export default {
   position: fixed;
   top: 100px;
   left: 50px;
-  top: 100px;
-  left: 50px;
   right: 50px;
   bottom: 30px;
   display: flex;
@@ -896,6 +922,46 @@ export default {
   margin-bottom: 0.8rem;
 }
 
+/* Criar empresa/usuário estilo */
+.create-company {
+  background-color: #f0f7ff; /* Fundo azulado similar ao de UsersView */
+  border: 1px solid #d0e1fd;
+}
+
+.company-form {
+  margin-top: 1rem;
+}
+
+/* Estilo dos inputs similar ao UsersView */
+.company-input {
+  width: 100%;
+  padding: 0.9rem;
+  border: 2px solid #d0e1fd;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+  background-color: #fff;
+}
+
+.company-input:focus {
+  border-color: #204578;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
+  outline: none;
+}
+
+.invalid-input {
+  border-color: #f87171;
+  background-color: #fff5f5;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+  display: block;
+}
+
 .info-details {
   margin-top: 0.8rem;
   color: #555;
@@ -926,6 +992,103 @@ export default {
   margin-top: 1rem;
   display: flex;
   justify-content: flex-end;
+}
+
+/* Pesquisa de usuários */
+.search-container {
+  margin-top: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 15px;
+  border: 2px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+  background-color: #f9f9f9;
+}
+
+.search-input:focus {
+  border-color: #204578;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
+  outline: none;
+  background-color: #fff;
+}
+
+.search-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 1.2rem;
+}
+
+/* Lista de usuários */
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: 350px;
+  overflow-y: auto;
+  margin-top: 1rem;
+}
+
+.user-item {
+  background-color: #fff;
+  border-radius: 6px;
+  border: 1px solid #eaeaea;
+  padding: 1rem 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.user-item:hover {
+  border-color: #d0d0d0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.user-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #142C4D;
+  display: block;
+}
+
+.user-type {
+  font-size: 0.85rem;
+  color: #666;
+  background-color: #f0f0f0;
+  padding: 0.3rem 0.7rem;
+  border-radius: 12px;
+  display: inline-block;
+  margin-top: 0.5rem;
+}
+
+.admin-type {
+  background-color: #e0f2fe;
+  color: #0077b6;
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.8rem;
 }
 
 /* Estados de loading, erro e sucesso */
@@ -959,40 +1122,134 @@ export default {
   display: inline-block;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* Botão de submit com gradiente */
+.submit-btn {
+  padding: 0.9rem 2rem;
+  background: linear-gradient(to right, #142C4D, #204578);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
 }
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
 }
 
-.error-icon {
-  width: 30px;
-  height: 30px;
-  background-color: #fee2e2;
-  color: #b91c1c;
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Botões de ação */
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.action-button {
+  padding: 0.9rem 2rem;
+  background-color: #142C4D;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-button:hover:not(:disabled) {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+}
+
+.action-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  padding: 0.9rem 2rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-button:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+.quick-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.delete-button {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  background-color: #fff;
+  border: 1px solid #ff7675;
+  color: #ff7675;
+  font-size: 1.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  margin-bottom: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
 }
 
-.success-icon {
-  width: 30px;
-  height: 30px;
-  background-color: #d1fae5;
-  color: #065f46;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-bottom: 0.8rem;
+.delete-button:hover {
+  background-color: #ff7675;
+  color: white;
+  transform: scale(1.1);
+}
+
+.delete-btn {
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(to right, #dc2626, #b91c1c);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #b91c1c, #991b1b);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
+}
+
+.delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .error-message p {
@@ -1003,257 +1260,21 @@ export default {
   color: #065f46;
 }
 
-.empty-state {
-  background-color: #f9f9f9;
-  padding: 1.5rem;
-  border-radius: 6px;
-  text-align: center;
+.empty-state p {
   color: #666;
   font-style: italic;
 }
 
-/* Usuários com acesso */
-.stores-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.8rem;
-}
-
-.store-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8rem 1rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-  transition: all 0.2s ease;
-}
-
-.store-item:hover {
-  background-color: #e9ecef;
-  transform: translateY(-2px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-}
-
-.store-item-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex: 1;
-}
-
-.store-name {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #142C4D;
-}
-
-.store-info {
-  font-size: 0.85rem;
+.close-btn {
+  background: none;
+  border: none;
   color: #666;
-  background-color: #f0f0f0;
-  padding: 0.2rem 0.5rem;
-  border-radius: 10px;
-  display: inline-block;
-  width: fit-content;
-}
-
-.admin-type {
-  background-color: #e6f0fd;
-  color: #204578;
-}
-
-.store-item-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Botão para remover acesso */
-.delete-button {
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border: none;
-  border-radius: 50%;
-  font-size: 1.3rem;
-  font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s ease;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
 }
 
-.delete-button:hover {
-  background-color: #fecaca;
-  transform: scale(1.1);
-}
-
-/* Formulário para adicionar usuários */
-.form-group {
-  margin-bottom: 1.2rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.6rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.user-select {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  background-color: white;
-  transition: all 0.2s ease;
-}
-
-.user-select:focus {
-  border-color: #204578;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.1);
-}
-
-/* Estilos para o formulário de criação de empresa */
-.dashboard-item.create-company {
-  background-color: #f0f9ff;
-  border: 1px solid #bae6fd;
-}
-
-.dashboard-item.create-company h3 {
-  color: #0369a1;
-}
-
-.company-form {
-  margin-top: 1rem;
-}
-
-.invalid-input {
-  border-color: #f87171 !important;
-  background-color: #fee2e2 !important;
-}
-
-.error-text {
-  color: #dc2626;
-  font-size: 0.8rem;
-  margin-top: 0.3rem;
-  display: block;
-}
-
-.button-container {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.action-button {
-  padding: 0.7rem 1.2rem;
-  background: linear-gradient(to right, #142C4D, #204578);
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.action-button:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
-.action-button:disabled {
-  background: #c0c0c0;
-  cursor: not-allowed;
-}
-
-/* Botões de ação */
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0;
-  margin-top: auto;
-}
-
-.secondary-button {
-  flex: 1;
-  min-width: 150px;
-  padding: 0.8rem;
-  background: transparent;
-  border: 2px solid #204578;
-  border-radius: 8px;
-  color: #204578;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.secondary-button:hover {
-  background-color: rgba(32, 69, 120, 0.1);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
-}
-
-.delete-btn {
-  padding: 0.7rem 1.2rem;
-  background-color: #dc2626;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.delete-btn:hover:not(:disabled) {
-  background-color: #b91c1c;
-  transform: translateY(-2px);
-}
-
-.delete-btn:disabled {
-  background-color: #f87171;
-  cursor: not-allowed;
-}
-
-.submit-btn {
-  padding: 0.8rem 1.5rem;
-  background: linear-gradient(to right, #0c4a6e, #0ea5e9);
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #0369a1, #38bdf8);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
-}
-
-.submit-btn:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-}
-
-/* Modal */
+/* Modal de confirmação */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1265,66 +1286,60 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fade-in 0.3s ease;
 }
 
 .modal-container {
+  background-color: white;
+  border-radius: 12px;
   width: 90%;
   max-width: 500px;
-  background-color: white;
-  border-radius: 10px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  animation: slide-up 0.3s ease;
   overflow: hidden;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-  animation: slide-in 0.4s ease;
-}
-
-@keyframes slide-in {
-  0% { opacity: 0; transform: translateY(-30px); }
-  100% { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
-  background-color: #f8f8f8;
+  background: linear-gradient(to right, #ff7675, #fab1a0);
   padding: 1.2rem 1.5rem;
-  border-bottom: 1px solid #eaeaea;
+  color: white;
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #333;
   font-size: 1.3rem;
 }
 
 .modal-body {
   padding: 1.5rem;
-  text-align: center;
 }
 
 .modal-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
+  display: block;
+  text-align: center;
 }
 
 .warning-text {
   color: #b91c1c;
-  font-weight: bold;
-  margin-top: 0.5rem;
+  font-weight: 600;
+  margin-top: 0.8rem;
 }
 
 .confirmation-input {
   margin-top: 1.5rem;
-  text-align: left;
 }
 
 .confirmation-input label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #333;
 }
 
 .confirmation-input input {
   width: 100%;
-  padding: 0.7rem;
+  padding: 0.8rem;
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 1rem;
@@ -1332,20 +1347,20 @@ export default {
 
 .modal-footer {
   display: flex;
-  padding: 1.2rem 1.5rem;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
   background-color: #f8f8f8;
   border-top: 1px solid #eaeaea;
-  justify-content: space-between;
 }
 
 .cancel-btn {
-  padding: 0.7rem 1.2rem;
+  padding: 0.7rem 1.5rem;
   background-color: #f0f0f0;
-  border: none;
-  border-radius: 6px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
   color: #333;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1354,13 +1369,19 @@ export default {
   background-color: #e0e0e0;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: #b91c1c;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0 0.5rem;
-  margin-left: auto;
+/* Animações */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

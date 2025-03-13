@@ -1,104 +1,151 @@
 <template>
-  <div class="store-layout">
-    <div class="store-container">
-      <div class="store-content">
-        <div class="page-header">
-          <h1>Gerenciar Usuários</h1>
-          <p class="subtitle">Crie e gerencie contas de usuários</p>
+  <div>
+    <!-- Conteúdo principal -->
+    <div class="home-layout">
+      <!-- Painel esquerdo - Usuários existentes -->
+      <div class="content-panel">
+        <div class="content-wrapper">
+          <div class="home-header">
+            <h1>Gerenciar Usuários</h1>
+          </div>
+
+          <div v-if="error" class="error-message">
+            <div class="error-icon">!</div>
+            <p>{{ error }}</p>
+            <button class="close-btn" @click="error = ''" aria-label="Fechar">×</button>
+          </div>
+
+          <div v-if="success" class="success-message">
+            <div class="success-icon">✓</div>
+            <p>{{ success }}</p>
+            <button class="close-btn" @click="success = ''" aria-label="Fechar">×</button>
+          </div>
+
+          <!-- Pesquisa de usuários -->
+          <div class="dashboard-summary">
+            <div class="dashboard-item">
+              <h3>Pesquisar usuários</h3>
+              <div class="search-container">
+                <div class="search-box">
+                  <input 
+                    type="text" 
+                    v-model="searchQuery" 
+                    placeholder="Procurar por nome de usuário..."
+                    class="search-input"
+                  >
+                  <span class="search-icon">🔍</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de usuários existentes -->
+          <div class="dashboard-summary">
+            <div class="dashboard-item">
+              <div v-if="usersLoading" class="loading-indicator">
+                <div class="loading-spinner"></div>
+                <p>Carregando usuários...</p>
+              </div>
+              
+              <div v-else-if="filteredUsers.length === 0" class="empty-state">
+                <p>Não há usuários cadastrados além do seu ou correspondentes à pesquisa.</p>
+              </div>
+              
+              <div v-else class="users-list">
+                <div v-for="user in filteredUsers" :key="user.id" class="user-item">
+                  <div class="user-item-details">
+                    <span class="user-name">{{ user.username }}</span>
+                    <span class="user-type" :class="{ 'admin-type': user.is_admin }">
+                      {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
+                    </span>
+                  </div>
+                  <div class="user-actions">
+                    <button 
+                      class="delete-button" 
+                      @click="confirmDeleteUser(user)"
+                      title="Remover usuário"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="users-actions">
+            <button class="secondary-button" @click="goBack">Voltar</button>
+          </div>
         </div>
-        
-        <div v-if="error" class="error-alert">
-          <span>{{ error }}</span>
-          <button class="close-btn" @click="error = ''" aria-label="Fechar">&times;</button>
-        </div>
-        
-        <div v-if="success" class="success-alert">
-          <span>{{ success }}</span>
-          <button class="close-btn" @click="success = ''" aria-label="Fechar">&times;</button>
-        </div>
-        
-        <!-- Layout de duas seções lado a lado -->
-        <div class="sections-row">
+      </div>
+      
+      <!-- Painel direito - Criar Novo Usuário -->
+      <div class="content-panel">
+        <div class="content-wrapper">
+          <div class="home-header">
+            <h1>Gerenciar Recursos</h1>
+          </div>
+
           <!-- Formulário para criar usuários -->
-          <div class="section-card create-section">
-            <h2>Criar Novo Usuário</h2>
-            <form class="user-form" @submit.prevent="createUser">
-              <div class="form-row">
+          <div class="dashboard-summary">
+            <div class="dashboard-item create-company">
+              <h3>Criar Novo Usuário</h3>
+              <p>Adicione um novo usuário ao sistema</p>
+              
+              <form @submit.prevent="createUser" class="company-form">
                 <div class="form-group">
-                  <label for="username">Nome de Usuário</label>
+                  <label for="username">Nome de Usuário:</label>
                   <input 
                     type="text" 
                     id="username" 
                     v-model="newUser.username" 
                     required
                     placeholder="ID do novo Usuário"
+                    class="company-input"
                   >
                 </div>
                 
                 <div class="form-group">
-                  <label for="password">Senha</label>
+                  <label for="password">Senha:</label>
                   <input 
                     type="password" 
                     id="password" 
                     v-model="newUser.password" 
                     required
                     placeholder="Nova Senha"
+                    class="company-input"
                   >
                 </div>
-              </div>
-              
-              <div class="form-group checkbox-group">
-                <input 
-                  type="checkbox" 
-                  id="is_admin" 
-                  v-model="newUser.is_admin"
+                
+                <div class="form-group checkbox-group">
+                  <input 
+                    type="checkbox" 
+                    id="is_admin" 
+                    v-model="newUser.is_admin"
+                  >
+                  <label for="is_admin">Usuário Administrador</label>
+                </div>
+                
+                <button 
+                  type="submit" 
+                  class="submit-btn" 
+                  :disabled="creatingUser"
                 >
-                <label for="is_admin">Usuário Administrador</label>
-              </div>
-              
-              <div class="button-container">
-                <button type="submit" class="action-button">Criar Usuário</button>
-              </div>
-            </form>
-          </div>
-          
-          <!-- Lista de usuários -->
-          <div class="section-card users-section">
-            <h2>Usuários Existentes</h2>
-            
-            <div v-if="usersLoading" class="loading-indicator">
-              <div class="loading-spinner"></div>
-              <p>Carregando usuários...</p>
-            </div>
-            
-            <div v-else-if="users.length === 0" class="empty-state">
-              <p>Não há usuários cadastrados além do seu.</p>
-            </div>
-            
-            <div v-else class="users-list">
-              <div v-for="user in users" :key="user.id" class="user-item">
-                <div class="user-item-details">
-                  <span class="user-name">{{ user.username }}</span>
-                  <span class="user-type" :class="{ 'admin-type': user.is_admin }">
-                    {{ user.is_admin ? 'Administrador' : 'Usuário Padrão' }}
-                  </span>
-                </div>
-                <div class="user-actions">
-                  <button 
-                    class="delete-button" 
-                    @click="confirmDeleteUser(user)"
-                    title="Remover usuário"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
+                  <span v-if="creatingUser" class="loading-spinner-small"></span>
+                  {{ creatingUser ? 'Criando...' : 'Criar Usuário' }}
+                </button>
+              </form>
             </div>
           </div>
-        </div>
-        
-        <div class="users-actions">
-          <button class="secondary-button" @click="goBack">Voltar</button>
+
+          <!-- Informações adicionais sobre usuários -->
+          <div class="dashboard-summary">
+            <div class="dashboard-item">
+              <h3>Tipos de Usuários</h3>
+              <p><strong>Usuário Padrão:</strong> Pode acessar apenas os grupos compartilhados.</p>
+              <p><strong>Administrador:</strong> Possui acesso completo a todos os grupos e pode gerenciar usuários.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -139,7 +186,22 @@ export default {
       },
       showDeleteModal: false,
       userToDelete: null,
-      deleteLoading: false
+      deleteLoading: false,
+      searchQuery: '', // Novo campo para busca
+      creatingUser: false // Flag para controlar estado de criação
+    }
+  },
+  computed: {
+    // Filtrar usuários baseado na pesquisa
+    filteredUsers() {
+      if (!this.searchQuery) {
+        return this.users;
+      }
+      
+      const query = this.searchQuery.toLowerCase();
+      return this.users.filter(user => 
+        user.username.toLowerCase().includes(query)
+      );
     }
   },
   created() {
@@ -197,6 +259,7 @@ export default {
     },
     async createUser() {
       try {
+        this.creatingUser = true;
         const userStr = localStorage.getItem('user');
         if (!userStr) {
           this.$router.push('/login');
@@ -218,6 +281,7 @@ export default {
         
         if (!response.ok) {
           this.error = data.message || 'Erro ao criar usuário';
+          this.creatingUser = false;
           return;
         }
         
@@ -231,8 +295,10 @@ export default {
         
         // Atualizar lista de usuários
         this.fetchUsers();
+        this.creatingUser = false;
       } catch (error) {
         this.error = 'Erro ao conectar ao servidor';
+        this.creatingUser = false;
         console.error('Error creating user:', error);
       }
     },
@@ -297,98 +363,153 @@ export default {
 </script>
 
 <style scoped>
-.store-layout {
+/* Layout principal - versão desktop */
+.home-layout {
+  position: fixed;
+  top: 100px;
+  left: 50px;
+  right: 50px;
+  bottom: 30px;
   display: flex;
-  flex-direction: column;
-  height: 100vh;
-  width: 100%;
+  gap: 20px; /* Espaçamento entre os containers */
+}
+
+/* Painéis de conteúdo */
+.content-panel {
+  width: 50%; /* 50% da largura menos metade do gap */
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  animation: fade-in 0.8s ease-out;
   overflow: hidden;
 }
 
-.store-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem 3rem;
-  display: flex;
-  justify-content: center;
-}
-
-.store-content {
+/* Container do conteúdo para o painel de conteúdo */
+.content-wrapper {
   width: 100%;
-  min-width: 1200px;
-  max-width: 85%;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  padding: 2.5rem 3rem;
-  animation: fade-in 0.6s ease-out;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
   overflow-y: auto;
-  max-height: calc(100vh - 4rem);
 }
 
-.page-header {
-  text-align: left;
-  margin-bottom: 2rem;
+.home-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #eaeaea;
+  position: relative;
 }
 
-.page-header h1 {
+.home-header h1 {
   color: #142C4D;
   font-size: 2.2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
-.subtitle {
-  color: #666;
-  font-size: 1.1rem;
+.dashboard-summary {
+  margin-bottom: 1.5rem;
 }
 
-.sections-row {
-  display: flex;
-  gap: 2.5rem;
-  margin-bottom: 2rem;
-}
-
-.section-card {
+.dashboard-item {
+  padding: 1.2rem;
   background-color: #f9f9f9;
   border-radius: 8px;
-  padding: 1.8rem;
-  flex: 1;
-}
-
-.create-section {
-  flex-basis: 42%;
-}
-
-.users-section {
-  flex-basis: 58%;
-}
-
-.section-card h2 {
-  color: #204578;
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e1e1e1;
-  padding-bottom: 0.8rem;
-}
-
-.form-row {
-  display: flex;
-  gap: 1.5rem;
   margin-bottom: 1rem;
 }
 
-.form-row .form-group {
-  flex: 1;
+.dashboard-item h3 {
+  color: #204578;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
 }
 
-.user-form {
-  display: flex;
-  flex-direction: column;
+.dashboard-item p {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 0.8rem;
 }
 
+/* Criar empresa/usuário estilo */
+.create-company {
+  background-color: #f0f7ff; /* Fundo azulado similar ao de GroupManageView */
+  border: 1px solid #d0e1fd;
+}
+
+.company-form {
+  margin-top: 1rem;
+}
+
+/* Estilo dos inputs similar ao GroupManageView */
+.company-input {
+  width: 100%;
+  padding: 0.9rem;
+  border: 2px solid #d0e1fd;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+  background-color: #fff;
+}
+
+.company-input:focus {
+  border-color: #204578;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
+  outline: none;
+}
+
+.invalid-input {
+  border-color: #f87171;
+  background-color: #fff5f5;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+  display: block;
+}
+
+/* Pesquisa */
+.search-container {
+  margin-top: 0.8rem;
+}
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 15px;
+  border: 2px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+  background-color: #f9f9f9;
+}
+
+.search-input:focus {
+  border-color: #204578;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
+  outline: none;
+  background-color: #fff;
+}
+
+.search-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 1.2rem;
+}
+
+/* Formulário */
 .form-group {
   margin-bottom: 1.2rem;
   text-align: left;
@@ -402,29 +523,11 @@ export default {
   color: #333;
 }
 
-.form-group input[type="text"],
-.form-group input[type="password"] {
-  width: 100%;
-  padding: 0.9rem;
-  border: 2px solid #e1e1e1;
-  border-radius: 8px;
-  font-size: 1rem;
-  color: #333;
-  transition: all 0.3s ease;
-  background-color: #fff;
-}
-
-.form-group input:focus {
-  border-color: #204578;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
-  outline: none;
-}
-
 .checkbox-group {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .checkbox-group input {
@@ -440,12 +543,48 @@ export default {
   cursor: pointer;
 }
 
-.button-container {
+/* Botão com gradiente igual ao de criar empresa */
+.submit-btn {
+  padding: 0.9rem 2rem;
+  background: linear-gradient(to right, #142C4D, #204578);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
   display: flex;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
 }
 
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Loading spinner pequeno para botão de submit */
+.loading-spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  display: inline-block;
+}
+
+/* Lista de usuários */
 .users-list {
   display: flex;
   flex-direction: column;
@@ -525,25 +664,7 @@ export default {
   transform: scale(1.1);
 }
 
-.action-button {
-  padding: 0.9rem 2rem;
-  background: linear-gradient(to right, #142C4D, #204578);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 200px;
-}
-
-.action-button:hover {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
+/* Botões */
 .secondary-button {
   padding: 0.9rem 2rem;
   background-color: #f0f0f0;
@@ -567,69 +688,75 @@ export default {
   margin-top: 1rem;
 }
 
-.error-alert, .success-alert {
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1rem;
-  animation: fade-in 0.3s ease;
-}
-
-.error-alert {
-  background-color: #fee2e2;
-  color: #b91c1c;
-}
-
-.success-alert {
-  background-color: #d1fae5;
-  color: #047857;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.3rem;
-  padding: 0 0.5rem;
-}
-
-.error-alert .close-btn {
-  color: #b91c1c;
-}
-
-.success-alert .close-btn {
-  color: #047857;
-}
-
-.loading-indicator, .empty-state {
+/* Estados de loading, erro e sucesso */
+.loading-indicator, .error-message, .empty-state, .success-message {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 0;
+  padding: 1.5rem;
   text-align: center;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(32, 69, 120, 0.1);
-  border-top: 4px solid #204578;
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #204578;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.error-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.success-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #d1fae5;
+  color: #065f46;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.error-message p {
+  color: #b91c1c;
+}
+
+.success-message p {
+  color: #065f46;
 }
 
 .empty-state p {
   color: #666;
   font-style: italic;
-  font-size: 1.1rem;
 }
 
-/* Modal styles */
+.close-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+}
+
+/* Modal de confirmação */
 .modal {
   position: fixed;
   top: 0;
