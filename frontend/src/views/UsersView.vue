@@ -613,8 +613,6 @@ export default {
         
         const currentUser = JSON.parse(userStr);
         
-        // Aqui precisamos criar um endpoint no backend para atualizar informações do usuário
-        // Como não temos este endpoint disponível no backend fornecido, assumiremos que seria algo assim:
         const response = await fetch(`/api/users/${this.selectedUser.id}`, {
           method: 'PUT',
           headers: {
@@ -627,28 +625,33 @@ export default {
           })
         });
         
-        // Como o endpoint não existe, vamos simular uma resposta bem-sucedida
-        // Em um caso real, você processaria a resposta da API
+        const data = await response.json();
         
-        // Simula atualizando o usuário localmente
+        if (!response.ok) {
+          this.manageUserError = data.message || 'Erro ao atualizar informações do usuário';
+          this.updatingUser = false;
+          return;
+        }
+        
+        // Update the user in the local array
         const updatedUser = this.users.find(u => u.id === this.selectedUser.id);
         if (updatedUser) {
           updatedUser.username = this.editUserData.username;
           updatedUser.is_admin = this.editUserData.is_admin;
           
-          // Atualizando o usuário selecionado também
+          // Update the selected user object
           this.selectedUser.username = this.editUserData.username;
           this.selectedUser.is_admin = this.editUserData.is_admin;
           
-          // Atualizando os valores originais
+          // Update the original data for comparison
           this.originalUserData.username = this.editUserData.username;
           this.originalUserData.is_admin = this.editUserData.is_admin;
         }
         
-        this.manageUserSuccess = 'Informações do usuário atualizadas com sucesso!';
+        this.manageUserSuccess = data.message || 'Informações do usuário atualizadas com sucesso!';
         this.updatingUser = false;
       } catch (error) {
-        this.manageUserError = 'Erro ao atualizar informações do usuário';
+        this.manageUserError = 'Erro ao conectar ao servidor';
         this.updatingUser = false;
         console.error('Error updating user:', error);
       }

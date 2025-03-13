@@ -142,6 +142,31 @@ def get_user(user_id):
         'user': user.to_dict()
     }), 200
 
+# NOVA ROTA: Atualizar informações do usuário (apenas admin)
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+@admin_required
+def update_user(user_id):
+    data = request.get_json()
+    user = User.query.get_or_404(user_id)
+    
+    # Verificar se o username não está em uso por outro usuário
+    if 'username' in data and data['username'] != user.username:
+        existing_user = User.query.filter_by(username=data['username']).first()
+        if existing_user:
+            return jsonify({'message': 'Nome de usuário já está em uso'}), 400
+        user.username = data['username']
+    
+    # Atualiza o status de admin se fornecido
+    if 'is_admin' in data:
+        user.is_admin = data['is_admin']
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Informações do usuário atualizadas com sucesso',
+        'user': user.to_dict()
+    }), 200
+
 # Rota para excluir usuários (apenas admin)
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 @admin_required
@@ -170,6 +195,62 @@ def delete_user(user_id):
     db.session.commit()
     
     return jsonify({'message': 'Usuário excluído com sucesso'}), 200
+
+# Modificação da rota existente para alteração de senha
+@app.route('/api/users/<int:user_id>/password', methods=['PUT'])
+def change_password(user_id):
+    data = request.get_json()
+    current_user_id = request.headers.get('User-ID')
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    user_to_change = User.query.get_or_404(user_id)
+    
+    # Verifica se o usuário é admin ou se está tentando mudar sua própria senha
+    if not current_user.is_admin and int(current_user_id) != user_id:
+        return jsonify({'message': 'Acesso não autorizado'}), 403
+    
+    # Verifica se a nova senha foi fornecida
+    if 'new_password' not in data:
+        return jsonify({'message': 'Nova senha é necessária'}), 400
+    
+    # Verifica se a senha tem o comprimento mínimo
+    if len(data['new_password']) < 6:
+        return jsonify({'message': 'A senha deve ter pelo menos 6 caracteres'}), 400
+    
+    # Se não for admin, verifica a senha atual
+    if not current_user.is_admin and int(current_user_id) == user_id:
+        if 'current_password' not in data:
+            return jsonify({'message': 'Senha atual é necessária'}), 400
+        
+        # Verifica se a senha atual está correta
+        if not user_to_change.check_password(data['current_password']):
+            return jsonify({'message': 'Senha atual incorreta'}), 400
+    
+    # Atualiza a senha do usuário
+    user_to_change.password = bcrypt.generate_password_hash(data['new_password']).decode('utf-8')
+    db.session.commit()
+    
+    return jsonify({'message': 'Senha alterada com sucesso'}), 200
+
+# NOVA ROTA: Obter grupos de um usuário específico
+@app.route('/api/users/<int:user_id>/groups', methods=['GET'])
+@admin_required
+def get_user_groups(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Obter todas as permissões de grupo do usuário
+    permissions = GroupPermission.query.filter_by(user_id=user_id).all()
+    group_ids = [permission.group_id for permission in permissions]
+    
+    # Obter os grupos correspondentes
+    groups = Group.query.filter(Group.id.in_(group_ids)).all()
+    
+    return jsonify({
+        'groups': [group.to_dict() for group in groups]
+    }), 200
 
 # Rota para criar grupos (apenas admin)
 @app.route('/api/groups', methods=['POST'])
@@ -393,8 +474,6 @@ def delete_group(group_id):
     
     return jsonify({'message': 'Grupo excluído com sucesso'}), 200
 
-# As demais rotas permanecem inalteradas...
-
 # Rota para upload de arquivos para uma empresa
 @app.route('/api/companies/<int:company_id>/files', methods=['POST'])
 @admin_required
@@ -469,32 +548,6 @@ def delete_company(company_id):
     db.session.commit()
     
     return jsonify({'message': 'Empresa excluída com sucesso'}), 200
-
-# Rota para trocar a senha de um usuário (admin pode trocar a senha de qualquer usuário, usuário comum pode trocar sua própria senha)
-@app.route('/api/users/<int:user_id>/password', methods=['PUT'])
-def change_password(user_id):
-    data = request.get_json()
-    current_user_id = request.headers.get('User-ID')
-    current_user = User.query.get(current_user_id)
-    
-    if not current_user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
-    
-    user_to_change = User.query.get_or_404(user_id)
-    
-    # Verifica se o usuário é admin ou se está tentando mudar sua própria senha
-    if not current_user.is_admin and int(current_user_id) != user_id:
-        return jsonify({'message': 'Acesso não autorizado'}), 403
-    
-    # Verifica se a nova senha foi fornecida
-    if 'new_password' not in data:
-        return jsonify({'message': 'Nova senha é necessária'}), 400
-    
-    # Atualiza a senha do usuário
-    user_to_change.password = bcrypt.generate_password_hash(data['new_password']).decode('utf-8')
-    db.session.commit()
-    
-    return jsonify({'message': 'Senha alterada com sucesso'}), 200
 
 # Rota para obter detalhes de uma empresa específica
 @app.route('/api/companies/<int:company_id>', methods=['GET'])

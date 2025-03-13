@@ -5,6 +5,7 @@ import GroupDetailView from '../views/GroupDetailView.vue'
 import UsersView from '../views/UsersView.vue'
 import GroupManageView from '../views/GroupManageView.vue'
 import CompanyDetailView from '../views/CompanyDetailView.vue'
+import ChangePasswordView from '../views/ChangePasswordView.vue'
 
 const routes = [
   {
@@ -47,6 +48,12 @@ const routes = [
     path: '/groups/:id',  // Alterado de :name para :id para ficar mais claro
     name: 'group-detail',
     component: GroupDetailView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/change-password',
+    name: 'change-password',
+    component: ChangePasswordView,
     meta: { requiresAuth: true }
   }
 ]

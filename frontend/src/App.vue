@@ -30,10 +30,28 @@
         
         <!-- Informações do usuário e botão de sair mais à direita -->
         <div class="user-info">
-          <div class="username">
-            <div class="avatar">{{ username.charAt(0) }}</div>
-            {{ username }}
+          <div class="username-dropdown">
+            <div class="username" @click="toggleDropdown">
+              <div class="avatar">{{ username.charAt(0) }}</div>
+              {{ username }}
+              <!-- Ícone de seta para dropdown -->
+              <svg class="dropdown-icon" :class="{ 'dropdown-open': showDropdown }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            <!-- Menu dropdown -->
+            <div v-show="showDropdown" class="dropdown-menu">
+              <router-link to="/change-password" class="dropdown-item" @click="showDropdown = false">
+                <svg class="dropdown-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Alterar Senha
+              </router-link>
+            </div>
           </div>
+          
           <button @click="logout" class="logout-btn">
             <svg class="logout-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -58,11 +76,18 @@ export default {
     return {
       isLoggedIn: false,
       isAdmin: false,
-      username: 'IcaroGabrielS'
+      username: 'IcaroGabrielS',
+      showDropdown: false
     }
   },
   created() {
     this.checkLoginStatus();
+    // Adiciona event listener para fechar o dropdown quando clicar fora
+    document.addEventListener('click', this.closeDropdownOutside);
+  },
+  beforeUnmount() {
+    // Remove event listener ao destruir o componente
+    document.removeEventListener('click', this.closeDropdownOutside);
   },
   methods: {
     checkLoginStatus() {
@@ -83,6 +108,17 @@ export default {
       this.isLoggedIn = false;
       this.isAdmin = false;
       this.$router.push('/login');
+    },
+    toggleDropdown(event) {
+      // Impede que o evento se propague para o document
+      event.stopPropagation();
+      this.showDropdown = !this.showDropdown;
+    },
+    closeDropdownOutside(event) {
+      const dropdown = document.querySelector('.username-dropdown');
+      if (dropdown && !dropdown.contains(event.target)) {
+        this.showDropdown = false;
+      }
     }
   },
   watch: {
@@ -119,6 +155,7 @@ export default {
   
   /* Sombras */
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -225,6 +262,11 @@ body {
   margin-left: auto; /* Empurra para a direita */
 }
 
+/* Estilos para o dropdown do usuário */
+.username-dropdown {
+  position: relative;
+}
+
 .username {
   display: flex;
   align-items: center;
@@ -232,6 +274,25 @@ body {
   font-weight: 600;
   color: var(--dark);
   font-size: 0.95rem;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.username:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dropdown-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  transition: transform 0.3s ease;
+}
+
+.dropdown-icon.dropdown-open {
+  transform: rotate(180deg);
 }
 
 .avatar {
@@ -245,6 +306,47 @@ body {
   justify-content: center;
   font-weight: 600;
   font-size: 1rem;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 200px;
+  background-color: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  margin-top: 8px;
+  overflow: hidden;
+  z-index: 1010;
+  border: 1px solid var(--light);
+  animation: fadeInDropdown 0.2s ease;
+}
+
+@keyframes fadeInDropdown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: var(--dark);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  gap: 10px;
+}
+
+.dropdown-item:hover {
+  background-color: var(--light);
+  color: var(--primary);
+}
+
+.dropdown-item-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .logout-btn {
@@ -445,6 +547,11 @@ input:focus {
     order: 1;
     width: 100%;
     justify-content: space-between;
+  }
+  
+  /* Ajuste para dropdown em mobile */
+  .dropdown-menu {
+    right: -50px;
   }
 }
 
