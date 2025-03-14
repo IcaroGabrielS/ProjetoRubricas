@@ -181,43 +181,6 @@
             <p>{{ manageUserSuccess }}</p>
             <button class="close-btn" @click="manageUserSuccess = ''" aria-label="Fechar">×</button>
           </div>
-
-          <!-- Seção de edição de dados do usuário -->
-          <div class="manage-section">
-            <h4>Informações do Usuário</h4>
-            
-            <div class="form-group">
-              <label for="edit-username">Nome de Usuário:</label>
-              <input 
-                type="text" 
-                id="edit-username" 
-                v-model="editUserData.username" 
-                class="company-input"
-                :disabled="updatingUser"
-              >
-            </div>
-            
-            <div class="form-group admin-checkbox-wrapper">
-              <div class="admin-checkbox wide">
-                <input 
-                  type="checkbox" 
-                  id="edit-is-admin" 
-                  v-model="editUserData.is_admin"
-                  :disabled="updatingUser"
-                >
-                <label for="edit-is-admin">Usuário Administrador</label>
-              </div>
-            </div>
-            
-            <button 
-              @click="updateUserInfo" 
-              class="action-btn update-btn"
-              :disabled="updatingUser || !userInfoChanged"
-            >
-              <span v-if="updatingUser" class="loading-spinner-small"></span>
-              {{ updatingUser ? 'Atualizando...' : 'Atualizar Informações' }}
-            </button>
-          </div>
           
           <!-- Seção de alteração de senha -->
           <div class="manage-section">
@@ -277,17 +240,17 @@
             </div>
           </div>
           
-          <!-- Seção para exclusão do usuário -->
+          <!-- Seção para exclusão do usuário - versão compacta -->
           <div class="manage-section danger-section">
-            <h4>Zona de Perigo</h4>
-            <p class="warning-text">A exclusão de um usuário é permanente e não pode ser desfeita.</p>
-            
-            <button 
-              @click="confirmDeleteUser(selectedUser)"
-              class="action-btn delete-btn"
-            >
-              Excluir Usuário
-            </button>
+            <div class="danger-header">
+              <h4>Zona de Perigo</h4>
+              <button 
+                @click="confirmDeleteUser(selectedUser)"
+                class="action-btn delete-btn"
+              >
+                Excluir Usuário
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -595,65 +558,6 @@ export default {
         this.manageUserError = 'Erro ao conectar ao servidor';
         this.loadingUserGroups = false;
         console.error('Error fetching user groups:', error);
-      }
-    },
-    
-    async updateUserInfo() {
-      if (!this.userInfoChanged) return;
-      
-      this.updatingUser = true;
-      this.manageUserError = '';
-      
-      try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const currentUser = JSON.parse(userStr);
-        
-        const response = await fetch(`/api/users/${this.selectedUser.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': currentUser.id
-          },
-          body: JSON.stringify({
-            username: this.editUserData.username,
-            is_admin: this.editUserData.is_admin
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.manageUserError = data.message || 'Erro ao atualizar informações do usuário';
-          this.updatingUser = false;
-          return;
-        }
-        
-        // Update the user in the local array
-        const updatedUser = this.users.find(u => u.id === this.selectedUser.id);
-        if (updatedUser) {
-          updatedUser.username = this.editUserData.username;
-          updatedUser.is_admin = this.editUserData.is_admin;
-          
-          // Update the selected user object
-          this.selectedUser.username = this.editUserData.username;
-          this.selectedUser.is_admin = this.editUserData.is_admin;
-          
-          // Update the original data for comparison
-          this.originalUserData.username = this.editUserData.username;
-          this.originalUserData.is_admin = this.editUserData.is_admin;
-        }
-        
-        this.manageUserSuccess = data.message || 'Informações do usuário atualizadas com sucesso!';
-        this.updatingUser = false;
-      } catch (error) {
-        this.manageUserError = 'Erro ao conectar ao servidor';
-        this.updatingUser = false;
-        console.error('Error updating user:', error);
       }
     },
     
@@ -999,13 +903,47 @@ export default {
   gap: 0.8rem;
 }
 
-/* Botão gerenciar usuário */
-.manage-button {
-  padding: 0.5rem 1rem;
-  background-color: #204578;
+/* Estilo para o modal compacto de perigo */
+.danger-section {
+  background-color: #fff5f5;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.danger-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.danger-header h4 {
+  color: #dc2626;
+  margin: 0;
+}
+
+.delete-btn {
+  background-color: #dc2626;
   color: white;
   border: none;
   border-radius: 6px;
+  padding: 0.7rem 1.2rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background-color: #b91c1c;
+}
+
+/* Botão manage */
+.manage-button {
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(to right, #142C4D, #204578);
+  border: none;
+  border-radius: 6px;
+  color: white;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -1013,104 +951,36 @@ export default {
 }
 
 .manage-button:hover {
-  background-color: #1a3760;
+  background: linear-gradient(to right, #1a3760, #2a5b9e);
   transform: translateY(-2px);
-  box-shadow: 0 3px 8px rgba(20, 44, 77, 0.3);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
 }
 
-/* Botões */
+/* Botão secundário */
 .secondary-button {
-  padding: 0.9rem 2rem;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
+  padding: 0.8rem 1.8rem;
+  background-color: #f3f4f6;
+  border: 2px solid #e5e7eb;
   border-radius: 8px;
-  color: #333;
+  color: #374151;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  display: block;
+  margin: 0 auto;
 }
 
 .secondary-button:hover {
-  background-color: #e0e0e0;
-  transform: translateY(-2px);
+  background-color: #e5e7eb;
 }
 
 .users-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
-/* Estados de loading, erro e sucesso */
-.loading-indicator, .error-message, .empty-state, .success-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
+  margin-top: 1.5rem;
   text-align: center;
 }
 
-.loading-spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #204578;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 0.8rem;
-}
-
-.error-icon {
-  width: 30px;
-  height: 30px;
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-bottom: 0.8rem;
-}
-
-.success-icon {
-  width: 30px;
-  height: 30px;
-  background-color: #d1fae5;
-  color: #065f46;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-bottom: 0.8rem;
-}
-
-.error-message p {
-  color: #b91c1c;
-}
-
-.success-message p {
-  color: #065f46;
-}
-
-.empty-state p {
-  color: #666;
-  font-style: italic;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0 0.5rem;
-}
-
-/* Modal de confirmação */
+/* Estilos para modais */
 .modal {
   position: fixed;
   top: 0;
@@ -1119,71 +989,63 @@ export default {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
-  animation: fade-in 0.3s ease;
+  animation: fade-in 0.2s ease-out;
 }
 
 .modal-content {
   background-color: white;
   border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  animation: slide-up 0.3s ease;
+  max-height: 90vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Modal de gerenciamento de usuário - maior que o modal padrão */
 .manage-user-modal {
-  max-width: 650px;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-width: 600px;
 }
 
 .modal-header {
-  background: linear-gradient(to right, #204578, #2a5b9e);
-  padding: 1.2rem 1.5rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid #eaeaea;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-header h3 {
-  color: white;
+  color: #142C4D;
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
 }
 
 .close-modal-btn {
   background: none;
   border: none;
-  color: white;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
+  color: #6b7280;
   cursor: pointer;
-  padding: 0;
-  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  color: #1f2937;
 }
 
 .modal-body {
   padding: 1.5rem;
-}
-
-.modal-body p {
-  margin-bottom: 0.8rem;
-  font-size: 1.1rem;
-}
-
-.warning-text {
-  color: #b91c1c;
-  font-weight: 600;
-  font-size: 0.95rem;
+  overflow-y: auto;
 }
 
 .modal-actions {
-  padding: 1rem 1.5rem;
-  background-color: #f9f9f9;
+  padding: 1.5rem;
+  border-top: 1px solid #eaeaea;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
@@ -1191,58 +1053,67 @@ export default {
 
 .cancel-btn {
   padding: 0.7rem 1.5rem;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  color: #333;
-  font-size: 1rem;
+  background-color: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .cancel-btn:hover {
-  background-color: #e0e0e0;
+  background-color: #e5e7eb;
 }
 
 .confirm-delete-btn {
   padding: 0.7rem 1.5rem;
-  background: linear-gradient(to right, #ff7675, #fab1a0);
+  background-color: #dc2626;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: white;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .confirm-delete-btn:hover {
-  background: linear-gradient(to right, #d63031, #e84393);
-  box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
+  background-color: #b91c1c;
 }
 
-/* Estilos específicos para o modal de gerenciamento de usuário */
+.warning-text {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Estilos para as seções do modal de gerenciamento */
 .manage-section {
+  margin-bottom: 2rem;
+  padding: 1.2rem;
   background-color: #f9f9f9;
   border-radius: 8px;
-  padding: 1.2rem;
-  margin-bottom: 1.2rem;
   border: 1px solid #eaeaea;
 }
 
-.manage-section h4 {
-  color: #142C4D;
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 0.5rem;
+.manage-section:last-child {
+  margin-bottom: 0;
 }
 
+.manage-section h4 {
+  color: #204578;
+  font-size: 1.1rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+/* Estilos para ações nos modais de gerenciamento */
 .action-btn {
-  padding: 0.7rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1252,105 +1123,205 @@ export default {
 }
 
 .update-btn {
-  background: linear-gradient(to right, #142C4D, #204578);
-  border: none;
+  background-color: #3b82f6;
   color: white;
-  margin-left: auto;
 }
 
 .update-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+  background-color: #2563eb;
 }
 
 .password-btn {
-  background: linear-gradient(to right, #3498db, #2980b9);
-  border: none;
+  background-color: #10b981;
   color: white;
-  margin-left: auto;
 }
 
 .password-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #2980b9, #1a5276);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(41, 128, 185, 0.3);
-}
-
-.delete-btn {
-  background: linear-gradient(to right, #ff7675, #fab1a0);
-  border: none;
-  color: white;
-}
-
-.delete-btn:hover {
-  background: linear-gradient(to right, #d63031, #e84393);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
+  background-color: #059669;
 }
 
 .action-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-.admin-checkbox-wrapper {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.admin-checkbox.wide {
-  width: 100%;
-  max-width: 250px;
-}
-
-/* Seção de grupos do usuário */
+/* Estilos para a lista de grupos do usuário */
 .user-groups-list {
-  max-height: 200px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 .group-item {
   background-color: #fff;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
   padding: 0.7rem 1rem;
+  display: flex;
+  align-items: center;
 }
 
 .group-name {
-  font-weight: 600;
-  color: #204578;
+  font-size: 0.95rem;
+  color: #374151;
 }
 
-/* Seção de perigo */
-.danger-section {
-  background-color: #fff5f5;
-  border-color: #fed7d7;
+/* Admin checkbox dentro do formulário de edição */
+.admin-checkbox-wrapper {
+  margin-bottom: 1.5rem;
 }
 
-.danger-section h4 {
-  color: #c53030;
-  border-color: #fed7d7;
+.admin-checkbox.wide {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0.8rem;
 }
 
-/* Animações */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Estados vazios */
+.empty-state {
+  padding: 1.5rem;
+  text-align: center;
+  color: #6b7280;
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Mensagens de erro e sucesso */
+.error-message, .success-message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+.success-message {
+  background-color: #d1fae5;
+  border: 1px solid #a7f3d0;
+}
+
+.error-icon, .success-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 0.8rem;
+}
+
+.error-icon {
+  background-color: #dc2626;
+  color: white;
+}
+
+.success-icon {
+  background-color: #10b981;
+  color: white;
+}
+
+.error-message p, .success-message p {
+  margin: 0;
+  flex-grow: 1;
+}
+
+.error-message p {
+  color: #991b1b;
+}
+
+.success-message p {
+  color: #065f46;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.error-message .close-btn {
+  color: #991b1b;
+}
+
+.success-message .close-btn {
+  color: #065f46;
+}
+
+/* Loading indicator */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(32, 69, 120, 0.3);
+  border-top: 4px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Media queries para responsividade */
+@media (max-width: 1024px) {
+  .home-layout {
+    flex-direction: column;
+    left: 30px;
+    right: 30px;
+  }
+  
+  .content-panel {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-layout {
+    top: 80px;
+    left: 20px;
+    right: 20px;
+  }
+  
+  .content-wrapper {
+    padding: 1.5rem;
+  }
+  
+  .username-row {
+    flex-direction: column;
+  }
+  
+  .admin-checkbox {
+    height: auto;
+    margin-top: 0.5rem;
+  }
+  
+  .submit-btn {
+    width: 100%;
+  }
 }
 </style>

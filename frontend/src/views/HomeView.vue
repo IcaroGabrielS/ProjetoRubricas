@@ -68,15 +68,7 @@
                   <span class="store-name">{{ group.name }}</span>
                 </div>
                 <div class="store-item-actions">
-                  <button 
-                    v-if="isAdmin" 
-                    class="manage-button" 
-                    @click="manageGroupAccess(group.id)" 
-                    title="Gerenciar acesso de usuários"
-                  >
-                    <span class="manage-icon">👥</span>
-                    <span class="manage-text">Gerenciar</span>
-                  </button>
+                  <!-- Botão de gerenciamento removido, mantendo apenas a seta de navegação -->
                   <div class="arrow-container" @click="goToGroupDetail(group.id)" title="Ver detalhes do grupo">
                     <span class="store-item-arrow">›</span>
                   </div>

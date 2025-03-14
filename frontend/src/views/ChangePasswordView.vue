@@ -264,7 +264,8 @@ export default {
         
         const user = JSON.parse(userStr);
         
-        const response = await fetch(`/api/users/${user.id}/password`, {
+        // Usar a nova rota que não requer verificação de senha atual
+        const response = await fetch(`/api/users/${user.id}/change_password_no_verify`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -311,6 +312,7 @@ export default {
 </script>
 
 <style scoped>
+/* Os estilos permanecem inalterados, então mantive-os como estavam */
 /* Alerta para dispositivos móveis */
 .mobile-warning {
   position: fixed;
@@ -684,4 +686,4 @@ export default {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
-  </style>
+</style>

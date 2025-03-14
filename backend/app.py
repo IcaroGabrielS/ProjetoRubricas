@@ -196,6 +196,36 @@ def delete_user(user_id):
     
     return jsonify({'message': 'Usuário excluído com sucesso'}), 200
 
+# Adicione esta nova rota para alteração de senha simplificada
+@app.route('/api/users/<int:user_id>/change_password_no_verify', methods=['PUT'])
+def change_password_no_verify(user_id):
+    data = request.get_json()
+    current_user_id = request.headers.get('User-ID')
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    user_to_change = User.query.get_or_404(user_id)
+    
+    # Verifica se o usuário é admin ou se está tentando mudar sua própria senha
+    if not current_user.is_admin and int(current_user_id) != user_id:
+        return jsonify({'message': 'Acesso não autorizado'}), 403
+    
+    # Verifica se a nova senha foi fornecida
+    if 'new_password' not in data:
+        return jsonify({'message': 'Nova senha é necessária'}), 400
+    
+    # Verifica se a senha tem o comprimento mínimo
+    if len(data['new_password']) < 6:
+        return jsonify({'message': 'A senha deve ter pelo menos 6 caracteres'}), 400
+    
+    # Atualiza a senha do usuário sem verificar a senha atual
+    user_to_change.password = bcrypt.generate_password_hash(data['new_password']).decode('utf-8')
+    db.session.commit()
+    
+    return jsonify({'message': 'Senha alterada com sucesso'}), 200
+
 # Modificação da rota existente para alteração de senha
 @app.route('/api/users/<int:user_id>/password', methods=['PUT'])
 def change_password(user_id):
