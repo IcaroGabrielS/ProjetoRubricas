@@ -9,17 +9,19 @@
             <h1>Gerenciar Usuários</h1>
           </div>
 
-          <div v-if="error" class="error-message">
-            <div class="error-icon">!</div>
-            <p>{{ error }}</p>
-            <button class="close-btn" @click="error = ''" aria-label="Fechar">×</button>
-          </div>
+          <AlertMessage 
+            :type="'error'" 
+            :message="error" 
+            v-if="error" 
+            @close="error = ''" 
+          />
 
-          <div v-if="success" class="success-message">
-            <div class="success-icon">✓</div>
-            <p>{{ success }}</p>
-            <button class="close-btn" @click="success = ''" aria-label="Fechar">×</button>
-          </div>
+          <AlertMessage 
+            :type="'success'" 
+            :message="success" 
+            v-if="success" 
+            @close="success = ''" 
+          />
 
           <!-- Lista de usuários existentes com pesquisa integrada -->
           <div class="dashboard-summary">
@@ -34,10 +36,7 @@
                 >
               </div>
               
-              <div v-if="usersLoading" class="loading-indicator">
-                <div class="loading-spinner"></div>
-                <p>Carregando usuários...</p>
-              </div>
+              <LoadingState v-if="usersLoading" message="Carregando usuários..." />
               
               <div v-else-if="filteredUsers.length === 0" class="empty-state">
                 <p>Não há usuários cadastrados além do seu ou correspondentes à pesquisa.</p>
@@ -116,14 +115,17 @@
                     v-model="newUser.password" 
                     required
                     placeholder="Nova Senha"
-                    class="company-input"
+                    :class="['company-input', {'invalid-input': showNewUserPasswordError}]"
                   >
+                  <span v-if="showNewUserPasswordError" class="error-text">
+                    A senha deve ter pelo menos 6 caracteres
+                  </span>
                 </div>
                 
                 <button 
                   type="submit" 
                   class="submit-btn" 
-                  :disabled="creatingUser"
+                  :disabled="creatingUser || !isNewUserPasswordValid"
                 >
                   <span v-if="creatingUser" class="loading-spinner-small"></span>
                   {{ creatingUser ? 'Criando...' : 'Criar Usuário' }}
@@ -145,22 +147,16 @@
     </div>
 
     <!-- Modal de Confirmação de Exclusão -->
-    <div class="modal" v-if="showDeleteModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Confirmar Exclusão</h3>
-          <button class="close-modal-btn" @click="showDeleteModal = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p>Tem certeza que deseja excluir o usuário <strong>{{ userToDelete?.username }}</strong>?</p>
-          <p class="warning-text">Esta ação não pode ser desfeita.</p>
-        </div>
-        <div class="modal-actions">
-          <button class="cancel-btn" @click="showDeleteModal = false">Cancelar</button>
-          <button class="confirm-delete-btn" @click="deleteUser">Confirmar Exclusão</button>
-        </div>
-      </div>
-    </div>
+    <ConfirmationModal
+      v-if="showDeleteModal"
+      title="Confirmar Exclusão"
+      :message="`Tem certeza que deseja excluir o usuário <strong>${userToDelete?.username}</strong>?`"
+      warningText="Esta ação não pode ser desfeita."
+      @cancel="showDeleteModal = false"
+      @confirm="deleteUser"
+      confirmLabel="Confirmar Exclusão"
+      confirmClass="confirm-delete-btn"
+    />
 
     <!-- Modal de Gerenciamento de Usuário -->
     <div class="modal" v-if="showManageModal">
@@ -170,17 +166,19 @@
           <button class="close-modal-btn" @click="closeManageUserModal">&times;</button>
         </div>
         <div class="modal-body">
-          <div v-if="manageUserError" class="error-message">
-            <div class="error-icon">!</div>
-            <p>{{ manageUserError }}</p>
-            <button class="close-btn" @click="manageUserError = ''" aria-label="Fechar">×</button>
-          </div>
+          <AlertMessage 
+            :type="'error'" 
+            :message="manageUserError" 
+            v-if="manageUserError" 
+            @close="manageUserError = ''" 
+          />
 
-          <div v-if="manageUserSuccess" class="success-message">
-            <div class="success-icon">✓</div>
-            <p>{{ manageUserSuccess }}</p>
-            <button class="close-btn" @click="manageUserSuccess = ''" aria-label="Fechar">×</button>
-          </div>
+          <AlertMessage 
+            :type="'success'" 
+            :message="manageUserSuccess" 
+            v-if="manageUserSuccess" 
+            @close="manageUserSuccess = ''" 
+          />
           
           <!-- Seção de alteração de senha -->
           <div class="manage-section">
@@ -192,10 +190,13 @@
                 type="password" 
                 id="new-password" 
                 v-model="editUserData.newPassword" 
-                class="company-input"
+                :class="['company-input', {'invalid-input': showEditPasswordError}]"
                 :disabled="changingPassword"
                 placeholder="Digite a nova senha"
               >
+              <span v-if="showEditPasswordError" class="error-text">
+                A senha deve ter pelo menos 6 caracteres
+              </span>
             </div>
             
             <div class="form-group">
@@ -204,10 +205,13 @@
                 type="password" 
                 id="confirm-password" 
                 v-model="editUserData.confirmPassword" 
-                class="company-input"
+                :class="['company-input', {'invalid-input': showPasswordMatchError}]"
                 :disabled="changingPassword"
                 placeholder="Confirme a nova senha"
               >
+              <span v-if="showPasswordMatchError" class="error-text">
+                As senhas não coincidem
+              </span>
             </div>
             
             <button 
@@ -224,10 +228,7 @@
           <div class="manage-section">
             <h4>Grupos Associados</h4>
             
-            <div v-if="loadingUserGroups" class="loading-indicator">
-              <div class="loading-spinner"></div>
-              <p>Carregando grupos...</p>
-            </div>
+            <LoadingState v-if="loadingUserGroups" message="Carregando grupos..." />
             
             <div v-else-if="userGroups.length === 0" class="empty-state">
               <p>Este usuário não participa de nenhum grupo.</p>
@@ -259,8 +260,79 @@
 </template>
 
 <script>
+// Componente para mensagens de alerta (erro e sucesso)
+const AlertMessage = {
+  props: {
+    type: String,
+    message: String
+  },
+  template: `
+    <div :class="type + '-message'">
+      <div :class="type + '-icon'">{{ type === 'error' ? '!' : '✓' }}</div>
+      <p>{{ message }}</p>
+      <button class="close-btn" @click="$emit('close')" aria-label="Fechar">×</button>
+    </div>
+  `
+};
+
+// Componente para estado de carregamento
+const LoadingState = {
+  props: {
+    message: {
+      type: String,
+      default: 'Carregando...'
+    }
+  },
+  template: `
+    <div class="loading-indicator">
+      <div class="loading-spinner"></div>
+      <p>{{ message }}</p>
+    </div>
+  `
+};
+
+// Componente para modal de confirmação
+const ConfirmationModal = {
+  props: {
+    title: String,
+    message: String,
+    warningText: String,
+    confirmLabel: {
+      type: String,
+      default: 'Confirmar'
+    },
+    confirmClass: {
+      type: String,
+      default: 'confirm-btn'
+    }
+  },
+  template: `
+    <div class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>{{ title }}</h3>
+          <button class="close-modal-btn" @click="$emit('cancel')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p v-html="message"></p>
+          <p class="warning-text" v-if="warningText">{{ warningText }}</p>
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="$emit('cancel')">Cancelar</button>
+          <button :class="confirmClass" @click="$emit('confirm')">{{ confirmLabel }}</button>
+        </div>
+      </div>
+    </div>
+  `
+};
+
 export default {
   name: 'UsersView',
+  components: {
+    AlertMessage,
+    LoadingState,
+    ConfirmationModal
+  },
   data() {
     return {
       users: [],
@@ -300,6 +372,14 @@ export default {
     }
   },
   computed: {
+    // Verificações de senha para o novo usuário
+    isNewUserPasswordValid() {
+      return this.newUser.password.length >= 6;
+    },
+    showNewUserPasswordError() {
+      return this.newUser.password.length > 0 && !this.isNewUserPasswordValid;
+    },
+    
     // Filtrar usuários baseado na pesquisa
     filteredUsers() {
       if (!this.searchQuery) {
@@ -311,16 +391,28 @@ export default {
         user.username.toLowerCase().includes(query)
       );
     },
+    
     // Verifica se os dados do usuário foram alterados
     userInfoChanged() {
       return this.editUserData.username !== this.originalUserData.username ||
              this.editUserData.is_admin !== this.originalUserData.is_admin;
     },
-    // Verifica se as senhas são válidas para alteração
+    
+    // Verificações para alteração de senha
     passwordsValid() {
       return this.editUserData.newPassword && 
              this.editUserData.newPassword === this.editUserData.confirmPassword &&
              this.editUserData.newPassword.length >= 6;
+    },
+    
+    showEditPasswordError() {
+      return this.editUserData.newPassword.length > 0 && 
+             this.editUserData.newPassword.length < 6;
+    },
+    
+    showPasswordMatchError() {
+      return this.editUserData.confirmPassword.length > 0 && 
+             this.editUserData.newPassword !== this.editUserData.confirmPassword;
     }
   },
   created() {
@@ -328,6 +420,42 @@ export default {
     this.fetchUsers();
   },
   methods: {
+    // Helper para fazer requisições API com headers padrão
+    async apiRequest(endpoint, options = {}) {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        this.$router.push('/login');
+        throw new Error('Usuário não autenticado');
+      }
+      
+      const user = JSON.parse(userStr);
+      
+      const defaultOptions = {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-ID': user.id
+        }
+      };
+      
+      const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...(options.headers || {})
+        }
+      };
+      
+      const response = await fetch(endpoint, mergedOptions);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Erro na requisição');
+      }
+      
+      return data;
+    },
+    
     checkAdminAccess() {
       const userStr = localStorage.getItem('user');
       if (!userStr) {
@@ -341,7 +469,11 @@ export default {
         this.$router.push('/');
       }
     },
+    
     async fetchUsers() {
+      this.usersLoading = true;
+      this.error = '';
+      
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -349,60 +481,35 @@ export default {
           return;
         }
         
-        const user = JSON.parse(userStr);
+        const currentUser = JSON.parse(userStr);
         
-        const response = await fetch('/api/users', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': user.id
-          }
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.error = data.message || 'Erro ao carregar usuários';
-          this.usersLoading = false;
-          return;
-        }
+        const data = await this.apiRequest('/api/users');
         
         // Filtrar o usuário atual da lista
-        this.users = data.users.filter(u => u.id != user.id);
-        this.usersLoading = false;
+        this.users = data.users.filter(u => u.id != currentUser.id);
       } catch (error) {
-        this.error = 'Erro ao conectar ao servidor';
-        this.usersLoading = false;
+        this.error = error.message || 'Erro ao carregar usuários';
         console.error('Error fetching users:', error);
+      } finally {
+        this.usersLoading = false;
       }
     },
+    
     async createUser() {
+      // Verificar se a senha atende aos requisitos
+      if (!this.isNewUserPasswordValid) {
+        this.error = 'A senha deve ter pelo menos 6 caracteres';
+        return;
+      }
+      
+      this.creatingUser = true;
+      this.error = '';
+      
       try {
-        this.creatingUser = true;
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        
-        const response = await fetch('/api/register', {
+        await this.apiRequest('/api/register', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': user.id
-          },
           body: JSON.stringify(this.newUser)
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.error = data.message || 'Erro ao criar usuário';
-          this.creatingUser = false;
-          return;
-        }
         
         // Limpar formulário e mostrar mensagem de sucesso
         this.success = `Usuário ${this.newUser.username} criado com sucesso!`;
@@ -413,14 +520,15 @@ export default {
         };
         
         // Atualizar lista de usuários
-        this.fetchUsers();
-        this.creatingUser = false;
+        await this.fetchUsers();
       } catch (error) {
-        this.error = 'Erro ao conectar ao servidor';
-        this.creatingUser = false;
+        this.error = error.message || 'Erro ao criar usuário';
         console.error('Error creating user:', error);
+      } finally {
+        this.creatingUser = false;
       }
     },
+    
     confirmDeleteUser(user) {
       this.userToDelete = user;
       this.showDeleteModal = true;
@@ -429,6 +537,7 @@ export default {
         this.showManageModal = false;
       }
     },
+    
     async deleteUser() {
       if (!this.userToDelete) {
         return;
@@ -437,29 +546,9 @@ export default {
       this.deleteLoading = true;
       
       try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        
-        const response = await fetch(`/api/users/${this.userToDelete.id}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': user.id
-          }
+        await this.apiRequest(`/api/users/${this.userToDelete.id}`, {
+          method: 'DELETE'
         });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          this.error = data.message || 'Erro ao excluir usuário';
-          this.showDeleteModal = false;
-          this.deleteLoading = false;
-          return;
-        }
         
         // Mostrar mensagem de sucesso
         this.success = `Usuário ${this.userToDelete.username} excluído com sucesso!`;
@@ -467,24 +556,24 @@ export default {
         // Fechar os modais
         this.showDeleteModal = false;
         this.showManageModal = false;
-        this.deleteLoading = false;
         this.userToDelete = null;
         this.selectedUser = null;
         
         // Atualizar lista de usuários
-        this.fetchUsers();
+        await this.fetchUsers();
       } catch (error) {
-        this.error = 'Erro ao conectar ao servidor';
-        this.showDeleteModal = false;
-        this.deleteLoading = false;
+        this.error = error.message || 'Erro ao excluir usuário';
         console.error('Error deleting user:', error);
+        this.showDeleteModal = false;
+      } finally {
+        this.deleteLoading = false;
       }
     },
+    
     goBack() {
       this.$router.push('/');
     },
     
-    // Novos métodos para gerenciamento de usuário
     openManageUserModal(user) {
       this.selectedUser = user;
       // Inicializa os dados para edição
@@ -522,42 +611,18 @@ export default {
       this.userGroups = [];
       
       try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const currentUser = JSON.parse(userStr);
-        
         // Buscar todos os grupos
-        const response = await fetch('/api/groups', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': currentUser.id
-          }
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.manageUserError = data.message || 'Erro ao carregar grupos';
-          this.loadingUserGroups = false;
-          return;
-        }
+        const data = await this.apiRequest('/api/groups');
         
         // Filtra apenas os grupos que o usuário selecionado tem permissão
-        const userGroups = data.groups.filter(group => 
+        this.userGroups = data.groups.filter(group => 
           group.allowed_users && group.allowed_users.includes(userId)
         );
-        
-        this.userGroups = userGroups;
-        this.loadingUserGroups = false;
       } catch (error) {
-        this.manageUserError = 'Erro ao conectar ao servidor';
-        this.loadingUserGroups = false;
+        this.manageUserError = error.message || 'Erro ao carregar grupos';
         console.error('Error fetching user groups:', error);
+      } finally {
+        this.loadingUserGroups = false;
       }
     },
     
@@ -568,43 +633,23 @@ export default {
       this.manageUserError = '';
       
       try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const currentUser = JSON.parse(userStr);
-        
-        const response = await fetch(`/api/users/${this.selectedUser.id}/password`, {
+        await this.apiRequest(`/api/users/${this.selectedUser.id}/password`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': currentUser.id
-          },
           body: JSON.stringify({
             new_password: this.editUserData.newPassword
           })
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.manageUserError = data.message || 'Erro ao alterar senha';
-          this.changingPassword = false;
-          return;
-        }
         
         // Limpar os campos de senha
         this.editUserData.newPassword = '';
         this.editUserData.confirmPassword = '';
         
         this.manageUserSuccess = 'Senha alterada com sucesso!';
-        this.changingPassword = false;
       } catch (error) {
-        this.manageUserError = 'Erro ao conectar ao servidor';
-        this.changingPassword = false;
+        this.manageUserError = error.message || 'Erro ao alterar senha';
         console.error('Error changing password:', error);
+      } finally {
+        this.changingPassword = false;
       }
     }
   }
@@ -998,13 +1043,12 @@ export default {
 .modal-content {
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
+  animation: slide-up 0.3s ease-out;
 }
 
 .manage-user-modal {
@@ -1012,49 +1056,49 @@ export default {
 }
 
 .modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #eaeaea;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #eaeaea;
 }
 
 .modal-header h3 {
-  color: #142C4D;
   margin: 0;
-  font-size: 1.5rem;
+  color: #142C4D;
+  font-size: 1.4rem;
 }
 
 .close-modal-btn {
   background: none;
   border: none;
   font-size: 1.8rem;
-  color: #6b7280;
+  color: #666;
   cursor: pointer;
-  transition: color 0.2s ease;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s;
 }
 
 .close-modal-btn:hover {
-  color: #1f2937;
+  color: #142C4D;
 }
 
 .modal-body {
   padding: 1.5rem;
-  overflow-y: auto;
 }
 
 .modal-actions {
-  padding: 1.5rem;
-  border-top: 1px solid #eaeaea;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 .cancel-btn {
   padding: 0.7rem 1.5rem;
-  background-color: #f3f4f6;
-  border: 2px solid #e5e7eb;
+  background-color: #e5e7eb;
+  border: none;
   border-radius: 6px;
   color: #374151;
   font-size: 0.95rem;
@@ -1064,7 +1108,7 @@ export default {
 }
 
 .cancel-btn:hover {
-  background-color: #e5e7eb;
+  background-color: #d1d5db;
 }
 
 .confirm-delete-btn {
@@ -1088,122 +1132,26 @@ export default {
   font-weight: 600;
 }
 
-/* Estilos para as seções do modal de gerenciamento */
-.manage-section {
-  margin-bottom: 2rem;
-  padding: 1.2rem;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-}
-
-.manage-section:last-child {
-  margin-bottom: 0;
-}
-
-.manage-section h4 {
-  color: #204578;
-  font-size: 1.1rem;
-  margin-top: 0;
-  margin-bottom: 1rem;
-}
-
-/* Estilos para ações nos modais de gerenciamento */
-.action-btn {
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.update-btn {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.update-btn:hover:not(:disabled) {
-  background-color: #2563eb;
-}
-
-.password-btn {
-  background-color: #10b981;
-  color: white;
-}
-
-.password-btn:hover:not(:disabled) {
-  background-color: #059669;
-}
-
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Estilos para a lista de grupos do usuário */
-.user-groups-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.group-item {
-  background-color: #fff;
-  border-radius: 4px;
-  border: 1px solid #d1d5db;
-  padding: 0.7rem 1rem;
-  display: flex;
-  align-items: center;
-}
-
-.group-name {
-  font-size: 0.95rem;
-  color: #374151;
-}
-
-/* Admin checkbox dentro do formulário de edição */
-.admin-checkbox-wrapper {
-  margin-bottom: 1.5rem;
-}
-
-.admin-checkbox.wide {
-  width: 100%;
-  justify-content: flex-start;
-  padding: 0.8rem;
-}
-
-/* Estados vazios */
-.empty-state {
-  padding: 1.5rem;
-  text-align: center;
-  color: #6b7280;
-}
-
-/* Mensagens de erro e sucesso */
+/* Estilos para mensagens de erro e sucesso */
 .error-message, .success-message {
+  display: flex;
+  align-items: flex-start;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
   position: relative;
 }
 
 .error-message {
   background-color: #fee2e2;
   border: 1px solid #fecaca;
+  color: #b91c1c;
 }
 
 .success-message {
-  background-color: #d1fae5;
-  border: 1px solid #a7f3d0;
+  background-color: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
 }
 
 .error-icon, .success-icon {
@@ -1211,14 +1159,15 @@ export default {
   height: 24px;
   border-radius: 50%;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   font-weight: bold;
-  margin-right: 0.8rem;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
 .error-icon {
-  background-color: #dc2626;
+  background-color: #ef4444;
   color: white;
 }
 
@@ -1227,37 +1176,88 @@ export default {
   color: white;
 }
 
-.error-message p, .success-message p {
-  margin: 0;
-  flex-grow: 1;
-}
-
-.error-message p {
-  color: #991b1b;
-}
-
-.success-message p {
-  color: #065f46;
-}
-
 .close-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
   background: none;
   border: none;
-  font-size: 1.5rem;
-  line-height: 1;
+  font-size: 1.2rem;
+  color: currentColor;
   cursor: pointer;
-  padding: 0;
 }
 
-.error-message .close-btn {
-  color: #991b1b;
+/* Estilos para seção de gerenciamento de usuário */
+.manage-section {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
 }
 
-.success-message .close-btn {
-  color: #065f46;
+.manage-section h4 {
+  color: #142C4D;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
 }
 
-/* Loading indicator */
+.action-btn {
+  padding: 0.7rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.password-btn {
+  background-color: #204578;
+  color: white;
+}
+
+.password-btn:hover:not(:disabled) {
+  background-color: #142C4D;
+}
+
+.password-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Lista de grupos do usuário */
+.user-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.group-item {
+  background-color: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+}
+
+.group-name {
+  font-weight: 600;
+  color: #333;
+}
+
+/* Estado vazio */
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #666;
+}
+
+/* Loading spinner */
 .loading-indicator {
   display: flex;
   flex-direction: column;
@@ -1269,7 +1269,7 @@ export default {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(32, 69, 120, 0.3);
+  border: 4px solid rgba(32, 69, 120, 0.2);
   border-top: 4px solid #204578;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1286,42 +1286,62 @@ export default {
   to { opacity: 1; }
 }
 
+@keyframes slide-up {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* Media queries para responsividade */
-@media (max-width: 1024px) {
+@media (max-width: 992px) {
   .home-layout {
     flex-direction: column;
-    left: 30px;
-    right: 30px;
+    left: 20px;
+    right: 20px;
+    gap: 15px;
   }
   
   .content-panel {
     width: 100%;
-    margin-bottom: 20px;
+  }
+  
+  .home-header h1 {
+    font-size: 1.8rem;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 576px) {
   .home-layout {
     top: 80px;
-    left: 20px;
-    right: 20px;
+    left: 10px;
+    right: 10px;
   }
   
   .content-wrapper {
-    padding: 1.5rem;
+    padding: 1.5rem 1rem;
   }
   
   .username-row {
     flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .input-wrapper {
+    width: 100%;
   }
   
   .admin-checkbox {
-    height: auto;
     margin-top: 0.5rem;
+    width: 100%;
   }
   
-  .submit-btn {
-    width: 100%;
+  .modal-content {
+    width: 95%;
   }
 }
 </style>
