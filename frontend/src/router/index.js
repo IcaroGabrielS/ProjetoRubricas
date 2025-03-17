@@ -6,6 +6,8 @@ import UsersView from '../views/UsersView.vue'
 import GroupManageView from '../views/GroupManageView.vue'
 import CompanyDetailView from '../views/CompanyDetailView.vue'
 import ChangePasswordView from '../views/ChangePasswordView.vue'
+import CompanyFilesView from '../views/CompanyFilesView.vue'
+
 
 const routes = [
   {
@@ -54,6 +56,12 @@ const routes = [
     path: '/change-password',
     name: 'change-password',
     component: ChangePasswordView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/companies/:id/files',
+    name: 'CompanyFiles',
+    component: CompanyFilesView,
     meta: { requiresAuth: true }
   }
 ]

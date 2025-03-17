@@ -114,7 +114,7 @@
         </div>
       </div>
       
-      <!-- Painel com arquivos (visualmente à direita) -->
+      <!-- Painel de arquivos simplificado (visualmente à direita) -->
       <div class="content-panel">
         <div class="content-wrapper">
           <div class="home-header">
@@ -123,75 +123,40 @@
 
           <div v-if="loading" class="loading-indicator">
             <div class="loading-spinner"></div>
-            <p>Carregando arquivos...</p>
+            <p>Carregando informações...</p>
           </div>
 
           <div v-else>
-            <!-- Upload de Arquivos -->
-            <div v-if="isAdmin" class="dashboard-summary">
+            <!-- Seção de Gerenciamento de Arquivos -->
+            <div class="dashboard-summary">
               <div class="dashboard-item">
-                <h3>Enviar Arquivo</h3>
-                <p>Adicione arquivos para esta empresa</p>
+                <h3>Gerenciamento de Arquivos</h3>
+                <p>
+                  Nesta seção você pode enviar, visualizar e gerenciar arquivos da empresa 
+                  <strong>{{ company.name }}</strong>.
+                </p>
+                <p>
+                  Utilize a página de gerenciamento de arquivos para:
+                </p>
+                <ul class="feature-list">
+                  <li>Enviar novos arquivos para a empresa</li>
+                  <li>Visualizar todos os arquivos disponíveis</li>
+                  <li>Fazer download dos arquivos</li>
+                  <li v-if="isAdmin">Excluir arquivos existentes</li>
+                </ul>
                 
-                <div v-if="!showUploadForm" class="form-actions">
-                  <button class="action-button admin" @click="showUploadForm = true">
-                    Mostrar Formulário de Upload
+                <div class="file-actions-center">
+                  <button class="action-button primary" @click="goToCompanyFiles">
+                    <i class="file-icon">📁</i>
+                    Gerenciar Arquivos
                   </button>
                 </div>
                 
-                <form v-else @submit.prevent="uploadFile" class="company-form">
-                  <div class="form-group">
-                    <label for="file">Selecionar Arquivo:</label>
-                    <input 
-                      type="file" 
-                      id="file" 
-                      ref="fileInput"
-                      @change="handleFileChange" 
-                      required
-                    >
-                    <div class="file-types">Formatos permitidos: .csv, .xls, .xlsx, .pdf</div>
-                  </div>
-                  
-                  <div class="form-actions">
-                    <button type="button" class="secondary-button" @click="showUploadForm = false">
-                      Cancelar
-                    </button>
-                    <button 
-                      type="submit" 
-                      class="submit-btn" 
-                      :disabled="uploading"
-                    >
-                      <span v-if="uploading" class="loading-spinner-small"></span>
-                      {{ uploading ? 'Enviando...' : 'Enviar Arquivo' }}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-            
-            <!-- Lista de Arquivos -->
-            <div class="dashboard-summary">
-              <div class="dashboard-item">
-                <h3>Arquivos Disponíveis</h3>
-                
-                <div v-if="!files || files.length === 0" class="empty-state">
-                  <p>Nenhum arquivo foi adicionado a esta empresa.</p>
-                </div>
-                <div v-else class="files-list">
-                  <div v-for="file in files" :key="file.id" class="file-item">
-                    <div class="file-info">
-                      <div :class="['file-icon', getFileIconClass(file.file_type)]">
-                        {{ file.file_type.toUpperCase() }}
-                      </div>
-                      <div class="file-details">
-                        <div class="file-name">{{ file.filename }}</div>
-                        <div class="file-date">Enviado em {{ formatDate(file.uploaded_at) }}</div>
-                      </div>
-                    </div>
-                    <div class="file-actions">
-                      <button class="download-btn" @click="downloadFile(file.id)">Download</button>
-                    </div>
-                  </div>
+                <div class="file-counter" v-if="files.length > 0">
+                  <p>
+                    <span class="file-count">{{ files.length }}</span> 
+                    {{ files.length === 1 ? 'arquivo disponível' : 'arquivos disponíveis' }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -248,10 +213,7 @@ export default {
       error: '',
       success: '',
       isAdmin: false,
-      showUploadForm: false,
       groupName: '',
-      selectedFile: null,
-      uploading: false,
       isMobileDevice: false,
       showDeleteConfirmation: false,
       confirmDeleteText: '',
@@ -417,67 +379,6 @@ export default {
         console.error('Error fetching company files:', error);
       }
     },
-    handleFileChange(event) {
-      this.selectedFile = event.target.files[0];
-    },
-    async uploadFile() {
-      if (!this.selectedFile) {
-        this.error = 'Selecione um arquivo para enviar';
-        return;
-      }
-      
-      const fileExt = this.selectedFile.name.split('.').pop().toLowerCase();
-      const allowedExts = ['csv', 'xls', 'xlsx', 'pdf'];
-      
-      if (!allowedExts.includes(fileExt)) {
-        this.error = 'Formato de arquivo não permitido';
-        return;
-      }
-      
-      try {
-        this.uploading = true;
-        
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        
-        const formData = new FormData();
-        formData.append('file', this.selectedFile);
-        
-        const response = await fetch(`/api/companies/${this.companyId}/files`, {
-          method: 'POST',
-          headers: {
-            'User-ID': user.id
-          },
-          body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          this.error = data.message || 'Erro ao enviar arquivo';
-          this.uploading = false;
-          return;
-        }
-        
-        // Limpar formulário e atualizar lista de arquivos
-        this.$refs.fileInput.value = '';
-        this.selectedFile = null;
-        this.showUploadForm = false;
-        this.success = 'Arquivo enviado com sucesso!';
-        await this.fetchCompanyFiles();
-        
-        this.uploading = false;
-      } catch (error) {
-        this.error = 'Erro ao conectar ao servidor';
-        this.uploading = false;
-        console.error('Error uploading file:', error);
-      }
-    },
     formatCNPJ() {
       // Remove qualquer caractere que não seja dígito
       let cnpj = this.editCompany.cnpj.replace(/\D/g, '');
@@ -599,43 +500,6 @@ export default {
         console.error('Error updating company:', error);
       }
     },
-    async downloadFile(fileId) {
-      try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        
-        // Criar um link temporário para download
-        const a = document.createElement('a');
-        a.href = `/api/files/${fileId}/download?user_id=${user.id}`;
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } catch (error) {
-        this.error = 'Erro ao baixar arquivo';
-        console.error('Error downloading file:', error);
-      }
-    },
-    getFileIconClass(fileType) {
-      if (!fileType) return 'generic-file';
-      
-      switch (fileType.toLowerCase()) {
-        case 'csv':
-          return 'csv-file';
-        case 'xls':
-        case 'xlsx':
-          return 'excel-file';
-        case 'pdf':
-          return 'pdf-file';
-        default:
-          return 'generic-file';
-      }
-    },
     formatDate(dateString) {
       if (!dateString) return '';
       
@@ -664,6 +528,10 @@ export default {
       } else {
         this.$router.push('/');
       }
+    },
+    goToCompanyFiles() {
+      // Redirecionar para a página de gerenciamento de arquivos
+      this.$router.push(`/companies/${this.companyId}/files`);
     },
     cancelDelete() {
       this.showDeleteConfirmation = false;
@@ -999,157 +867,208 @@ export default {
   font-style: italic;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0 0.5rem;
-  margin-left: auto;
-  color: #b91c1c;
+/* Estilos para features de arquivo */
+.feature-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0.5rem 0 1.5rem 0;
 }
 
-.close-btn.success {
-  color: #065f46;
+.feature-list li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  color: #4b5563;
 }
 
-/* Botões de ação */
-.quick-actions {
+.feature-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #1D4ED8;
+  font-weight: bold;
+}
+
+.file-actions-center {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0;
-  margin-top: auto;
+  justify-content: center;
+  margin: 1.5rem 0;
 }
 
 .action-button {
-  flex: 1;
-  min-width: 150px;
-  padding: 0.8rem;
+  background-color: #204578;
+  color: white;
   border: none;
   border-radius: 8px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.action-button.admin {
-  background: linear-gradient(to right, #142C4D, #204578);
-}
-
-.action-button.admin:hover {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
-.secondary-button {
-  flex: 1;
-  min-width: 150px;
-  padding: 0.8rem;
-  background: transparent;
-  border: 2px solid #204578;
-  border-radius: 8px;
-  color: #204578;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.secondary-button:hover {
-  background-color: rgba(32, 69, 120, 0.1);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.1);
-}
-
-.submit-btn {
   padding: 0.8rem 1.5rem;
-  background: linear-gradient(to right, #142C4D, #204578);
-  border: none;
-  border-radius: 8px;
-  color: white;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.action-button:hover {
+  background-color: #142C4D;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.action-button.primary {
+  background-color: #1D4ED8;
+}
+
+.action-button.primary:hover {
+  background-color: #1e40af;
+}
+
+.action-button.admin {
+  background-color: #047857;
+}
+
+.action-button.admin:hover {
+  background-color: #065f46;
+}
+
+.file-icon {
+  margin-right: 0.8rem;
+  font-style: normal;
+  font-size: 1.2rem;
+}
+
+.file-counter {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.file-count {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #204578;
+  margin-right: 0.2rem;
+}
+
+/* Botões e ações */
+.quick-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  gap: 0.8rem;
+}
+
+.submit-btn {
+  background-color: #204578;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+  background-color: #142C4D;
 }
 
 .submit-btn:disabled {
-  background: #c0c0c0;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
-/* Botão de exclusão */
+.secondary-button {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-button:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
 .delete-btn {
-  padding: 0.7rem 1.2rem;
-  background: linear-gradient(to right, #991b1b, #b91c1c);
-  border: none;
-  border-radius: 8px;
+  background-color: #dc2626;
   color: white;
-  font-size: 0.9rem;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .delete-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #7f1d1d, #991b1b);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(185, 28, 28, 0.3);
+  background-color: #b91c1c;
 }
 
 .delete-btn:disabled {
-  background: #c0c0c0;
+  opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-/* Modal de confirmação */
+.cancel-btn {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background-color: #4b5563;
+}
+
+/* Modal de Confirmação */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fade-in 0.3s ease;
 }
 
 .modal-container {
   width: 450px;
   background-color: white;
   border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
-  background-color: #f9fafb;
-  padding: 1.2rem;
-  border-bottom: 1px solid #eaeaea;
+  padding: 1.5rem;
+  background-color: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #142C4D;
-  font-size: 1.2rem;
+  color: #111827;
+  font-size: 1.25rem;
 }
 
 .modal-body {
@@ -1160,32 +1079,31 @@ export default {
   text-align: center;
 }
 
+.modal-icon {
+  font-size: 40px;
+  margin-bottom: 1rem;
+}
+
 .modal-body p {
   margin-bottom: 1rem;
-  color: #333;
+  color: #374151;
 }
 
 .warning-text {
   color: #b91c1c;
   font-weight: 600;
-  margin-bottom: 1.5rem;
-}
-
-.modal-icon {
-  font-size: 2rem;
-  margin-bottom: 1rem;
 }
 
 .confirmation-input {
+  margin-top: 1.5rem;
   width: 100%;
-  margin-top: 1rem;
 }
 
 .confirmation-input label {
   display: block;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
-  color: #333;
+  color: #374151;
 }
 
 .confirmation-input input {
@@ -1199,155 +1117,24 @@ export default {
 .modal-footer {
   padding: 1rem 1.5rem;
   background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
   display: flex;
-  justify-content: space-between;
-  border-top: 1px solid #eaeaea;
-}
-
-.cancel-btn {
-  padding: 0.7rem 1.2rem;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  color: #333;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  background-color: #f9fafb;
-}
-
-/* Lista de arquivos */
-.files-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.file-item {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.2s ease;
-}
-
-.file-item:hover {
-  background-color: #e9ecef;
-  transform: translateY(-2px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-}
-
-.file-info {
-  display: flex;
-  align-items: center;
+  justify-content: flex-end;
   gap: 1rem;
 }
 
-.file-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.7rem;
-  color: white;
-}
-
-.csv-file {
-  background: linear-gradient(135deg, #20bf6b, #0fb9b1);
-}
-
-.excel-file {
-  background: linear-gradient(135deg, #2ecc71, #26de81);
-}
-
-.pdf-file {
-  background: linear-gradient(135deg, #eb3b5a, #fc5c65);
-}
-
-.generic-file {
-  background: linear-gradient(135deg, #4b6584, #778ca3);
-}
-
-.file-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.file-name {
-  font-weight: 600;
-  color: #142C4D;
-  font-size: 0.95rem;
-}
-
-.file-date {
-  color: #666;
-  font-size: 0.85rem;
-}
-
-.file-actions {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.download-btn {
-  padding: 0.5rem 0.8rem;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  color: #333;
-  font-size: 0.85rem;
+/* Notificações */
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  color: #b91c1c;
+  padding: 0;
+  margin-left: 10px;
 }
 
-.download-btn:hover {
-  background-color: #e0e0e0;
-}
-
-/* Campo de arquivos */
-.file-types {
-  font-size: 0.85rem;
-  color: #666;
-  margin-top: 0.5rem;
-}
-
-/* Responsividade - para tablets e dispositivos menores */
-@media (max-width: 1280px) {
-  .home-layout {
-    left: 30px;
-    right: 30px;
-    top: 100px;
-  }
-}
-
-/* Responsividade - para laptops menores */
-@media (max-width: 1024px) {
-  .home-layout {
-    flex-direction: column;
-    left: 20px;
-    right: 20px;
-    top: 80px;
-    bottom: 20px;
-    overflow: auto;
-    gap: 15px;
-    position: absolute;
-  }
-  
-  .content-panel {
-    width: 100%;
-    height: auto;
-    min-height: 250px;
-  }
+.close-btn.success {
+  color: #065f46;
 }
 </style>
