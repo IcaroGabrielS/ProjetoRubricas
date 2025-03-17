@@ -147,16 +147,31 @@
     </div>
 
     <!-- Modal de Confirmação de Exclusão -->
-    <ConfirmationModal
-      v-if="showDeleteModal"
-      title="Confirmar Exclusão"
-      :message="`Tem certeza que deseja excluir o usuário <strong>${userToDelete?.username}</strong>?`"
-      warningText="Esta ação não pode ser desfeita."
-      @cancel="showDeleteModal = false"
-      @confirm="deleteUser"
-      confirmLabel="Confirmar Exclusão"
-      confirmClass="confirm-delete-btn"
-    />
+    <div class="modal" v-if="showDeleteModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Confirmar Exclusão</h3>
+          <button class="close-modal-btn" @click="showDeleteModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p v-if="userToDelete">
+            Tem certeza que deseja excluir o usuário <strong>{{ userToDelete.username }}</strong>?
+          </p>
+          <p class="warning-text">Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="showDeleteModal = false">Cancelar</button>
+          <button 
+            class="confirm-delete-btn" 
+            @click="deleteUser" 
+            :disabled="deleteLoading"
+          >
+            <span v-if="deleteLoading" class="loading-spinner-small"></span>
+            {{ deleteLoading ? 'Excluindo...' : 'Confirmar Exclusão' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal de Gerenciamento de Usuário -->
     <div class="modal" v-if="showManageModal">
@@ -291,47 +306,11 @@ const LoadingState = {
   `
 };
 
-// Componente para modal de confirmação
-const ConfirmationModal = {
-  props: {
-    title: String,
-    message: String,
-    warningText: String,
-    confirmLabel: {
-      type: String,
-      default: 'Confirmar'
-    },
-    confirmClass: {
-      type: String,
-      default: 'confirm-btn'
-    }
-  },
-  template: `
-    <div class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>{{ title }}</h3>
-          <button class="close-modal-btn" @click="$emit('cancel')">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p v-html="message"></p>
-          <p class="warning-text" v-if="warningText">{{ warningText }}</p>
-        </div>
-        <div class="modal-actions">
-          <button class="cancel-btn" @click="$emit('cancel')">Cancelar</button>
-          <button :class="confirmClass" @click="$emit('confirm')">{{ confirmLabel }}</button>
-        </div>
-      </div>
-    </div>
-  `
-};
-
 export default {
   name: 'UsersView',
   components: {
     AlertMessage,
-    LoadingState,
-    ConfirmationModal
+    LoadingState
   },
   data() {
     return {
@@ -998,34 +977,145 @@ export default {
 .manage-button:hover {
   background: linear-gradient(to right, #1a3760, #2a5b9e);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.15);
 }
 
-/* Botão secundário */
+/* Botões secundários */
 .secondary-button {
-  padding: 0.8rem 1.8rem;
-  background-color: #f3f4f6;
-  border: 2px solid #e5e7eb;
+  padding: 0.8rem 1.5rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  color: #374151;
-  font-size: 1rem;
+  color: #333;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  display: block;
-  margin: 0 auto;
+  transition: all 0.2s ease;
 }
 
 .secondary-button:hover {
-  background-color: #e5e7eb;
+  background-color: #e0e0e0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .users-actions {
-  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+/* Estados de loading, erro e sucesso */
+.loading-indicator, .error-message, .empty-state, .success-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem;
   text-align: center;
 }
 
-/* Estilos para modais */
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.8rem;
+}
+
+.error-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.success-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #d1fae5;
+  color: #065f46;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.error-message, .success-message {
+  flex-direction: row;
+  align-items: flex-start;
+  text-align: left;
+  background-color: #fee2e2;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.success-message {
+  background-color: #d1fae5;
+}
+
+.error-message p {
+  color: #b91c1c;
+  margin: 0 0 0 0.8rem;
+  flex: 1;
+}
+
+.success-message p {
+  color: #065f46;
+  margin: 0 0 0 0.8rem;
+  flex: 1;
+}
+
+.empty-state p {
+  color: #666;
+  font-style: italic;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+  margin-left: auto;
+}
+
+/* Grupos do usuário */
+.user-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.group-item {
+  background-color: #f8f9fa;
+  padding: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #eaeaea;
+}
+
+.group-name {
+  font-weight: 600;
+  color: #142C4D;
+  font-size: 0.95rem;
+}
+
+/* Estilo para o modal */
 .modal {
   position: fixed;
   top: 0;
@@ -1037,51 +1127,30 @@ export default {
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  animation: fade-in 0.2s ease-out;
 }
 
 .modal-content {
   background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
   width: 90%;
   max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slide-up 0.3s ease-out;
-}
-
-.manage-user-modal {
-  max-width: 600px;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
 }
 
 .modal-header {
+  background-color: #f8f8f8;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #eaeaea;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.2rem 1.5rem;
-  border-bottom: 1px solid #eaeaea;
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #142C4D;
-  font-size: 1.4rem;
-}
-
-.close-modal-btn {
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  color: #666;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  transition: color 0.2s;
-}
-
-.close-modal-btn:hover {
-  color: #142C4D;
+  color: #333;
+  font-size: 1.3rem;
 }
 
 .modal-body {
@@ -1090,129 +1159,53 @@ export default {
 
 .modal-actions {
   display: flex;
+  padding: 1.2rem 1.5rem;
+  background-color: #f8f8f8;
+  border-top: 1px solid #eaeaea;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1.5rem;
 }
 
-.cancel-btn {
-  padding: 0.7rem 1.5rem;
-  background-color: #e5e7eb;
-  border: none;
-  border-radius: 6px;
-  color: #374151;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.manage-user-modal {
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.cancel-btn:hover {
-  background-color: #d1d5db;
-}
-
-.confirm-delete-btn {
-  padding: 0.7rem 1.5rem;
-  background-color: #dc2626;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.confirm-delete-btn:hover {
-  background-color: #b91c1c;
-}
-
-.warning-text {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-/* Estilos para mensagens de erro e sucesso */
-.error-message, .success-message {
-  display: flex;
-  align-items: flex-start;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  position: relative;
-}
-
-.error-message {
-  background-color: #fee2e2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-}
-
-.success-message {
-  background-color: #dcfce7;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
-}
-
-.error-icon, .success-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
-.error-icon {
-  background-color: #ef4444;
-  color: white;
-}
-
-.success-icon {
-  background-color: #10b981;
-  color: white;
-}
-
-.close-btn {
-  position: absolute;
-  right: 10px;
-  top: 10px;
+.close-modal-btn {
   background: none;
   border: none;
-  font-size: 1.2rem;
-  color: currentColor;
+  font-size: 1.5rem;
   cursor: pointer;
+  color: #666;
 }
 
-/* Estilos para seção de gerenciamento de usuário */
 .manage-section {
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  padding: 1.2rem;
   margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.manage-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .manage-section h4 {
-  color: #142C4D;
-  margin-top: 0;
-  margin-bottom: 1rem;
+  color: #204578;
   font-size: 1.1rem;
+  margin-bottom: 1rem;
 }
 
 .action-btn {
-  padding: 0.7rem 1.5rem;
-  border-radius: 6px;
+  padding: 0.7rem 1.2rem;
   border: none;
+  border-radius: 6px;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  transition: all 0.2s;
 }
 
 .password-btn {
@@ -1221,127 +1214,52 @@ export default {
 }
 
 .password-btn:hover:not(:disabled) {
-  background-color: #142C4D;
+  background-color: #1a3760;
 }
 
 .password-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
-/* Lista de grupos do usuário */
-.user-groups-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.group-item {
-  background-color: #fff;
-  border: 1px solid #eaeaea;
-  border-radius: 6px;
-  padding: 0.8rem 1rem;
-}
-
-.group-name {
-  font-weight: 600;
+.cancel-btn {
+  background-color: #f0f0f0;
   color: #333;
 }
 
-/* Estado vazio */
-.empty-state {
-  text-align: center;
-  padding: 2rem 1rem;
-  color: #666;
+.cancel-btn:hover {
+  background-color: #e0e0e0;
 }
 
-/* Loading spinner */
-.loading-indicator {
+.confirm-delete-btn {
+  background-color: #dc2626;
+  color: white;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 2rem;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(32, 69, 120, 0.2);
-  border-top: 4px solid #204578;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+.confirm-delete-btn:hover:not(:disabled) {
+  background-color: #b91c1c;
 }
 
+.confirm-delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.warning-text {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* Animações */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-up {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Media queries para responsividade */
-@media (max-width: 992px) {
-  .home-layout {
-    flex-direction: column;
-    left: 20px;
-    right: 20px;
-    gap: 15px;
-  }
-  
-  .content-panel {
-    width: 100%;
-  }
-  
-  .home-header h1 {
-    font-size: 1.8rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .home-layout {
-    top: 80px;
-    left: 10px;
-    right: 10px;
-  }
-  
-  .content-wrapper {
-    padding: 1.5rem 1rem;
-  }
-  
-  .username-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .input-wrapper {
-    width: 100%;
-  }
-  
-  .admin-checkbox {
-    margin-top: 0.5rem;
-    width: 100%;
-  }
-  
-  .modal-content {
-    width: 95%;
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

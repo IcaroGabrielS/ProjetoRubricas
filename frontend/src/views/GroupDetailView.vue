@@ -38,7 +38,6 @@
             <div class="dashboard-summary">
               <div class="dashboard-item simplified">
                 <div class="info-header">
-                  <span class="info-label">ID: {{ group.id }}</span>
                   <span class="info-label">Criado em: {{ formatDate(group.created_at) }}</span>
                   <button v-if="isAdmin" class="manage-btn" @click="manageAccess(group.id)">
                     <span class="manage-text">Gerenciar Acesso</span>
