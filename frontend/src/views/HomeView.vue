@@ -1,15 +1,15 @@
 <template>
   <div>
-    <!-- Alerta para dispositivos móveis - sem alterações -->
+    <!-- Alerta para dispositivos móveis -->
     <div v-if="isMobileDevice" class="mobile-warning">
       <div class="warning-icon">⚠️</div>
       <h2>Acesso não recomendado</h2>
       <p>Este site não foi projetado para dispositivos móveis. Por favor, acesse através de um computador para uma melhor experiência.</p>
     </div>
 
-    <!-- Conteúdo principal - visível apenas em desktop -->
+    <!-- Layout principal - visível apenas em desktop -->
     <div v-else class="home-layout">
-      <!-- Painel com o conteúdo (visualmente à direita) -->
+      <!-- Painel com o conteúdo principal (direita) -->
       <div class="content-panel">
         <div class="content-wrapper">
           <div class="home-header">
@@ -39,7 +39,6 @@
           
           <!-- Lista de grupos -->
           <div class="stores-section">
-            <!-- CORRIGIDO: Indicador de carregamento -->
             <div v-if="groupsLoading" class="groups-loading-container">
               <div class="groups-loading-spinner"></div>
               <p>Carregando grupos...</p>
@@ -68,7 +67,6 @@
                   <span class="store-name">{{ group.name }}</span>
                 </div>
                 <div class="store-item-actions">
-                  <!-- Botão de gerenciamento removido, mantendo apenas a seta de navegação -->
                   <div class="arrow-container" @click="goToGroupDetail(group.id)" title="Ver detalhes do grupo">
                     <span class="store-item-arrow">›</span>
                   </div>
@@ -85,10 +83,8 @@
         </div>
       </div>
       
-      <!-- NOVO LAYOUT: Dois painéis à esquerda -->
-      <!-- Painel superior com o calendário -->
+      <!-- Painel superior com o calendário (esquerda-superior) -->
       <div class="calendar-panel">
-        <!-- Calendário completo -->
         <div class="full-calendar-container">
           <div class="calendar-header">
             <button @click="prevMonth" class="calendar-nav-btn">&lt;</button>
@@ -101,19 +97,19 @@
           </div>
           
           <div class="calendar-days">
-            <!-- Dias anteriores ao mês atual (do mês anterior) -->
+            <!-- Dias do mês anterior -->
             <div 
-              v-for="day in firstDayOfMonth" 
-              :key="'prev-' + day" 
+              v-for="(day, index) in getLastDaysOfPreviousMonth()" 
+              :key="`prev-${index}`" 
               class="calendar-day faded"
             >
-              {{ getLastDaysOfPreviousMonth()[day - 1] }}
+              {{ day }}
             </div>
             
             <!-- Dias do mês atual -->
             <div 
               v-for="day in daysInMonth" 
-              :key="'curr-' + day" 
+              :key="`curr-${day}`" 
               :class="['calendar-day', 
                        isToday(day) ? 'today' : '',
                        hasEvent(day) ? 'has-event' : '']"
@@ -123,10 +119,10 @@
               <div v-if="hasEvent(day)" class="event-indicator"></div>
             </div>
             
-            <!-- Dias após o mês atual (do próximo mês) -->
+            <!-- Dias do próximo mês -->
             <div 
               v-for="day in nextDaysCount" 
-              :key="'next-' + day" 
+              :key="`next-${day}`" 
               class="calendar-day faded"
             >
               {{ day }}
@@ -135,19 +131,25 @@
         </div>
       </div>
       
-      <!-- Painel inferior para futuras adições -->
-      <div class="future-panel">
-        <div class="future-content">
-          <h3>Área reservada para futuras funcionalidades</h3>
-          <p>Este espaço será utilizado para adicionar novas funcionalidades e informações relevantes.</p>
+      <!-- Painel inferior para eventos (esquerda-inferior) -->
+      <div class="events-panel">
+        <div class="events-content">
+          <h3>Próximos Eventos</h3>
+          <div v-if="events.length === 0" class="empty-events">
+            <p>Nenhum evento agendado.</p>
+          </div>
+          <ul v-else class="events-list">
+            <li v-for="(event, index) in events" :key="index" class="event-item">
+              {{ event.date }}: {{ event.title }}
+            </li>
+          </ul>
         </div>
       </div>
     </div>
 
-    <!-- Modal para criar novo grupo - sem alterações -->
+    <!-- Modal para criar novo grupo -->
     <div v-if="showCreateGroupModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-container">
-        <!-- Conteúdo do modal sem alterações -->
         <div class="modal-header">
           <h2>Criar Novo Grupo</h2>
           <button class="close-modal-btn" @click="closeModal">×</button>
@@ -199,12 +201,15 @@ export default {
   name: 'HomeView',
   data() {
     return {
+      // Usuário e grupos
       username: 'Usuário',
       isAdmin: false,
       groups: [],
       groupsLoading: true,
       groupsError: null,
       searchQuery: '',
+      
+      // Responsividade
       isMobileDevice: false,
       
       // Novo Grupo Modal
@@ -224,11 +229,13 @@ export default {
       ],
       currentMonth: new Date().getMonth(),
       currentYear: new Date().getFullYear(),
-      today: new Date(),
-      events: [], // Futuro: armazenar eventos aqui
+      
+      // Eventos
+      events: [], // Aqui serão armazenados os eventos do calendário
     }
   },
   computed: {
+    // Filtragem de grupos com base na pesquisa
     filteredGroups() {
       if (!this.searchQuery) {
         return this.groups;
@@ -239,29 +246,32 @@ export default {
         group.name.toLowerCase().includes(query)
       );
     },
+    
     // Cálculos para o calendário
     daysInMonth() {
       // Retorna o número de dias no mês atual
       return new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
     },
+    
     firstDayOfMonth() {
       // Obtém o dia da semana do primeiro dia do mês (0 = Domingo, 1 = Segunda, etc.)
       const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
       // Retorna um array com o número de dias necessários para preencher os espaços antes
       return Array.from({ length: firstDay }, (_, i) => i + 1);
     },
+    
     nextDaysCount() {
       // Calcula quantos dias do próximo mês precisamos mostrar
-      // Total de células em um grid 7x6 = 42
-      const totalDays = 42;
-      const usedDays = this.firstDayOfMonth.length + this.daysInMonth;
-      return Array.from({ length: totalDays - usedDays }, (_, i) => i + 1);
+      const totalCells = 42; // Grid 7x6
+      const usedCells = this.firstDayOfMonth.length + this.daysInMonth;
+      return Array.from({ length: totalCells - usedCells }, (_, i) => i + 1);
     }
   },
   created() {
     this.checkDeviceType();
     this.loadUserInfo();
     this.fetchGroups();
+    this.loadMockEvents(); // Carregar eventos de exemplo (temporário)
     
     // Adicionar listener para verificar redimensionamento
     window.addEventListener('resize', this.checkDeviceType);
@@ -271,50 +281,11 @@ export default {
     window.removeEventListener('resize', this.checkDeviceType);
   },
   methods: {
-    // Métodos para calendário
-    prevMonth() {
-      if (this.currentMonth === 0) {
-        this.currentMonth = 11;
-        this.currentYear--;
-      } else {
-        this.currentMonth--;
-      }
-    },
-    nextMonth() {
-      if (this.currentMonth === 11) {
-        this.currentMonth = 0;
-        this.currentYear++;
-      } else {
-        this.currentMonth++;
-      }
-    },
-    getLastDaysOfPreviousMonth() {
-      // Obtém os últimos dias do mês anterior para exibir no calendário
-      const lastDayPrevMonth = new Date(this.currentYear, this.currentMonth, 0).getDate();
-      const daysNeeded = this.firstDayOfMonth.length;
-      return Array.from({ length: daysNeeded }, (_, i) => lastDayPrevMonth - daysNeeded + i + 1);
-    },
-    isToday(day) {
-      // Verifica se o dia é o dia atual
-      const today = new Date();
-      return day === today.getDate() && 
-             this.currentMonth === today.getMonth() && 
-             this.currentYear === today.getFullYear();
-    },
-    hasEvent(day) {
-      // Futuro: verificar se existe evento para este dia
-      // Por enquanto, vamos simular alguns eventos
-      const randomDays = [];
-      return randomDays.includes(day) && this.currentMonth === new Date().getMonth();
-    },
-    dayClicked(day) {
-      // Futuro: abrir modal para adicionar/ver eventos
-      console.log(`Dia clicado: ${day}/${this.currentMonth + 1}/${this.currentYear}`);
-      // Se for admin, poderia mostrar um diálogo para adicionar evento
-    },
+    // Métodos de verificação de dispositivo e carregamento de dados
     checkDeviceType() {
       this.isMobileDevice = window.innerWidth < 1024;
     },
+    
     loadUserInfo() {
       const userStr = localStorage.getItem('user');
       if (userStr) {
@@ -325,6 +296,7 @@ export default {
         this.$router.push('/login');
       }
     },
+    
     async fetchGroups() {
       try {
         const userStr = localStorage.getItem('user');
@@ -359,21 +331,92 @@ export default {
         console.error('Error fetching groups:', error);
       }
     },
+    
+    // Navegação
     goToGroupDetail(groupId) {
       this.$router.push(`/groups/${groupId}`);
     },
-    manageGroupAccess(groupId) {
-      this.$router.push(`/groups/manage/${groupId}`);
-    },
-    createGroup() {
-      this.showCreateGroupModal = true;
-    },
+    
     manageAccounts() {
       this.$router.push('/users');
     },
-    logout() {
-      localStorage.removeItem('user');
-      this.$router.push('/login');
+    
+    // Métodos para o calendário
+    prevMonth() {
+      if (this.currentMonth === 0) {
+        this.currentMonth = 11;
+        this.currentYear--;
+      } else {
+        this.currentMonth--;
+      }
+      this.updateEventsForCurrentMonth();
+    },
+    
+    nextMonth() {
+      if (this.currentMonth === 11) {
+        this.currentMonth = 0;
+        this.currentYear++;
+      } else {
+        this.currentMonth++;
+      }
+      this.updateEventsForCurrentMonth();
+    },
+    
+    getLastDaysOfPreviousMonth() {
+      // Obtém os últimos dias do mês anterior para exibir no calendário
+      const lastDayPrevMonth = new Date(this.currentYear, this.currentMonth, 0).getDate();
+      const daysNeeded = this.firstDayOfMonth.length;
+      return Array.from({ length: daysNeeded }, (_, i) => lastDayPrevMonth - daysNeeded + i + 1);
+    },
+    
+    isToday(day) {
+      // Verifica se o dia é o dia atual
+      const today = new Date();
+      return day === today.getDate() && 
+             this.currentMonth === today.getMonth() && 
+             this.currentYear === today.getFullYear();
+    },
+    
+    hasEvent(day) {
+      // Verifica se existe evento para este dia no mês atual
+      return this.events.some(event => {
+        const eventDate = new Date(event.date);
+        return eventDate.getDate() === day && 
+               eventDate.getMonth() === this.currentMonth &&
+               eventDate.getFullYear() === this.currentYear;
+      });
+    },
+    
+    dayClicked(day) {
+      // Futuramente: abrir modal para adicionar/ver eventos do dia
+      console.log(`Dia clicado: ${day}/${this.currentMonth + 1}/${this.currentYear}`);
+      
+      // Se for admin, poderia mostrar um diálogo para adicionar evento
+      if (this.isAdmin) {
+        // Implementação futura: adicionar eventos
+      }
+    },
+    
+    // Carregar eventos de exemplo (temporário)
+    loadMockEvents() {
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(today.getDate() + 1);
+      const nextWeek = new Date();
+      nextWeek.setDate(today.getDate() + 7);
+      
+      this.events = [
+        { date: today.toISOString(), title: 'Reunião de planejamento' },
+        { date: tomorrow.toISOString(), title: 'Entrega de relatório' },
+        { date: nextWeek.toISOString(), title: 'Avaliação semestral' }
+      ];
+      
+      this.updateEventsForCurrentMonth();
+    },
+    
+    updateEventsForCurrentMonth() {
+      // Método para atualizar eventos quando o mês é alterado
+      // (Implementação futura: buscar eventos do servidor)
     },
     
     // Métodos para o modal de criação de grupo
@@ -392,12 +435,14 @@ export default {
         this.createGroupSuccess = '';
       }
     },
+    
     resetCreateGroupForm() {
       this.newGroup = {
         name: ''
       };
       this.createGroupSuccess = '';
     },
+    
     async handleCreateGroup() {
       this.createGroupLoading = true;
       this.createGroupError = null;
@@ -475,33 +520,7 @@ export default {
   max-width: 280px;
 }
 
-/* Layout principal - versão desktop ATUALIZADO */
-.home-layout {
-  position: fixed;
-  top: 100px;
-  left: 50px;
-  right: 50px;
-  bottom: 30px;
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Divide em duas colunas */
-  grid-template-rows: 1fr; /* Uma única linha para o painel da direita */
-  gap: 20px;
-}
-
-/* Painel de conteúdo (visualmente à direita) */
-.content-panel {
-  grid-column: 2 / 3; /* Posiciona na segunda coluna */
-  grid-row: 1 / 3;   /* Ocupa as duas linhas do grid */
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-/* Layout principal - o elemento que atua como container pai */
+/* Layout principal - versão desktop */
 .home-layout {
   position: fixed;
   top: 100px;
@@ -514,7 +533,7 @@ export default {
   gap: 20px; /* Espaçamento uniforme entre todos os elementos */
 }
 
-/* Painel de conteúdo (visualmente à direita) */
+/* Painel de conteúdo principal (visualmente à direita) */
 .content-panel {
   grid-column: 2 / 3; /* Posiciona na segunda coluna */
   grid-row: 1 / 3;   /* Ocupa as duas linhas do grid */
@@ -526,7 +545,7 @@ export default {
   flex-direction: column;
 }
 
-/* Novos painéis à esquerda */
+/* Painel do calendário (esquerda-superior) */
 .calendar-panel {
   grid-column: 1 / 2; /* Posiciona na primeira coluna */
   grid-row: 1 / 2;   /* Ocupa a primeira linha */
@@ -536,41 +555,336 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0; /* Remove margin e usa o gap do grid */
   height: auto; /* Altura automática baseada no grid */
 }
 
-.future-panel {
+/* Painel de eventos (esquerda-inferior) */
+.events-panel {
   grid-column: 1 / 2; /* Posiciona na primeira coluna */
   grid-row: 2 / 3;   /* Ocupa a segunda linha */
-  background: #1E3A8A;
+  background: linear-gradient(135deg, #1E3A8A 30%, #2A4494 70%);
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 0; /* Remove margin e usa o gap do grid */
   height: auto; /* Altura automática baseada no grid */
 }
 
-.future-content {
+.events-content {
   color: white;
-  text-align: center;
   padding: 20px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
 }
 
-.future-content h3 {
+.events-content h3 {
   margin-bottom: 15px;
   font-size: 1.2rem;
   font-weight: 600;
+  text-align: center;
 }
 
-.future-content p {
+.empty-events {
+  text-align: center;
+  font-style: italic;
+  opacity: 0.7;
+  padding: 20px 0;
+}
+
+.events-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.event-item {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.event-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(5px);
+}
+
+/* Container do conteúdo principal */
+.content-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.home-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eaeaea;
+  position: relative;
+}
+
+.home-header h1 {
+  color: #142C4D;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-text {
+  color: #667;
+  font-size: 1.1rem;
+}
+
+/* Elementos do dashboard */
+.dashboard-summary {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-item {
+  padding: 1.2rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.dashboard-item h3 {
+  color: #204578;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-item p {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* Caixa de Busca */
+.search-container {
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 15px;
+  border: 2px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.3s ease;
+  background-color: #f9f9f9;
+}
+
+.search-input:focus {
+  border-color: #204578;
+  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
+  outline: none;
+  background-color: #fff;
+}
+
+.search-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 1.2rem;
+}
+
+/* Seção de grupos/lojas ta escrito store mas isso serve pra identificar grupos*/ 
+.stores-section {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  max-height: calc(100% - 250px);
+}
+
+.stores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.store-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  transition: all 0.2s ease;
+}
+
+.store-item:hover {
+  background-color: #e9ecef;
+}
+
+.store-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.store-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #142C4D;
+}
+
+.store-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Contêiner da seta de navegação */
+.arrow-container {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: #e8f0fe;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.arrow-container:hover {
+  background-color: #d0e1fd;
+}
+
+.store-item-arrow {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #204578;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Indicador de carregamento */
+.groups-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  width: 100%;
+  height: 150px;
+  margin: 1rem 0;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+}
+
+.groups-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(32, 69, 120, 0.1);
+  border-top: 4px solid #204578;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Estados de erro e vazio */
+.error-message, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+  width: 100%;
+  margin: 1rem 0;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  border-color: #fecaca;
+}
+
+.error-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+}
+
+.error-message p {
+  color: #b91c1c;
+}
+
+.empty-state p {
+  color: #666;
+  font-style: italic;
+}
+
+/* Botões de ação */
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0;
+  margin-top: auto;
+}
+
+.action-button {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  color: white;
   font-size: 0.9rem;
-  opacity: 0.8;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-/* ESTILOS ATUALIZADOS PARA O CALENDÁRIO */
+.action-button.admin {
+  background: linear-gradient(to right, #2e67c4, #3b82f6);
+}
+
+.action-button.admin:hover {
+  background: linear-gradient(to right, #2554a0, #326fd1);
+}
+
+/* Estilos para o calendário */
 .full-calendar-container {
   width: 100%;
   background-color: white;
@@ -598,7 +912,6 @@ export default {
   color: #142C4D;
 }
 
-/* Botões de navegação modernizados */
 .calendar-nav-btn {
   background: none;
   border: none;
@@ -616,7 +929,6 @@ export default {
 
 .calendar-nav-btn:hover {
   color: #3b82f6;
-  transform: scale(1.1);
   background-color: rgba(59, 130, 246, 0.1);
 }
 
@@ -696,290 +1008,6 @@ export default {
   border-radius: 50%;
 }
 
-/* Container do conteúdo para o painel de conteúdo */
-.content-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 2rem;
-  overflow-y: auto;
-}
-
-.home-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #eaeaea;
-  position: relative;
-}
-
-.home-header h1 {
-  color: #142C4D;
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.welcome-text {
-  color: #666;
-  font-size: 1.1rem;
-}
-
-.dashboard-summary {
-  margin-bottom: 1.5rem;
-}
-
-.dashboard-item {
-  padding: 1.2rem;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.dashboard-item h3 {
-  color: #204578;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
-}
-
-.dashboard-item p {
-  color: #666;
-  font-size: 0.95rem;
-}
-
-/* Caixa de Busca */
-.search-container {
-  margin-bottom: 1.5rem;
-}
-
-.search-box {
-  position: relative;
-  width: 100%;
-}
-
-.search-input {
-  width: 100%;
-  padding: 12px 40px 12px 15px;
-  border: 2px solid #e1e1e1;
-  border-radius: 8px;
-  font-size: 1rem;
-  color: #333;
-  transition: all 0.3s ease;
-  background-color: #f9f9f9;
-}
-
-.search-input:focus {
-  border-color: #204578;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
-  outline: none;
-  background-color: #fff;
-}
-
-.search-icon {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #666;
-  font-size: 1.2rem;
-}
-
-/* Seção de lojas */
-.stores-section {
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 1rem;
-  max-height: calc(100% - 250px);
-}
-
-.stores-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.store-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8rem 1rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-  transition: all 0.2s ease;
-}
-
-.store-item:hover {
-  background-color: #e9ecef;
-  transform: translateY(-2px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-}
-
-.store-item-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex: 1;
-}
-
-.store-name {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #142C4D;
-}
-
-.store-item-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Novo estilo para o contêiner da seta */
-.arrow-container {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background-color: #e8f0fe;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.arrow-container:hover {
-  background-color: #d0e1fd;
-  transform: scale(1.1);
-}
-
-.store-item-arrow {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #204578;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* NOVOS ESTILOS: Indicador de carregamento */
-.groups-loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  text-align: center;
-  width: 100%;
-  height: 150px;
-  margin: 1rem 0;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-}
-
-.groups-loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(32, 69, 120, 0.1);
-  border-top: 4px solid #204578;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-/* Estados de erro e vazio */
-.error-message, .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  text-align: center;
-  width: 100%;
-  margin: 1rem 0;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-}
-
-.error-message {
-  background-color: #fee2e2;
-  border-color: #fecaca;
-}
-
-.error-icon {
-  width: 30px;
-  height: 30px;
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-bottom: 0.8rem;
-}
-
-.error-message p {
-  color: #b91c1c;
-}
-
-.empty-state p {
-  color: #666;
-  font-style: italic;
-}
-
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0;
-  margin-top: auto;
-}
-
-.action-button {
-  flex: 1;
-  min-width: 150px;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.action-button.admin {
-  background: linear-gradient(to right, #142C4D, #204578);
-}
-
-.action-button.admin:hover {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
-.action-button.logout {
-  background: linear-gradient(to right, #d63031, #e84393);
-}
-
-.action-button.logout:hover {
-  background: linear-gradient(to right, #c0392b, #d63031);
-  box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
-}
-
 /* Modal para criação de grupo */
 .modal-overlay {
   position: fixed;
@@ -1000,29 +1028,28 @@ export default {
   max-width: 600px;
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
-  animation: slide-up 0.4s ease;
+  animation: slide-up 0.3s ease;
 }
 
 @keyframes slide-up {
-  0% { transform: translateY(30px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
+  background: linear-gradient(to right, #142C4D, #204578);
+  color: white;
+  padding: 1.2rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #eaeaea;
-  background: linear-gradient(to right, #142C4D, #204578);
-  color: white;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
@@ -1031,14 +1058,18 @@ export default {
   border: none;
   color: white;
   font-size: 1.8rem;
-  line-height: 1;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
 }
 
 .close-modal-btn:hover {
-  transform: scale(1.2);
-  color: #f8f9fa;
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .modal-body {
@@ -1046,28 +1077,29 @@ export default {
 }
 
 .create-group-form {
-  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
 }
 
 .form-group {
-  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #333;
+  font-size: 0.95rem;
 }
 
 .form-group input {
-  width: 100%;
-  padding: 12px 15px;
+  padding: 0.8rem 1rem;
   border: 2px solid #e1e1e1;
   border-radius: 8px;
   font-size: 1rem;
-  color: #333;
-  transition: all 0.3s ease;
+  transition: all 0.3s;
 }
 
 .form-group input:focus {
@@ -1079,124 +1111,134 @@ export default {
 .button-container {
   display: flex;
   justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 .submit-btn {
   background: linear-gradient(to right, #142C4D, #204578);
   color: white;
   border: none;
-  padding: 12px 24px;
   border-radius: 8px;
+  padding: 0.8rem 1.5rem;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
-.submit-btn:hover:not(:disabled) {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
+.submit-btn:hover {
   box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
 }
 
 .submit-btn:disabled {
-  background: linear-gradient(to right, #a3a3a3, #c0c0c0);
+  background: #94a3b8;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .form-loading-indicator {
   display: inline-block;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top: 3px solid white;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
 }
 
 /* Mensagens de sucesso e erro */
-.success-message {
+.success-message, .error-message {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  padding: 1.5rem;
-  background-color: #ecfdf5;
-  border: 1px solid #a7f3d0;
+  padding: 1.2rem;
   border-radius: 8px;
-  margin-top: 1.5rem;
+  margin: 1.5rem 0 1rem;
+  animation: fade-in 0.3s ease;
+}
+
+.success-message {
+  background-color: #ecfdf5;
+  border: 1px solid #d1fae5;
 }
 
 .success-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background-color: #10b981;
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   margin-bottom: 0.8rem;
 }
 
 .success-message p {
   color: #047857;
-  font-weight: 500;
-  margin-bottom: 1rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 .success-actions {
   display: flex;
   gap: 1rem;
-  flex-wrap: wrap;
+  margin-top: 1rem;
 }
 
 .action-btn {
-  padding: 10px 16px;
+  padding: 0.6rem 1rem;
   border-radius: 6px;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
 .view-btn {
-  background-color: #3b82f6;
+  background-color: #1e40af;
   color: white;
   border: none;
 }
 
 .view-btn:hover {
-  background-color: #2563eb;
+  background-color: #1e3a8a;
 }
 
 .reset-btn {
-  background-color: white;
-  color: #333;
+  background-color: #f3f4f6;
+  color: #1f2937;
   border: 1px solid #d1d5db;
 }
 
 .reset-btn:hover {
-  background-color: #f3f4f6;
+  background-color: #e5e7eb;
 }
 
 .close-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 0.5rem;
+  right: 0.5rem;
   background: none;
   border: none;
   color: #b91c1c;
   font-size: 1.2rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  transition: all 0.2s;
 }
 
 .close-btn:hover {
-  color: #991b1b;
+  background-color: rgba(185, 28, 28, 0.1);
 }
 </style>
