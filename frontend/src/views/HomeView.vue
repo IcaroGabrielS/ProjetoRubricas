@@ -9,7 +9,7 @@
 
     <!-- Conteúdo principal - visível apenas em desktop -->
     <div v-else class="home-layout">
-      <!-- Painel com o conteúdo (visualmente à esquerda) -->
+      <!-- Painel com o conteúdo (visualmente à direita) -->
       <div class="content-panel">
         <div class="content-wrapper">
           <div class="home-header">
@@ -85,63 +85,61 @@
         </div>
       </div>
       
-      <!-- Painel com a ilustração (visualmente à direita) -->
-      <div class="illustration-panel">
-        <!-- Parte superior com o calendário -->
-        <div class="panel-top-section">
-          <!-- Calendário completo - mais largo horizontalmente -->
-          <div class="full-calendar-container">
-            <div class="calendar-header">
-              <button @click="prevMonth" class="calendar-nav-btn">&lt;</button>
-              <h3>{{ monthNames[currentMonth] }} {{ currentYear }}</h3>
-              <button @click="nextMonth" class="calendar-nav-btn">&gt;</button>
+      <!-- NOVO LAYOUT: Dois painéis à esquerda -->
+      <!-- Painel superior com o calendário -->
+      <div class="calendar-panel">
+        <!-- Calendário completo -->
+        <div class="full-calendar-container">
+          <div class="calendar-header">
+            <button @click="prevMonth" class="calendar-nav-btn">&lt;</button>
+            <h3>{{ monthNames[currentMonth] }} {{ currentYear }}</h3>
+            <button @click="nextMonth" class="calendar-nav-btn">&gt;</button>
+          </div>
+          
+          <div class="calendar-weekdays">
+            <div class="weekday" v-for="day in weekdays" :key="day">{{ day }}</div>
+          </div>
+          
+          <div class="calendar-days">
+            <!-- Dias anteriores ao mês atual (do mês anterior) -->
+            <div 
+              v-for="day in firstDayOfMonth" 
+              :key="'prev-' + day" 
+              class="calendar-day faded"
+            >
+              {{ getLastDaysOfPreviousMonth()[day - 1] }}
             </div>
             
-            <div class="calendar-weekdays">
-              <div class="weekday" v-for="day in weekdays" :key="day">{{ day }}</div>
+            <!-- Dias do mês atual -->
+            <div 
+              v-for="day in daysInMonth" 
+              :key="'curr-' + day" 
+              :class="['calendar-day', 
+                       isToday(day) ? 'today' : '',
+                       hasEvent(day) ? 'has-event' : '']"
+              @click="dayClicked(day)"
+            >
+              {{ day }}
+              <div v-if="hasEvent(day)" class="event-indicator"></div>
             </div>
             
-            <div class="calendar-days">
-              <!-- Dias anteriores ao mês atual (do mês anterior) -->
-              <div 
-                v-for="day in firstDayOfMonth" 
-                :key="'prev-' + day" 
-                class="calendar-day faded"
-              >
-                {{ getLastDaysOfPreviousMonth()[day - 1] }}
-              </div>
-              
-              <!-- Dias do mês atual -->
-              <div 
-                v-for="day in daysInMonth" 
-                :key="'curr-' + day" 
-                :class="['calendar-day', 
-                         isToday(day) ? 'today' : '',
-                         hasEvent(day) ? 'has-event' : '']"
-                @click="dayClicked(day)"
-              >
-                {{ day }}
-                <div v-if="hasEvent(day)" class="event-indicator"></div>
-              </div>
-              
-              <!-- Dias após o mês atual (do próximo mês) -->
-              <div 
-                v-for="day in nextDaysCount" 
-                :key="'next-' + day" 
-                class="calendar-day faded"
-              >
-                {{ day }}
-              </div>
+            <!-- Dias após o mês atual (do próximo mês) -->
+            <div 
+              v-for="day in nextDaysCount" 
+              :key="'next-' + day" 
+              class="calendar-day faded"
+            >
+              {{ day }}
             </div>
           </div>
         </div>
-        
-        <!-- Divisória ilusória entre as seções -->
-        <div class="panel-divider"></div>
-        
-        <!-- Parte inferior - reservada para uso futuro -->
-        <div class="panel-bottom-section">
-          <!-- Espaço reservado para conteúdo futuro -->
+      </div>
+      
+      <!-- Painel inferior para futuras adições -->
+      <div class="future-panel">
+        <div class="future-content">
+          <h3>Área reservada para futuras funcionalidades</h3>
+          <p>Este espaço será utilizado para adicionar novas funcionalidades e informações relevantes.</p>
         </div>
       </div>
     </div>
@@ -477,84 +475,88 @@ export default {
   max-width: 280px;
 }
 
-/* Layout principal - versão desktop */
+/* Layout principal - versão desktop ATUALIZADO */
 .home-layout {
   position: fixed;
   top: 100px;
   left: 50px;
   right: 50px;
   bottom: 30px;
-  display: flex;
-  flex-direction: row-reverse; /* Mantém a ordem inversa (ilustração à direita) */
-  gap: 20px; /* Espaçamento entre os containers */
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Divide em duas colunas */
+  grid-template-rows: 1fr; /* Uma única linha para o painel da direita */
+  gap: 20px;
 }
 
-/* Painel de conteúdo (visualmente à esquerda) */
+/* Painel de conteúdo (visualmente à direita) */
 .content-panel {
-  width: calc(50% - 10px); /* 50% da largura menos metade do gap */
+  grid-column: 2 / 3; /* Posiciona na segunda coluna */
+  grid-row: 1 / 2;   /* Ocupa a linha inteira */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   animation: fade-in 0.8s ease-out;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Painel de ilustração (visualmente à direita) */
-.illustration-panel {
-  width: calc(50% - 10px); /* 50% da largura menos metade do gap */
+/* Novos painéis à esquerda */
+.calendar-panel {
+  grid-column: 1 / 2; /* Posiciona na primeira coluna */
+  grid-row: 1 / 2;   /* Ocupa a primeira linha */
   background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%);
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 0; /* Removido padding para ter controle total sobre as seções */
-  overflow: hidden;
+  justify-content: center;
+  padding: 20px;
   animation: fade-in 0.8s ease-out;
+  margin-bottom: 20px; /* Espaço entre os painéis esquerdo superior e inferior */
+  height: calc(50% - 10px); /* 50% da altura menos metade do gap */
 }
 
-/* Divisão do painel em seções */
-.panel-top-section {
-  width: 100%;
-  height: 50%; /* Define exatamente 50% do espaço para a seção superior */
+.future-panel {
+  grid-column: 1 / 2; /* Posiciona na primeira coluna */
+  grid-row: 1 / 2;   /* Ocupa a mesma linha, mas ficará abaixo por causa do CSS */
+  background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%);
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 15px;
-  box-sizing: border-box;
-}
-
-.panel-divider {
-  width: 90%;
-  height: 1px;
-  background: linear-gradient(to right, 
-                             rgba(255,255,255,0.05), 
-                             rgba(255,255,255,0.3), 
-                             rgba(255,255,255,0.05));
-  margin: 0 auto;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.panel-bottom-section {
-  width: 100%;
-  height: 50%; /* Define exatamente 50% do espaço para a seção inferior */
-  display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 15px;
-  box-sizing: border-box;
+  padding: 20px;
+  animation: fade-in 0.8s ease-out;
+  margin-top: calc(50% + 10px); /* Posiciona abaixo do calendário */
+  height: calc(50% - 10px); /* 50% da altura menos metade do gap */
 }
 
-/* Calendário completo - versão mais larga e achatada */
+.future-content {
+  color: white;
+  text-align: center;
+  padding: 20px;
+}
+
+.future-content h3 {
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.future-content p {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+/* ESTILOS ATUALIZADOS PARA O CALENDÁRIO */
 .full-calendar-container {
   width: 95%;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: white;
   border-radius: 12px;
-  padding: 10px 15px;
-  color: white;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -565,58 +567,60 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(20, 44, 77, 0.1);
 }
 
 .calendar-header h3 {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 600;
   margin: 0;
+  color: #142C4D;
 }
 
+/* Botões de navegação modernizados */
 .calendar-nav-btn {
-  background-color: rgba(255, 255, 255, 0.15);
+  background: none;
   border: none;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  color: #142C4D;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  cursor: pointer;
-  color: white;
-  transition: all 0.2s;
-  font-size: 1rem;
 }
 
 .calendar-nav-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  color: #3b82f6;
   transform: scale(1.1);
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
 }
 
 .weekday {
   text-align: center;
   font-weight: 600;
-  font-size: 0.9rem;
-  padding: 3px 0;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+  padding: 5px 0;
+  color: #142C4D;
 }
 
 .calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: repeat(6, 1fr);
-  gap: 2px;
+  gap: 3px;
   flex: 1;
 }
 
@@ -626,25 +630,27 @@ export default {
   align-items: center;
   justify-content: center;
   height: auto;
-  min-height: 24px;
-  border-radius: 6px;
+  min-height: 28px;
+  border-radius: 8px;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  color: #333;
 }
 
 .calendar-day:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 .calendar-day.today {
   background-color: #3b82f6;
+  color: white;
   font-weight: bold;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
 .calendar-day.faded {
-  color: rgba(255, 255, 255, 0.35);
+  color: #CBD5E1;
   cursor: default;
 }
 
@@ -656,18 +662,18 @@ export default {
   content: '';
   position: absolute;
   bottom: 3px;
-  width: 4px;
-  height: 4px;
-  background-color: #f97316;
+  width: 5px;
+  height: 5px;
+  background-color: #f59e0b;
   border-radius: 50%;
 }
 
 .event-indicator {
   position: absolute;
   bottom: 3px;
-  width: 4px;
-  height: 4px;
-  background-color: #f97316;
+  width: 5px;
+  height: 5px;
+  background-color: #f59e0b;
   border-radius: 50%;
 }
 
@@ -837,40 +843,6 @@ export default {
   justify-content: center;
 }
 
-/* Estilo atualizado para o botão de gerenciamento */
-.manage-button {
-  min-width: 120px;
-  height: 36px;
-  border-radius: 6px;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0 12px;
-  font-size: 0.9rem;
-  box-shadow: none;
-  gap: 6px;
-}
-
-.manage-button:hover {
-  background-color: #e0e0e0;
-  transform: scale(1.05);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.manage-icon {
-  font-size: 1rem;
-}
-
-.manage-text {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #444;
-}
-
 /* NOVOS ESTILOS: Indicador de carregamento */
 .groups-loading-container {
   display: flex;
@@ -895,6 +867,16 @@ export default {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 /* Estados de erro e vazio */
@@ -999,41 +981,49 @@ export default {
   max-width: 600px;
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: slide-up 0.4s ease;
+}
+
+@keyframes slide-up {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
+  padding: 1.5rem;
   border-bottom: 1px solid #eaeaea;
+  background: linear-gradient(to right, #142C4D, #204578);
+  color: white;
 }
 
 .modal-header h2 {
-  color: #142C4D;
-  font-size: 1.8rem;
   margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 .close-modal-btn {
   background: none;
   border: none;
+  color: white;
   font-size: 1.8rem;
-  color: #666;
+  line-height: 1;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
 .close-modal-btn:hover {
-  color: #142C4D;
-  transform: scale(1.1);
+  transform: scale(1.2);
+  color: #f8f9fa;
 }
 
 .modal-body {
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 .create-group-form {
@@ -1041,181 +1031,153 @@ export default {
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
-  text-align: left;
+  margin-bottom: 1.2rem;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #333;
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.9rem;
+  padding: 12px 15px;
   border: 2px solid #e1e1e1;
   border-radius: 8px;
   font-size: 1rem;
   color: #333;
   transition: all 0.3s ease;
-  background-color: #f9f9f9;
-  font-family: 'Sarala', sans-serif;
 }
 
 .form-group input:focus {
   border-color: #204578;
   box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
   outline: none;
-  background-color: #fff;
-}
-
-.form-group input::placeholder {
-  color: #aaa;
 }
 
 .button-container {
   display: flex;
   justify-content: flex-end;
-  margin-top: 1rem;
 }
 
 .submit-btn {
-  padding: 1rem 2.5rem;
   background: linear-gradient(to right, #142C4D, #204578);
-  border: none;
-  border-radius: 8px;
   color: white;
-  font-size: 1.1rem;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 200px;
+  gap: 8px;
 }
 
 .submit-btn:hover:not(:disabled) {
   background: linear-gradient(to right, #1a3760, #2a5b9e);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(32, 69, 120, 0.3);
-}
-
-.submit-btn:active:not(:disabled) {
-  transform: translateY(0);
+  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
 }
 
 .submit-btn:disabled {
-  background: linear-gradient(to right, #6c757d, #495057);
+  background: linear-gradient(to right, #a3a3a3, #c0c0c0);
   cursor: not-allowed;
 }
 
-/* Renomeado para evitar conflito */
 .form-loading-indicator {
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 3px solid rgba(255,255,255,0.3);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
   border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 10px;
+  animation: spin 1s linear infinite;
 }
 
+/* Mensagens de sucesso e erro */
 .success-message {
-  margin-top: 1.5rem;
-  padding: 1.2rem;
-  border-radius: 8px;
   display: flex;
-  align-items: flex-start;
-  background-color: #d1fae5;
-  color: #065f46;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  padding: 1.5rem;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  margin-top: 1.5rem;
 }
 
 .success-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: #059669;
+  width: 40px;
+  height: 40px;
+  background-color: #10b981;
   color: white;
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 0.8rem;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: #b91c1c;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0 0.5rem;
-  margin-left: auto;
+.success-message p {
+  color: #047857;
+  font-weight: 500;
+  margin-bottom: 1rem;
 }
 
 .success-actions {
   display: flex;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .action-btn {
-  padding: 0.8rem 1.5rem;
+  padding: 10px 16px;
   border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  min-width: 180px;
-  text-align: center;
-  border: none;
+  transition: all 0.2s ease;
 }
 
 .view-btn {
-  background-color: #204578;
+  background-color: #3b82f6;
   color: white;
+  border: none;
 }
 
 .view-btn:hover {
-  background-color: #142C4D;
-  transform: translateY(-2px);
+  background-color: #2563eb;
 }
 
 .reset-btn {
-  background-color: #6c757d;
-  color: white;
+  background-color: white;
+  color: #333;
+  border: 1px solid #d1d5db;
 }
 
 .reset-btn:hover {
-  background-color: #5a6268;
-  transform: translateY(-2px);
+  background-color: #f3f4f6;
 }
 
-/* Animações */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #b91c1c;
+  font-size: 1.2rem;
+  cursor: pointer;
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.close-btn:hover {
+  color: #991b1b;
 }
 </style>
