@@ -87,13 +87,66 @@
       
       <!-- Painel com a ilustração (visualmente à direita) -->
       <div class="illustration-panel">
-        <div class="large-svg-container">
-          <img src="@/assets/task-animate.svg" alt="Task Illustration" class="large-svg">
+        <!-- Parte superior com o calendário -->
+        <div class="panel-top-section">
+          <!-- Calendário completo - mais largo horizontalmente -->
+          <div class="full-calendar-container">
+            <div class="calendar-header">
+              <button @click="prevMonth" class="calendar-nav-btn">&lt;</button>
+              <h3>{{ monthNames[currentMonth] }} {{ currentYear }}</h3>
+              <button @click="nextMonth" class="calendar-nav-btn">&gt;</button>
+            </div>
+            
+            <div class="calendar-weekdays">
+              <div class="weekday" v-for="day in weekdays" :key="day">{{ day }}</div>
+            </div>
+            
+            <div class="calendar-days">
+              <!-- Dias anteriores ao mês atual (do mês anterior) -->
+              <div 
+                v-for="day in firstDayOfMonth" 
+                :key="'prev-' + day" 
+                class="calendar-day faded"
+              >
+                {{ getLastDaysOfPreviousMonth()[day - 1] }}
+              </div>
+              
+              <!-- Dias do mês atual -->
+              <div 
+                v-for="day in daysInMonth" 
+                :key="'curr-' + day" 
+                :class="['calendar-day', 
+                         isToday(day) ? 'today' : '',
+                         hasEvent(day) ? 'has-event' : '']"
+                @click="dayClicked(day)"
+              >
+                {{ day }}
+                <div v-if="hasEvent(day)" class="event-indicator"></div>
+              </div>
+              
+              <!-- Dias após o mês atual (do próximo mês) -->
+              <div 
+                v-for="day in nextDaysCount" 
+                :key="'next-' + day" 
+                class="calendar-day faded"
+              >
+                {{ day }}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Divisória ilusória entre as seções -->
+        <div class="panel-divider"></div>
+        
+        <!-- Parte inferior - reservada para uso futuro -->
+        <div class="panel-bottom-section">
+          <!-- Espaço reservado para conteúdo futuro -->
         </div>
       </div>
     </div>
 
-    <!-- Modal para criar novo grupo - sem alterações importantes -->
+    <!-- Modal para criar novo grupo - sem alterações -->
     <div v-if="showCreateGroupModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-container">
         <!-- Conteúdo do modal sem alterações -->
@@ -163,7 +216,18 @@ export default {
       },
       createGroupLoading: false,
       createGroupError: null,
-      createGroupSuccess: ''
+      createGroupSuccess: '',
+
+      // Calendário
+      weekdays: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
+      monthNames: [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ],
+      currentMonth: new Date().getMonth(),
+      currentYear: new Date().getFullYear(),
+      today: new Date(),
+      events: [], // Futuro: armazenar eventos aqui
     }
   },
   computed: {
@@ -176,6 +240,24 @@ export default {
       return this.groups.filter(group => 
         group.name.toLowerCase().includes(query)
       );
+    },
+    // Cálculos para o calendário
+    daysInMonth() {
+      // Retorna o número de dias no mês atual
+      return new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+    },
+    firstDayOfMonth() {
+      // Obtém o dia da semana do primeiro dia do mês (0 = Domingo, 1 = Segunda, etc.)
+      const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
+      // Retorna um array com o número de dias necessários para preencher os espaços antes
+      return Array.from({ length: firstDay }, (_, i) => i + 1);
+    },
+    nextDaysCount() {
+      // Calcula quantos dias do próximo mês precisamos mostrar
+      // Total de células em um grid 7x6 = 42
+      const totalDays = 42;
+      const usedDays = this.firstDayOfMonth.length + this.daysInMonth;
+      return Array.from({ length: totalDays - usedDays }, (_, i) => i + 1);
     }
   },
   created() {
@@ -191,6 +273,47 @@ export default {
     window.removeEventListener('resize', this.checkDeviceType);
   },
   methods: {
+    // Métodos para calendário
+    prevMonth() {
+      if (this.currentMonth === 0) {
+        this.currentMonth = 11;
+        this.currentYear--;
+      } else {
+        this.currentMonth--;
+      }
+    },
+    nextMonth() {
+      if (this.currentMonth === 11) {
+        this.currentMonth = 0;
+        this.currentYear++;
+      } else {
+        this.currentMonth++;
+      }
+    },
+    getLastDaysOfPreviousMonth() {
+      // Obtém os últimos dias do mês anterior para exibir no calendário
+      const lastDayPrevMonth = new Date(this.currentYear, this.currentMonth, 0).getDate();
+      const daysNeeded = this.firstDayOfMonth.length;
+      return Array.from({ length: daysNeeded }, (_, i) => lastDayPrevMonth - daysNeeded + i + 1);
+    },
+    isToday(day) {
+      // Verifica se o dia é o dia atual
+      const today = new Date();
+      return day === today.getDate() && 
+             this.currentMonth === today.getMonth() && 
+             this.currentYear === today.getFullYear();
+    },
+    hasEvent(day) {
+      // Futuro: verificar se existe evento para este dia
+      // Por enquanto, vamos simular alguns eventos
+      const randomDays = [];
+      return randomDays.includes(day) && this.currentMonth === new Date().getMonth();
+    },
+    dayClicked(day) {
+      // Futuro: abrir modal para adicionar/ver eventos
+      console.log(`Dia clicado: ${day}/${this.currentMonth + 1}/${this.currentYear}`);
+      // Se for admin, poderia mostrar um diálogo para adicionar evento
+    },
     checkDeviceType() {
       this.isMobileDevice = window.innerWidth < 1024;
     },
@@ -383,25 +506,169 @@ export default {
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
+  padding: 0; /* Removido padding para ter controle total sobre as seções */
   overflow: hidden;
   animation: fade-in 0.8s ease-out;
 }
 
-/* Container e estilos para o SVG grande */
-.large-svg-container {
+/* Divisão do painel em seções */
+.panel-top-section {
+  width: 100%;
+  height: 50%; /* Define exatamente 50% do espaço para a seção superior */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.panel-divider {
   width: 90%;
-  height: 90%;
+  height: 1px;
+  background: linear-gradient(to right, 
+                             rgba(255,255,255,0.05), 
+                             rgba(255,255,255,0.3), 
+                             rgba(255,255,255,0.05));
+  margin: 0 auto;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.panel-bottom-section {
+  width: 100%;
+  height: 50%; /* Define exatamente 50% do espaço para a seção inferior */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+/* Calendário completo - versão mais larga e achatada */
+.full-calendar-container {
+  width: 95%;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 15px;
+  color: white;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.calendar-header h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.calendar-nav-btn {
+  background-color: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s;
+  font-size: 1rem;
 }
 
-.large-svg {
-  max-width: 100%;
-  max-height: 100%;
+.calendar-nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 5px;
+}
+
+.weekday {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 3px 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 2px;
+  flex: 1;
+}
+
+.calendar-day {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  min-height: 24px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.calendar-day:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.calendar-day.today {
+  background-color: #3b82f6;
+  font-weight: bold;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.calendar-day.faded {
+  color: rgba(255, 255, 255, 0.35);
+  cursor: default;
+}
+
+.calendar-day.faded:hover {
+  background-color: transparent;
+}
+
+.calendar-day.has-event::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  background-color: #f97316;
+  border-radius: 50%;
+}
+
+.event-indicator {
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  background-color: #f97316;
+  border-radius: 50%;
 }
 
 /* Container do conteúdo para o painel de conteúdo */
