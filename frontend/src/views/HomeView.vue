@@ -54,7 +54,7 @@
             </div>
             
             <div v-else-if="filteredGroups.length === 0" class="empty-state">
-              <p>Nenhum grupo encontrado com esse nome.</p>
+              <p>Nenhum grupo encontrado.</p>
             </div>
             
             <div v-else class="stores-list">
@@ -135,12 +135,25 @@
       <div class="events-panel">
         <div class="events-content">
           <h3>Próximos Eventos</h3>
-          <div v-if="events.length === 0" class="empty-events">
-            <p>Nenhum evento agendado.</p>
+          <div v-if="eventsLoading" class="events-loading">
+            <div class="events-loading-spinner"></div>
+            <p>Carregando eventos...</p>
+          </div>
+          <div v-else-if="eventsError" class="error-message">
+            <div class="error-icon">!</div>
+            <p>{{ eventsError }}</p>
+          </div>
+          <div v-else-if="events.length === 0" class="empty-events">
+            <p>Nenhum evento agendado para o período.</p>
           </div>
           <ul v-else class="events-list">
-            <li v-for="(event, index) in events" :key="index" class="event-item">
-              {{ event.date }}: {{ event.title }}
+            <li 
+              v-for="(event, index) in events" 
+              :key="index" 
+              class="event-item"
+              :data-type="event.type"
+            >
+              {{ formatEventDate(event.date) }}: {{ event.title }}
             </li>
           </ul>
         </div>
@@ -231,7 +244,10 @@ export default {
       currentYear: new Date().getFullYear(),
       
       // Eventos
-      events: [], // Aqui serão armazenados os eventos do calendário
+      events: [],
+      eventsLoading: false,
+      eventsError: null,
+      holidaysCache: {}, // Cache para armazenar feriados por ano
     }
   },
   computed: {
@@ -271,7 +287,7 @@ export default {
     this.checkDeviceType();
     this.loadUserInfo();
     this.fetchGroups();
-    this.loadMockEvents(); // Carregar eventos de exemplo (temporário)
+    this.fetchHolidaysAndEvents(); // Buscar feriados nacionais
     
     // Adicionar listener para verificar redimensionamento
     window.addEventListener('resize', this.checkDeviceType);
@@ -346,6 +362,8 @@ export default {
       if (this.currentMonth === 0) {
         this.currentMonth = 11;
         this.currentYear--;
+        // Carrega feriados do ano anterior se necessário
+        this.fetchNationalHolidays(this.currentYear).then(() => this.combineAllEvents());
       } else {
         this.currentMonth--;
       }
@@ -356,6 +374,8 @@ export default {
       if (this.currentMonth === 11) {
         this.currentMonth = 0;
         this.currentYear++;
+        // Carrega feriados do próximo ano se necessário
+        this.fetchNationalHolidays(this.currentYear).then(() => this.combineAllEvents());
       } else {
         this.currentMonth++;
       }
@@ -388,35 +408,127 @@ export default {
     },
     
     dayClicked(day) {
-      // Futuramente: abrir modal para adicionar/ver eventos do dia
-      console.log(`Dia clicado: ${day}/${this.currentMonth + 1}/${this.currentYear}`);
+      // Mostra os eventos deste dia específico
+      // Removida a declaração de clickedDate que não era utilizada
+      const eventsOnThisDay = this.events.filter(event => {
+        const eventDate = new Date(event.date);
+        return eventDate.getDate() === day && 
+               eventDate.getMonth() === this.currentMonth &&
+               eventDate.getFullYear() === this.currentYear;
+      });
       
-      // Se for admin, poderia mostrar um diálogo para adicionar evento
-      if (this.isAdmin) {
-        // Implementação futura: adicionar eventos
+      if (eventsOnThisDay.length > 0) {
+        console.log('Eventos neste dia:', eventsOnThisDay);
+        // Aqui você pode implementar um modal ou uma exibição detalhada
+        // dos eventos deste dia
+      } else if (this.isAdmin) {
+        // Se for admin, pode mostrar opção para adicionar evento
+        console.log(`Nenhum evento no dia ${day}/${this.currentMonth + 1}/${this.currentYear}`);
       }
     },
     
-    // Carregar eventos de exemplo (temporário)
-    loadMockEvents() {
+    // Formata a data do evento para exibição
+    formatEventDate(dateStr) {
+      const date = new Date(dateStr);
+      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    },
+    
+    // Busca feriados da API e outros eventos
+    async fetchHolidaysAndEvents() {
+      this.eventsLoading = true;
+      
+      try {
+        // Buscar feriados nacionais do Brasil para o ano corrente
+        await this.fetchNationalHolidays(this.currentYear);
+        
+        // Se estamos perto do fim do ano, já carrega os feriados do próximo ano
+        if (this.currentMonth >= 10) {
+          await this.fetchNationalHolidays(this.currentYear + 1);
+        }
+        
+        // Aqui você poderia adicionar outros eventos do sistema, se necessário
+        this.combineAllEvents();
+        
+      } catch (error) {
+        console.error('Erro ao carregar eventos:', error);
+        this.eventsError = 'Erro ao carregar eventos. Por favor, tente novamente mais tarde.';
+      } finally {
+        this.eventsLoading = false;
+      }
+    },
+    
+    // Busca feriados nacionais de uma API pública
+    async fetchNationalHolidays(year) {
+      // Verifica se já temos os feriados desse ano em cache
+      if (this.holidaysCache[year]) {
+        return;
+      }
+      
+      try {
+        // Usando a API Nager.Date para buscar feriados do Brasil
+        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/BR`);
+        
+        if (!response.ok) {
+          throw new Error(`Erro ao buscar feriados: ${response.status}`);
+        }
+        
+        const holidays = await response.json();
+        
+        // Transformando os dados da API para o formato esperado pelo componente
+        const formattedHolidays = holidays.map(holiday => ({
+          date: holiday.date, // Formato ISO: YYYY-MM-DD
+          title: holiday.localName,
+          type: 'holiday',
+          fixed: true
+        }));
+        
+        // Armazena em cache
+        this.holidaysCache[year] = formattedHolidays;
+        
+      } catch (error) {
+        console.error(`Erro ao buscar feriados de ${year}:`, error);
+        // Criar um array vazio em caso de erro para evitar novas requisições
+        this.holidaysCache[year] = [];
+      }
+    },
+    
+    // Combina todos os eventos e os ordena por data
+    combineAllEvents() {
+      let allEvents = [];
+      
+      // Adiciona todos os feriados do cache
+      Object.values(this.holidaysCache).forEach(holidays => {
+        allEvents = [...allEvents, ...holidays];
+      });
+      
+      // Adiciona outros eventos do sistema aqui, se houver
+      
+      // Filtra eventos apenas dos próximos 90 dias
       const today = new Date();
-      const tomorrow = new Date();
-      tomorrow.setDate(today.getDate() + 1);
-      const nextWeek = new Date();
-      nextWeek.setDate(today.getDate() + 7);
+      const futureDate = new Date();
+      futureDate.setDate(today.getDate() + 90);
       
-      this.events = [
-        { date: today.toISOString(), title: 'Reunião de planejamento' },
-        { date: tomorrow.toISOString(), title: 'Entrega de relatório' },
-        { date: nextWeek.toISOString(), title: 'Avaliação semestral' }
-      ];
+      allEvents = allEvents.filter(event => {
+        const eventDate = new Date(event.date);
+        return eventDate >= today && eventDate <= futureDate;
+      });
       
-      this.updateEventsForCurrentMonth();
+      // Ordena por data
+      allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      this.events = allEvents;
     },
     
     updateEventsForCurrentMonth() {
-      // Método para atualizar eventos quando o mês é alterado
-      // (Implementação futura: buscar eventos do servidor)
+      // Atualiza os eventos visíveis no calendário para o mês atual
+      this.combineAllEvents();
+      
+      // Se estamos próximos da transição de ano, já carrega o próximo/anterior
+      if (this.currentMonth === 11) {
+        this.fetchNationalHolidays(this.currentYear + 1);
+      } else if (this.currentMonth === 0) {
+        this.fetchNationalHolidays(this.currentYear - 1);
+      }
     },
     
     // Métodos para o modal de criação de grupo
@@ -1240,5 +1352,45 @@ export default {
 
 .close-btn:hover {
   background-color: rgba(185, 28, 28, 0.1);
+}
+
+/* Estilos para os indicadores de eventos */
+.events-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.events-loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+/* Melhorar a visualização de eventos com cores diferentes por tipo */
+.event-item {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border-left: 3px solid #f59e0b; /* Cor padrão para feriados */
+}
+
+/* Cor diferente para eventos do sistema (quando implementados) */
+.event-item[data-type="system"] {
+  border-left: 3px solid #10b981; /* Verde para eventos do sistema */
+}
+
+/* Cor diferente para eventos pessoais (quando implementados) */
+.event-item[data-type="personal"] {
+  border-left: 3px solid #3b82f6; /* Azul para eventos pessoais */
 }
 </style>
