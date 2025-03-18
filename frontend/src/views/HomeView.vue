@@ -491,11 +491,36 @@ export default {
 /* Painel de conteúdo (visualmente à direita) */
 .content-panel {
   grid-column: 2 / 3; /* Posiciona na segunda coluna */
-  grid-row: 1 / 2;   /* Ocupa a linha inteira */
+  grid-row: 1 / 3;   /* Ocupa as duas linhas do grid */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  animation: fade-in 0.8s ease-out;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Layout principal - o elemento que atua como container pai */
+.home-layout {
+  position: fixed;
+  top: 100px;
+  left: 50px;
+  right: 50px;
+  bottom: 30px;
+  display: grid;
+  grid-template-columns: 1fr 2fr; /* Proporção 1:2 entre esquerda e direita */
+  grid-template-rows: 1fr 1fr; /* Duas linhas de igual altura */
+  gap: 20px; /* Espaçamento uniforme entre todos os elementos */
+}
+
+/* Painel de conteúdo (visualmente à direita) */
+.content-panel {
+  grid-column: 2 / 3; /* Posiciona na segunda coluna */
+  grid-row: 1 / 3;   /* Ocupa as duas linhas do grid */
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -511,25 +536,21 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  animation: fade-in 0.8s ease-out;
-  margin-bottom: 20px; /* Espaço entre os painéis esquerdo superior e inferior */
-  height: calc(50% - 10px); /* 50% da altura menos metade do gap */
+  margin-bottom: 0; /* Remove margin e usa o gap do grid */
+  height: auto; /* Altura automática baseada no grid */
 }
 
 .future-panel {
   grid-column: 1 / 2; /* Posiciona na primeira coluna */
-  grid-row: 1 / 2;   /* Ocupa a mesma linha, mas ficará abaixo por causa do CSS */
-  background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%);
+  grid-row: 2 / 3;   /* Ocupa a segunda linha */
+  background: #1E3A8A;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  animation: fade-in 0.8s ease-out;
-  margin-top: calc(50% + 10px); /* Posiciona abaixo do calendário */
-  height: calc(50% - 10px); /* 50% da altura menos metade do gap */
+  margin-top: 0; /* Remove margin e usa o gap do grid */
+  height: auto; /* Altura automática baseada no grid */
 }
 
 .future-content {
@@ -551,12 +572,10 @@ export default {
 
 /* ESTILOS ATUALIZADOS PARA O CALENDÁRIO */
 .full-calendar-container {
-  width: 95%;
+  width: 100%;
   background-color: white;
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
   height: 100%;
   display: flex;
   flex-direction: column;
