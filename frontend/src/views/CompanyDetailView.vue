@@ -127,36 +127,22 @@
           </div>
 
           <div v-else>
-            <!-- Seção de Gerenciamento de Arquivos -->
+            <!-- Seção de Gerenciamento de Arquivos Simplificada -->
             <div class="dashboard-summary">
-              <div class="dashboard-item">
-                <h3>Gerenciamento de Arquivos</h3>
-                <p>
-                  Nesta seção você pode enviar, visualizar e gerenciar arquivos da empresa 
-                  <strong>{{ company.name }}</strong>.
-                </p>
-                <p>
-                  Utilize a página de gerenciamento de arquivos para:
-                </p>
-                <ul class="feature-list">
-                  <li>Enviar novos arquivos para a empresa</li>
-                  <li>Visualizar todos os arquivos disponíveis</li>
-                  <li>Fazer download dos arquivos</li>
-                  <li v-if="isAdmin">Excluir arquivos existentes</li>
-                </ul>
-                
-                <div class="file-actions-center">
-                  <button class="action-button primary" @click="goToCompanyFiles">
-                    <i class="file-icon">📁</i>
+              <div class="dashboard-item files-panel">
+                <div class="files-content">
+                  <div class="files-info">
+                    <h3>Gerenciamento de Arquivos</h3>
+                    <p v-if="files.length > 0" class="files-count">
+                      {{ files.length }} {{ files.length === 1 ? 'arquivo disponível' : 'arquivos disponíveis' }}
+                    </p>
+                    <p v-else class="files-count">Nenhum arquivo disponível</p>
+                  </div>
+                  
+                  <button class="file-manage-btn" @click="goToCompanyFiles">
+                    <span class="file-icon">📁</span>
                     Gerenciar Arquivos
                   </button>
-                </div>
-                
-                <div class="file-counter" v-if="files.length > 0">
-                  <p>
-                    <span class="file-count">{{ files.length }}</span> 
-                    {{ files.length === 1 ? 'arquivo disponível' : 'arquivos disponíveis' }}
-                  </p>
                 </div>
               </div>
             </div>
@@ -683,6 +669,57 @@ export default {
   margin-bottom: 1rem;
 }
 
+/* Estilo para o painel de arquivos minimalista */
+.dashboard-item.files-panel {
+  background-color: #f0f4f8;
+  transition: all 0.2s ease;
+}
+
+.dashboard-item.files-panel:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.files-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.files-info h3 {
+  margin-bottom: 0.3rem;
+  color: #204578;
+}
+
+.files-count {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.file-manage-btn {
+  background-color: #204578;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.file-manage-btn:hover {
+  background-color: #142C4D;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.file-icon {
+  margin-right: 0.5rem;
+}
+
 .dashboard-item h3 {
   color: #204578;
   font-size: 1.2rem;
@@ -867,92 +904,6 @@ export default {
   font-style: italic;
 }
 
-/* Estilos para features de arquivo */
-.feature-list {
-  list-style-type: none;
-  padding: 0;
-  margin: 0.5rem 0 1.5rem 0;
-}
-
-.feature-list li {
-  padding: 0.5rem 0;
-  padding-left: 1.5rem;
-  position: relative;
-  color: #4b5563;
-}
-
-.feature-list li::before {
-  content: "✓";
-  position: absolute;
-  left: 0;
-  color: #1D4ED8;
-  font-weight: bold;
-}
-
-.file-actions-center {
-  display: flex;
-  justify-content: center;
-  margin: 1.5rem 0;
-}
-
-.action-button {
-  background-color: #204578;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  text-decoration: none;
-}
-
-.action-button:hover {
-  background-color: #142C4D;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.action-button.primary {
-  background-color: #1D4ED8;
-}
-
-.action-button.primary:hover {
-  background-color: #1e40af;
-}
-
-.action-button.admin {
-  background-color: #047857;
-}
-
-.action-button.admin:hover {
-  background-color: #065f46;
-}
-
-.file-icon {
-  margin-right: 0.8rem;
-  font-style: normal;
-  font-size: 1.2rem;
-}
-
-.file-counter {
-  text-align: center;
-  margin-top: 1.5rem;
-  font-size: 0.9rem;
-  color: #6b7280;
-}
-
-.file-count {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #204578;
-  margin-right: 0.2rem;
-}
-
 /* Botões e ações */
 .quick-actions {
   display: flex;
@@ -1002,13 +953,12 @@ export default {
 }
 
 .delete-btn {
-  background-color: #dc2626;
+  background-color: #ef4444;
   color: white;
   border: none;
   border-radius: 6px;
   padding: 0.8rem 1.5rem;
   font-size: 1rem;
-  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1018,26 +968,11 @@ export default {
 }
 
 .delete-btn:disabled {
-  opacity: 0.7;
+  background-color: #fca5a5;
   cursor: not-allowed;
 }
 
-.cancel-btn {
-  background-color: #6b7280;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  background-color: #4b5563;
-}
-
-/* Modal de Confirmação */
+/* Modal de confirmação */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1048,27 +983,34 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .modal-container {
-  width: 450px;
+  width: 90%;
+  max-width: 500px;
   background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
-  padding: 1.5rem;
-  background-color: #f3f4f6;
+  background-color: #f9fafb;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h3 {
   margin: 0;
   color: #111827;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
 
 .modal-body {
@@ -1076,65 +1018,73 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-}
-
-.modal-icon {
-  font-size: 40px;
-  margin-bottom: 1rem;
 }
 
 .modal-body p {
-  margin-bottom: 1rem;
-  color: #374151;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+  text-align: center;
 }
 
 .warning-text {
-  color: #b91c1c;
+  color: #ef4444;
   font-weight: 600;
 }
 
+.modal-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
 .confirmation-input {
-  margin-top: 1.5rem;
   width: 100%;
+  margin-top: 1rem;
 }
 
 .confirmation-input label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.95rem;
+  font-weight: 500;
+  font-size: 0.9rem;
   color: #374151;
 }
 
 .confirmation-input input {
   width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #ddd;
+  padding: 0.7rem;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
+}
+
+.confirmation-input input:focus {
+  outline: none;
+  border-color: #204578;
+  box-shadow: 0 0 0 2px rgba(32, 69, 120, 0.2);
 }
 
 .modal-footer {
-  padding: 1rem 1.5rem;
   background-color: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.8rem;
+  border-top: 1px solid #e5e7eb;
 }
 
-/* Notificações */
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
+.cancel-btn {
+  padding: 0.6rem 1.2rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  font-weight: 500;
   cursor: pointer;
-  color: #b91c1c;
-  padding: 0;
-  margin-left: 10px;
+  transition: all 0.2s ease;
 }
 
-.close-btn.success {
-  color: #065f46;
+.cancel-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
 }
 </style>

@@ -68,27 +68,6 @@
                       <div class="file-types">Formatos permitidos: .csv, .xls, .xlsx, .pdf</div>
                     </div>
                     
-                    <div class="form-group">
-                      <label for="fileDescription">Descrição do Arquivo:</label>
-                      <input 
-                        type="text" 
-                        id="fileDescription" 
-                        v-model="fileDescription" 
-                        placeholder="Descreva brevemente o conteúdo deste arquivo"
-                      >
-                    </div>
-                    
-                    <div class="form-group">
-                      <label for="fileCategory">Categoria:</label>
-                      <select id="fileCategory" v-model="fileCategory">
-                        <option value="">Selecione uma categoria</option>
-                        <option value="financeiro">Financeiro</option>
-                        <option value="contratual">Contratual</option>
-                        <option value="relatório">Relatório</option>
-                        <option value="outro">Outro</option>
-                      </select>
-                    </div>
-                    
                     <button 
                       type="submit" 
                       class="submit-btn" 
@@ -125,7 +104,7 @@
               <!-- Filtro de Arquivos -->
               <div class="dashboard-summary">
                 <div class="dashboard-item">
-                  <h3>Filtrar Arquivos</h3>
+                  <h3>Buscar Arquivos</h3>
                   <div class="filter-controls">
                     <div class="form-group">
                       <input 
@@ -134,20 +113,6 @@
                         placeholder="Buscar por nome de arquivo" 
                         class="search-input"
                       >
-                    </div>
-                    <div class="filter-actions">
-                      <select v-model="filterCategory" class="filter-select">
-                        <option value="">Todas as categorias</option>
-                        <option value="financeiro">Financeiro</option>
-                        <option value="contratual">Contratual</option>
-                        <option value="relatório">Relatório</option>
-                        <option value="outro">Outro</option>
-                      </select>
-                      <select v-model="sortOrder" class="filter-select">
-                        <option value="newest">Mais recentes primeiro</option>
-                        <option value="oldest">Mais antigos primeiro</option>
-                        <option value="name">Nome (A-Z)</option>
-                      </select>
                     </div>
                   </div>
                 </div>
@@ -162,7 +127,7 @@
                     <p>Nenhum arquivo foi adicionado a esta empresa.</p>
                   </div>
                   <div v-else-if="filteredFiles.length === 0" class="empty-state">
-                    <p>Nenhum arquivo corresponde aos filtros selecionados.</p>
+                    <p>Nenhum arquivo corresponde à busca.</p>
                   </div>
                   <div v-else class="files-list">
                     <div v-for="file in filteredFiles" :key="file.id" class="file-item">
@@ -254,8 +219,6 @@
         
         // Upload de arquivos
         selectedFile: null,
-        fileDescription: '',
-        fileCategory: '',
         uploading: false,
   
         // Exclusão de arquivo
@@ -264,8 +227,6 @@
         
         // Filtro e paginação
         searchQuery: '',
-        filterCategory: '',
-        sortOrder: 'newest',
         currentPage: 1,
         itemsPerPage: 10
       }
@@ -283,23 +244,8 @@
           );
         }
         
-        // Aplicar filtro de categoria
-        if (this.filterCategory) {
-          result = result.filter(file => file.category === this.filterCategory);
-        }
-        
-        // Aplicar ordenação
-        switch(this.sortOrder) {
-          case 'newest':
-            result.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
-            break;
-          case 'oldest':
-            result.sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at));
-            break;
-          case 'name':
-            result.sort((a, b) => a.filename.localeCompare(b.filename));
-            break;
-        }
+        // Ordenar por mais recentes primeiro (mantendo a ordenação padrão)
+        result.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
         
         // Paginação
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
@@ -329,14 +275,8 @@
       window.removeEventListener('resize', this.checkDeviceType);
     },
     watch: {
-      filterCategory() {
-        this.currentPage = 1; // Reset para primeira página quando filtrar
-      },
       searchQuery() {
         this.currentPage = 1; // Reset para primeira página quando buscar
-      },
-      sortOrder() {
-        this.currentPage = 1; // Reset para primeira página quando mudar ordenação
       }
     },
     methods: {
@@ -484,15 +424,6 @@
           const formData = new FormData();
           formData.append('file', this.selectedFile);
           
-          // Adicionar metadados adicionais se fornecidos
-          if (this.fileDescription) {
-            formData.append('description', this.fileDescription);
-          }
-          
-          if (this.fileCategory) {
-            formData.append('category', this.fileCategory);
-          }
-          
           const response = await fetch(`/api/companies/${this.companyId}/files`, {
             method: 'POST',
             headers: {
@@ -512,8 +443,6 @@
           // Limpar formulário e atualizar lista de arquivos
           this.$refs.fileInput.value = '';
           this.selectedFile = null;
-          this.fileDescription = '';
-          this.fileCategory = '';
           this.success = 'Arquivo enviado com sucesso!';
           await this.fetchCompanyFiles();
           
@@ -913,20 +842,6 @@
     font-size: 0.95rem;
     margin-bottom: 0.8rem;
   }
-  
-  .filter-actions {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.filter-select {
-  padding: 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: #374151;
-  background-color: white;
-}
 
 /* Paginação */
 .pagination {
@@ -1000,71 +915,87 @@
   100% { transform: rotate(360deg); }
 }
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.error-message, .success-message {
+  flex-direction: row;
+  justify-content: flex-start;
+  background-color: #fdeded;
+  border-left: 4px solid #ef4444;
+  color: #b91c1c;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  position: relative;
 }
 
-.error-icon {
-  width: 30px;
-  height: 30px;
-  background-color: #fee2e2;
-  color: #b91c1c;
+.success-message {
+  background-color: #ecfdf5;
+  border-left: 4px solid #10b981;
+  color: #047857;
+}
+
+.error-icon, .success-icon {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  background-color: #ef4444;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  margin-bottom: 0.8rem;
+  margin-right: 1rem;
 }
 
 .success-icon {
-  width: 30px;
-  height: 30px;
-  background-color: #d1fae5;
-  color: #065f46;
-  border-radius: 50%;
+  background-color: #10b981;
+}
+
+.close-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #b91c1c;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  margin-bottom: 0.8rem;
 }
 
-.error-message p {
-  color: #b91c1c;
+.close-btn.success {
+  color: #047857;
 }
 
-.success-message p {
-  color: #065f46;
+.empty-state {
+  text-align: center;
+  color: #6b7280;
+  background-color: #f9fafb;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
 }
 
-.empty-state p {
-  color: #666;
-  font-style: italic;
-}
-
-/* Botões e ações */
-.quick-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 2rem;
-  gap: 0.8rem;
+/* Botões */
+.submit-btn, .secondary-button, .download-btn, .delete-btn {
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .submit-btn {
   background-color: #204578;
   color: white;
   border: none;
-  border-radius: 6px;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -1072,35 +1003,27 @@
 }
 
 .submit-btn:disabled {
-  opacity: 0.7;
+  background-color: #9ca3af;
   cursor: not-allowed;
 }
 
 .secondary-button {
   background-color: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  color: #204578;
+  border: 1px solid #204578;
 }
 
 .secondary-button:hover {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
+  background-color: #f8f9fa;
+  color: #142C4D;
 }
 
 .download-btn {
   background-color: #204578;
   color: white;
   border: none;
-  border-radius: 6px;
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 1rem;
   font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .download-btn:hover {
@@ -1108,21 +1031,14 @@
 }
 
 .delete-btn {
-  background-color: #dc2626;
+  background-color: #ef4444;
   color: white;
   border: none;
-  border-radius: 6px;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .delete-btn.small {
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 1rem;
   font-size: 0.9rem;
-  font-weight: normal;
 }
 
 .delete-btn:hover:not(:disabled) {
@@ -1130,26 +1046,11 @@
 }
 
 .delete-btn:disabled {
-  opacity: 0.7;
+  background-color: #f87171;
   cursor: not-allowed;
 }
 
-.cancel-btn {
-  background-color: #6b7280;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  background-color: #4b5563;
-}
-
-/* Modal de Confirmação */
+/* Modal de confirmação */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1160,27 +1061,34 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .modal-container {
-  width: 450px;
+  width: 90%;
+  max-width: 500px;
   background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
-  padding: 1.5rem;
-  background-color: #f3f4f6;
+  background-color: #f9fafb;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h3 {
   margin: 0;
   color: #111827;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
 
 .modal-body {
@@ -1188,65 +1096,51 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-}
-
-.modal-icon {
-  font-size: 40px;
-  margin-bottom: 1rem;
 }
 
 .modal-body p {
-  margin-bottom: 1rem;
-  color: #374151;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+  text-align: center;
 }
 
 .warning-text {
-  color: #b91c1c;
+  color: #ef4444;
   font-weight: 600;
 }
 
-.confirmation-input {
-  margin-top: 1.5rem;
-  width: 100%;
-}
-
-.confirmation-input label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-  color: #374151;
-}
-
-.confirmation-input input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
+.modal-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
 }
 
 .modal-footer {
-  padding: 1rem 1.5rem;
   background-color: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.8rem;
+  border-top: 1px solid #e5e7eb;
 }
 
-/* Notificações */
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
+.cancel-btn {
+  padding: 0.6rem 1.2rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  font-weight: 500;
   cursor: pointer;
-  color: #b91c1c;
-  padding: 0;
-  margin-left: 10px;
+  transition: all 0.2s ease;
 }
 
-.close-btn.success {
-  color: #065f46;
+.cancel-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>
