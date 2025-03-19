@@ -84,9 +84,9 @@ class GroupPermission(db.Model):
             "created_at": self.created_at.isoformat()
         }
 
-# Atualizamos a tabela de empresas para usar UUID do grupo
+# Atualizamos a tabela de empresas para usar UUID como chave primária também
 class Company(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(100), nullable=False)
     cnpj = db.Column(db.String(18), unique=True, nullable=False)
     group_id = db.Column(db.String(36), db.ForeignKey('group.id'), nullable=False)
@@ -104,9 +104,33 @@ class Company(db.Model):
             "created_at": self.created_at.isoformat()
         }
 
+class Employee(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    cpf = db.Column(db.String(14), nullable=False)
+    company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    
+    # Relacionamento com a empresa
+    company = db.relationship('Company', backref='employees')
+    
+    # Garantir que não haja CPF duplicado na mesma empresa
+    __table_args__ = (
+        db.UniqueConstraint('company_id', 'cpf', name='unique_company_employee_cpf'),
+    )
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "cpf": self.cpf,
+            "company_id": self.company_id,
+            "created_at": self.created_at.isoformat()
+        }
+
 class CompanyFile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)  # Atualizado para UUID
     filename = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.String(500), nullable=False)
     file_type = db.Column(db.String(50), nullable=False)

@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from models import db, User, Group, Company, CompanyFile, GroupPermission, bcrypt
+from models import db, User, Group, Company, CompanyFile, GroupPermission, Employee, bcrypt
 from config import Config
 import os
 from werkzeug.utils import secure_filename
@@ -430,7 +430,7 @@ def manage_group_permissions(group_id):
             'message': 'Acesso removido com sucesso'
         }), 200
 
-# Rota para criar empresas dentro de um grupo (apenas admin) - atualizada para UUID
+# Rota para criar empresas dentro de um grupo (apenas admin) - Atualizada para retornar UUID
 @app.route('/api/groups/<group_id>/companies', methods=['POST'])
 @admin_required
 def create_company(group_id):
@@ -439,7 +439,6 @@ def create_company(group_id):
         return jsonify({'message': 'ID de grupo inválido'}), 400
         
     data = request.get_json()
-    user_id = request.headers.get('User-ID')
     
     new_company = Company(
         name=data['name'],
@@ -455,7 +454,7 @@ def create_company(group_id):
         'company': new_company.to_dict()
     }), 201
 
-# Rota para listar empresas de um grupo - atualizada para UUID
+# Rota para listar empresas de um grupo - Mantém a mesma interface
 @app.route('/api/groups/<group_id>/companies', methods=['GET'])
 def list_companies(group_id):
     # Verifica se o group_id é um UUID válido
@@ -495,7 +494,12 @@ def delete_group(group_id):
     # Exclui todas as empresas associadas ao grupo
     companies = Company.query.filter_by(group_id=group_id).all()
     for company in companies:
+        # Exclui todos os funcionários de cada empresa
+        Employee.query.filter_by(company_id=company.id).delete()
+        
+        # Exclui todos os arquivos de cada empresa
         CompanyFile.query.filter_by(company_id=company.id).delete()
+        
         db.session.delete(company)
     
     # Exclui o grupo
@@ -504,10 +508,14 @@ def delete_group(group_id):
     
     return jsonify({'message': 'Grupo excluído com sucesso'}), 200
 
-# Rota para upload de arquivos para uma empresa
-@app.route('/api/companies/<int:company_id>/files', methods=['POST'])
+# Rota para upload de arquivos para uma empresa - Atualizada para UUID
+@app.route('/api/companies/<company_id>/files', methods=['POST'])
 @admin_required
 def upload_file(company_id):
+    # Verifica se o company_id é um UUID válido
+    if not is_valid_uuid(company_id):
+        return jsonify({'message': 'ID de empresa inválido'}), 400
+    
     company = Company.query.get_or_404(company_id)
     
     if 'file' not in request.files:
@@ -564,24 +572,13 @@ def download_file(file_id):
     company_folder = os.path.join(app.config['UPLOAD_FOLDER'], f'company_{file_obj.company_id}')
     return send_from_directory(company_folder, file_obj.filename, as_attachment=True)
 
-# Rota para excluir uma empresa
-@app.route('/api/companies/<int:company_id>', methods=['DELETE'])
-@admin_required
-def delete_company(company_id):
-    company = Company.query.get_or_404(company_id)
-    
-    # Exclui todos os arquivos associados à empresa
-    CompanyFile.query.filter_by(company_id=company_id).delete()
-    
-    # Exclui a empresa
-    db.session.delete(company)
-    db.session.commit()
-    
-    return jsonify({'message': 'Empresa excluída com sucesso'}), 200
-
-# Rota para obter detalhes de uma empresa específica
-@app.route('/api/companies/<int:company_id>', methods=['GET'])
+# Rota para obter detalhes de uma empresa específica - Atualizada para UUID
+@app.route('/api/companies/<company_id>', methods=['GET'])
 def get_company(company_id):
+    # Verifica se o company_id é um UUID válido
+    if not is_valid_uuid(company_id):
+        return jsonify({'message': 'ID de empresa inválido'}), 400
+    
     user_id = request.headers.get('User-ID')
     user = User.query.get(user_id)
     
@@ -597,14 +594,44 @@ def get_company(company_id):
     # Obter arquivos associados à empresa
     files = CompanyFile.query.filter_by(company_id=company_id).all()
     
+    # Obter funcionários associados à empresa
+    employees = Employee.query.filter_by(company_id=company_id).all()
+    
     company_dict = company.to_dict()
     company_dict['files'] = [file.to_dict() for file in files]
+    company_dict['employees'] = [employee.to_dict() for employee in employees]
     
     return jsonify({'company': company_dict}), 200
 
-# Rota para listar arquivos de uma empresa
-@app.route('/api/companies/<int:company_id>/files', methods=['GET'])
+# Rota para excluir uma empresa - Atualizada para UUID
+@app.route('/api/companies/<company_id>', methods=['DELETE'])
+@admin_required
+def delete_company(company_id):
+    # Verifica se o company_id é um UUID válido
+    if not is_valid_uuid(company_id):
+        return jsonify({'message': 'ID de empresa inválido'}), 400
+    
+    company = Company.query.get_or_404(company_id)
+    
+    # Exclui todos os funcionários associados à empresa
+    Employee.query.filter_by(company_id=company_id).delete()
+    
+    # Exclui todos os arquivos associados à empresa
+    CompanyFile.query.filter_by(company_id=company_id).delete()
+    
+    # Exclui a empresa
+    db.session.delete(company)
+    db.session.commit()
+    
+    return jsonify({'message': 'Empresa excluída com sucesso'}), 200
+
+# Rota para listar arquivos de uma empresa - Atualizada para UUID
+@app.route('/api/companies/<company_id>/files', methods=['GET'])
 def list_company_files(company_id):
+    # Verifica se o company_id é um UUID válido
+    if not is_valid_uuid(company_id):
+        return jsonify({'message': 'ID de empresa inválido'}), 400
+    
     user_id = request.headers.get('User-ID')
     user = User.query.get(user_id)
     
@@ -622,3 +649,165 @@ def list_company_files(company_id):
     return jsonify({
         'files': [file.to_dict() for file in files]
     }), 200
+
+# NOVAS ROTAS PARA FUNCIONÁRIOS
+
+# Rota para criar funcionário
+@app.route('/api/companies/<company_id>/employees', methods=['POST'])
+def create_employee(company_id):
+    # Verifica se o company_id é um UUID válido
+    if not is_valid_uuid(company_id):
+        return jsonify({'message': 'ID de empresa inválido'}), 400
+    
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    company = Company.query.get_or_404(company_id)
+    
+    # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
+    if not user.is_admin and not user_has_group_access(user_id, company.group_id):
+        return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
+    
+    data = request.get_json()
+    
+    # Validações básicas
+    if not data.get('name'):
+        return jsonify({'message': 'Nome do funcionário é obrigatório'}), 400
+    
+    if not data.get('cpf'):
+        return jsonify({'message': 'CPF do funcionário é obrigatório'}), 400
+    
+    # Verificar se já existe um funcionário com o mesmo CPF na empresa
+    existing_employee = Employee.query.filter_by(company_id=company_id, cpf=data['cpf']).first()
+    if existing_employee:
+        return jsonify({'message': 'Já existe um funcionário com este CPF nesta empresa'}), 400
+    
+    # Criar novo funcionário
+    new_employee = Employee(
+        name=data['name'],
+        cpf=data['cpf'],
+        company_id=company_id
+    )
+    
+    db.session.add(new_employee)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Funcionário criado com sucesso',
+        'employee': new_employee.to_dict()
+    }), 201
+
+# Rota para listar funcionários de uma empresa
+@app.route('/api/companies/<company_id>/employees', methods=['GET'])
+def list_employees(company_id):
+    # Verifica se o company_id é um UUID válido
+    if not is_valid_uuid(company_id):
+        return jsonify({'message': 'ID de empresa inválido'}), 400
+    
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    company = Company.query.get_or_404(company_id)
+    
+    # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
+    if not user.is_admin and not user_has_group_access(user_id, company.group_id):
+        return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
+    
+    employees = Employee.query.filter_by(company_id=company_id).all()
+    
+    return jsonify({
+        'employees': [employee.to_dict() for employee in employees]
+    }), 200
+
+# Rota para obter detalhes de um funcionário específico
+@app.route('/api/employees/<int:employee_id>', methods=['GET'])
+def get_employee(employee_id):
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    employee = Employee.query.get_or_404(employee_id)
+    company = Company.query.get(employee.company_id)
+    
+    # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
+    if not user.is_admin and not user_has_group_access(user_id, company.group_id):
+        return jsonify({'message': 'Acesso não autorizado a este funcionário'}), 403
+    
+    return jsonify({
+        'employee': employee.to_dict()
+    }), 200
+
+# Rota para atualizar funcionário
+@app.route('/api/employees/<int:employee_id>', methods=['PUT'])
+def update_employee(employee_id):
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    employee = Employee.query.get_or_404(employee_id)
+    company = Company.query.get(employee.company_id)
+    
+    # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
+    if not user.is_admin and not user_has_group_access(user_id, company.group_id):
+        return jsonify({'message': 'Acesso não autorizado a este funcionário'}), 403
+    
+    data = request.get_json()
+    
+    # Atualizar nome se fornecido
+    if 'name' in data:
+        employee.name = data['name']
+    
+    # Atualizar CPF se fornecido
+    if 'cpf' in data:
+        # Verificar se já existe outro funcionário com este CPF na mesma empresa
+        existing_employee = Employee.query.filter_by(
+            company_id=employee.company_id, 
+            cpf=data['cpf']
+        ).filter(Employee.id != employee_id).first()
+        
+        if existing_employee:
+            return jsonify({'message': 'Já existe outro funcionário com este CPF nesta empresa'}), 400
+        
+        employee.cpf = data['cpf']
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Funcionário atualizado com sucesso',
+        'employee': employee.to_dict()
+    }), 200
+
+# Rota para excluir funcionário
+@app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
+def delete_employee(employee_id):
+    user_id = request.headers.get('User-ID')
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+    
+    employee = Employee.query.get_or_404(employee_id)
+    company = Company.query.get(employee.company_id)
+    
+    # Verificar se o usuário tem acesso ao grupo ao qual a empresa pertence
+    if not user.is_admin and not user_has_group_access(user_id, company.group_id):
+        return jsonify({'message': 'Acesso não autorizado a este funcionário'}), 403
+    
+    db.session.delete(employee)
+    db.session.commit()
+    
+    return jsonify({'message': 'Funcionário excluído com sucesso'}), 200
+
+# Inicia a aplicação se este arquivo for executado diretamente
+if __name__ == '__main__':
+    app.run(debug=True)
