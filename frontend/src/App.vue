@@ -2,10 +2,9 @@
   <div id="app">
     <nav v-if="isLoggedIn" class="app-navbar">
       <div class="nav-container">
-        <!-- Logo posicionado mais à esquerda -->
+        <!-- Logo posicionado mais à esquerda, removido o texto redundante -->
         <div class="nav-logo">
           <img src="@/assets/logo.svg" alt="Logo" class="logo-image" />
-          <span class="logo-text">Portal do Cliente</span>
         </div>
         
         <!-- Links de navegação centralizados -->
@@ -28,13 +27,14 @@
           </router-link>
         </div>
         
-        <!-- Informações do usuário e botão de sair mais à direita -->
+        <!-- Resto do código permanece o mesmo -->
         <div class="user-info">
+          <!-- Código para dropdown e logout botão inalterado -->
           <div class="username-dropdown">
+            <!-- Código para dropdown inalterado -->
             <div class="username" @click="toggleDropdown">
               <div class="avatar">{{ username.charAt(0) }}</div>
               {{ username }}
-              <!-- Ícone de seta para dropdown -->
               <svg class="dropdown-icon" :class="{ 'dropdown-open': showDropdown }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
@@ -193,29 +193,20 @@ body {
   justify-content: space-between;
   align-items: center;
   height: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 24px;
+  width: 100%;
 }
 
 .nav-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 220px; /* Garante espaço suficiente para o logo */
-  margin-right: auto; /* Empurra para a esquerda */
+  margin-right: auto;
+  padding-left: 40px;
 }
 
 .logo-image {
-  width: 38px;
-  height: 38px;
-}
-
-.logo-text {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--primary);
-  letter-spacing: -0.5px;
+  max-height: 45px;
+  width: auto;
+  object-fit: contain;
 }
 
 .nav-links {
@@ -223,7 +214,7 @@ body {
   align-items: center;
   gap: 12px;
   flex: 1;
-  justify-content: center; /* Centraliza os links */
+  justify-content: center;
 }
 
 .nav-link {
@@ -257,12 +248,11 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
-  min-width: 220px; /* Garante espaço suficiente para informações do usuário */
-  justify-content: flex-end; /* Alinha à direita */
-  margin-left: auto; /* Empurra para a direita */
+  justify-content: flex-end;
+  margin-left: auto; 
+  padding-right: 40px;
 }
 
-/* Estilos para o dropdown do usuário */
 .username-dropdown {
   position: relative;
 }
@@ -379,7 +369,6 @@ body {
   min-height: calc(100vh - 70px);
 }
 
-/* Estilos globais para botões */
 button {
   background-color: var(--primary);
   color: var(--white);
@@ -400,12 +389,10 @@ button:focus {
   outline: none;
 }
 
-/* Botões de ação principal */
 .action-button {
   background-color: var(--accent);
 }
 
-/* Botões secundários */
 .secondary-button {
   background: var(--white);
   color: var(--dark);
@@ -417,7 +404,6 @@ button:focus {
   color: var(--primary);
 }
 
-/* Estilos globais para inputs */
 input {
   font-family: 'Outfit', sans-serif;
   border: 1.5px solid var(--light);
@@ -500,8 +486,8 @@ input:focus {
     padding: 0 16px;
   }
   
-  .logo-text {
-    font-size: 1.2rem;
+  .logo-image {
+    max-height: 50px;
   }
   
   .nav-links {
@@ -553,6 +539,10 @@ input:focus {
   .dropdown-menu {
     right: -50px;
   }
+  
+  .logo-image {
+    max-height: 45px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -582,8 +572,8 @@ input:focus {
     min-height: calc(100vh - 100px);
   }
   
-  .logo-text {
-    font-size: 1.1rem;
+  .logo-image {
+    max-height: 35px;
   }
   
   .avatar {
@@ -591,5 +581,6 @@ input:focus {
     height: 28px;
     font-size: 0.9rem;
   }
+  
 }
 </style>

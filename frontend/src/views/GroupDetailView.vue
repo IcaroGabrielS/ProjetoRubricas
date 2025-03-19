@@ -364,10 +364,10 @@ export default {
 /* Layout principal - versão desktop */
 .home-layout {
   position: fixed;
-  top: 100px;
-  left: 50px;
-  right: 50px;
-  bottom: 30px;
+  top: 90px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
   display: flex;
   flex-direction: row-reverse; /* Mantém a ordem inversa (ilustração à direita) */
   gap: 20px; /* Espaçamento entre os containers */

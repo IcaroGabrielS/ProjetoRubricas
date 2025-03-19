@@ -632,17 +632,16 @@ export default {
   max-width: 280px;
 }
 
-/* Layout principal - versão desktop */
 .home-layout {
   position: fixed;
-  top: 100px;
-  left: 50px;
-  right: 50px;
-  bottom: 30px;
+  top: 90px;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
   display: grid;
-  grid-template-columns: 1fr 2fr; /* Proporção 1:2 entre esquerda e direita */
-  grid-template-rows: 1fr 1fr; /* Duas linhas de igual altura */
-  gap: 20px; /* Espaçamento uniforme entre todos os elementos */
+  grid-template-columns: 1fr 2fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 20px;
 }
 
 /* Painel de conteúdo principal (visualmente à direita) */

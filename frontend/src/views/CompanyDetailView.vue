@@ -114,21 +114,20 @@
         </div>
       </div>
       
-      <!-- Painel de arquivos simplificado (visualmente à direita) -->
+      <!-- Painel de arquivos e funcionários (visualmente à direita) -->
       <div class="content-panel">
         <div class="content-wrapper">
-          <div class="home-header">
-            <h1>Arquivos</h1>
-          </div>
-
           <div v-if="loading" class="loading-indicator">
             <div class="loading-spinner"></div>
             <p>Carregando informações...</p>
           </div>
 
           <div v-else>
-            <!-- Seção de Gerenciamento de Arquivos Simplificada -->
+            <!-- Seção de Gerenciamento de Arquivos -->
             <div class="dashboard-summary">
+              <div class="home-header">
+                <h1>Arquivos</h1>
+              </div>
               <div class="dashboard-item files-panel">
                 <div class="files-content">
                   <div class="files-info">
@@ -143,6 +142,40 @@
                     <span class="file-icon">📁</span>
                     Gerenciar Arquivos
                   </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Seção de Gerenciamento de Funcionários -->
+            <div class="dashboard-summary">
+              <div class="home-header">
+                <h1>Funcionários</h1>
+              </div>
+              <div class="dashboard-item employees-panel">
+                <div class="employees-content">
+                  <div class="employees-info">
+                    <h3>Gerenciamento de Funcionários</h3>
+                    <p v-if="employees.length > 0" class="employees-count">
+                      {{ employees.length }} {{ employees.length === 1 ? 'funcionário registrado' : 'funcionários registrados' }}
+                    </p>
+                    <p v-else class="employees-count">Nenhum funcionário registrado</p>
+                  </div>
+                  
+                  <button class="employee-manage-btn" @click="showEmployeeManagement = true">
+                    <span class="employee-icon">👤</span>
+                    Gerenciar Funcionários
+                  </button>
+                </div>
+
+                <!-- Lista compacta de funcionários (exibe até 5) -->
+                <div v-if="employees.length > 0" class="employee-list-preview">
+                  <div v-for="employee in employeesPreview" :key="employee.id" class="employee-item-preview">
+                    <div class="employee-name">{{ employee.name }}</div>
+                    <div class="employee-cpf">CPF: {{ formatCPF(employee.cpf) }}</div>
+                  </div>
+                  <div v-if="employees.length > 5" class="more-employees">
+                    + {{ employees.length - 5 }} mais...
+                  </div>
                 </div>
               </div>
             </div>
@@ -184,6 +217,121 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Gerenciamento de Funcionários -->
+    <div v-if="showEmployeeManagement" class="modal-overlay">
+      <div class="modal-container employee-modal">
+        <div class="modal-header">
+          <h3>Gerenciamento de Funcionários</h3>
+          <button class="close-modal-btn" @click="showEmployeeManagement = false" aria-label="Fechar">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <!-- Formulário para adicionar/editar funcionário -->
+          <div class="employee-form-section">
+            <h4>{{ isEditingEmployee ? 'Editar Funcionário' : 'Adicionar Novo Funcionário' }}</h4>
+            <form @submit.prevent="saveEmployee" class="employee-form">
+              <div class="form-group">
+                <label for="employeeName">Nome:</label>
+                <input 
+                  type="text" 
+                  id="employeeName" 
+                  v-model="employeeForm.name" 
+                  required 
+                  placeholder="Nome do Funcionário"
+                >
+              </div>
+              
+              <div class="form-group">
+                <label for="employeeCPF">CPF:</label>
+                <input 
+                  type="text" 
+                  id="employeeCPF" 
+                  v-model="employeeForm.cpf" 
+                  @input="formatEmployeeCPF"
+                  required 
+                  placeholder="XXX.XXX.XXX-XX"
+                  :class="{ 'invalid-input': cpfError }"
+                  :disabled="isEditingEmployee"
+                >
+                <small v-if="cpfError" class="error-text">{{ cpfError }}</small>
+              </div>
+              
+              <div class="form-actions">
+                <button 
+                  v-if="isEditingEmployee"
+                  type="button" 
+                  class="cancel-btn" 
+                  @click="cancelEditEmployee"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  class="submit-btn" 
+                  :disabled="savingEmployee || cpfError !== ''"
+                >
+                  <span v-if="savingEmployee" class="loading-spinner-small"></span>
+                  {{ isEditingEmployee ? 'Atualizar' : 'Adicionar' }}
+                </button>
+              </div>
+            </form>
+          </div>
+          
+          <!-- Lista de funcionários -->
+          <div class="employee-list-section">
+            <h4>Funcionários Cadastrados</h4>
+            
+            <div v-if="employeeLoading" class="loading-indicator">
+              <div class="loading-spinner"></div>
+              <p>Carregando funcionários...</p>
+            </div>
+            
+            <div v-else-if="employees.length === 0" class="empty-state">
+              <p>Nenhum funcionário cadastrado para esta empresa.</p>
+            </div>
+            
+            <div v-else class="employee-list">
+              <div v-for="employee in employees" :key="employee.id" class="employee-item">
+                <div class="employee-details">
+                  <div class="employee-name">{{ employee.name }}</div>
+                  <div class="employee-cpf">CPF: {{ formatCPF(employee.cpf) }}</div>
+                  <div class="employee-created">Criado em: {{ formatDate(employee.created_at) }}</div>
+                </div>
+                <div class="employee-actions">
+                  <button class="edit-btn" @click="editEmployee(employee)">Editar</button>
+                  <button class="delete-btn" @click="confirmDeleteEmployee(employee)">Excluir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão de Funcionário -->
+    <div v-if="showDeleteEmployeeConfirmation" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>Confirmação de Exclusão</h3>
+        </div>
+        <div class="modal-body">
+          <div class="warning-icon modal-icon">⚠️</div>
+          <p>Você está prestes a excluir o funcionário <strong>{{ employeeToDelete?.name }}</strong>.</p>
+          <p class="warning-text">Esta ação não pode ser desfeita!</p>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" @click="cancelDeleteEmployee">Cancelar</button>
+          <button 
+            class="delete-btn"
+            :disabled="deletingEmployee"
+            @click="deleteEmployee"
+          >
+            {{ deletingEmployee ? 'Excluindo...' : 'Confirmar Exclusão' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -195,7 +343,9 @@ export default {
       companyId: null,
       company: {},
       files: [],
+      employees: [],
       loading: true,
+      employeeLoading: false,
       error: '',
       success: '',
       isAdmin: false,
@@ -204,25 +354,42 @@ export default {
       showDeleteConfirmation: false,
       confirmDeleteText: '',
       deletingCompany: false,
+      
       // Campos para edição da empresa
       editCompany: {
         name: '',
         cnpj: ''
       },
       cnpjError: '',
-      updatingCompany: false
+      updatingCompany: false,
+      
+      // Gerenciamento de funcionários
+      showEmployeeManagement: false,
+      employeeForm: {
+        id: null,
+        name: '',
+        cpf: ''
+      },
+      isEditingEmployee: false,
+      cpfError: '',
+      savingEmployee: false,
+      showDeleteEmployeeConfirmation: false,
+      employeeToDelete: null,
+      deletingEmployee: false
+    }
+  },
+  computed: {
+    // Retorna apenas os 5 primeiros funcionários para preview
+    employeesPreview() {
+      return this.employees.slice(0, 5);
     }
   },
   created() {
     this.checkDeviceType();
     this.checkAccess();
-    // IDs de empresa ainda são numéricos, então o parseInt é mantido
-    this.companyId = parseInt(this.$route.params.id);
-    if (isNaN(this.companyId)) {
-      this.error = 'ID de empresa inválido';
-      this.loading = false;
-      return;
-    }
+    
+    // Obtém o ID da empresa da URL (agora é UUID, não precisa de parseInt)
+    this.companyId = this.$route.params.id;
     this.fetchCompanyData();
     
     // Adicionar listener para verificar redimensionamento
@@ -293,6 +460,14 @@ export default {
           // Caso contrário, buscar arquivos separadamente
           await this.fetchCompanyFiles();
         }
+
+        // Se a API já retorna os funcionários, podemos usar diretamente
+        if (this.company.employees) {
+          this.employees = this.company.employees;
+        } else {
+          // Caso contrário, buscar funcionários separadamente
+          await this.fetchCompanyEmployees();
+        }
         
         // Buscar nome do grupo se necessário
         if (this.company.group_id) {
@@ -315,7 +490,7 @@ export default {
         
         const user = JSON.parse(userStr);
         
-        // O ID do grupo agora é UUID, não precisa de conversão
+        // O ID do grupo é UUID, não precisa de conversão
         console.log('Fetching group name for UUID:', this.company.group_id);
         
         const response = await fetch(`/api/groups/${this.company.group_id}`, {
@@ -363,6 +538,38 @@ export default {
         console.log('Files loaded:', this.files);
       } catch (error) {
         console.error('Error fetching company files:', error);
+      }
+    },
+    async fetchCompanyEmployees() {
+      try {
+        this.employeeLoading = true;
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return;
+        
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(`/api/companies/${this.companyId}/employees`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          }
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          console.error('Error fetching employees:', data.message);
+          this.employeeLoading = false;
+          return;
+        }
+        
+        const data = await response.json();
+        this.employees = data.employees;
+        console.log('Employees loaded:', this.employees);
+        this.employeeLoading = false;
+      } catch (error) {
+        console.error('Error fetching company employees:', error);
+        this.employeeLoading = false;
       }
     },
     formatCNPJ() {
@@ -439,6 +646,85 @@ export default {
       
       this.cnpjError = '';
     },
+    formatEmployeeCPF() {
+      // Remove qualquer caractere que não seja dígito
+      let cpf = this.employeeForm.cpf.replace(/\D/g, '');
+      
+      // Limita a 11 dígitos
+      cpf = cpf.substring(0, 11);
+      
+      // Aplica a máscara XXX.XXX.XXX-XX
+      if (cpf.length > 0) {
+        cpf = cpf.replace(/^(\d{3})(\d)/, '$1.$2');
+        cpf = cpf.replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3');
+        cpf = cpf.replace(/\.(\d{3})(\d)/, '.$1-$2');
+      }
+      
+      this.employeeForm.cpf = cpf;
+      this.validateCPF();
+    },
+    validateCPF() {
+      const cpf = this.employeeForm.cpf.replace(/\D/g, '');
+      
+      if (cpf.length === 0) {
+        this.cpfError = '';
+        return;
+      }
+      
+      if (cpf.length !== 11) {
+        this.cpfError = 'CPF deve conter 11 dígitos.';
+        return;
+      }
+      
+      // Verificar se todos os dígitos são iguais
+      if (/^(\d)\1+$/.test(cpf)) {
+        this.cpfError = 'CPF inválido.';
+        return;
+      }
+      
+      // Validação dos dígitos verificadores
+      // Primeiro dígito verificador
+      let soma = 0;
+      for (let i = 0; i < 9; i++) {
+        soma += parseInt(cpf.charAt(i)) * (10 - i);
+      }
+      
+      let resto = 11 - (soma % 11);
+      let dv1 = resto > 9 ? 0 : resto;
+      
+      if (parseInt(cpf.charAt(9)) !== dv1) {
+        this.cpfError = 'CPF inválido.';
+        return;
+      }
+      
+      // Segundo dígito verificador
+      soma = 0;
+      for (let i = 0; i < 10; i++) {
+        soma += parseInt(cpf.charAt(i)) * (11 - i);
+      }
+      
+      resto = 11 - (soma % 11);
+      let dv2 = resto > 9 ? 0 : resto;
+      
+      if (parseInt(cpf.charAt(10)) !== dv2) {
+        this.cpfError = 'CPF inválido.';
+        return;
+      }
+      
+      this.cpfError = '';
+    },
+    formatCPF(cpf) {
+      if (!cpf) return '';
+      
+      // Se já estiver formatado, retorna como está
+      if (cpf.includes('.') || cpf.includes('-')) {
+        return cpf;
+      }
+      
+      // Aplica a máscara XXX.XXX.XXX-XX
+      cpf = cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+      return cpf;
+    },
     async updateCompany() {
       if (this.cnpjError) {
         return;
@@ -484,6 +770,156 @@ export default {
         this.error = 'Erro ao conectar ao servidor';
         this.updatingCompany = false;
         console.error('Error updating company:', error);
+      }
+    },
+    // Métodos para gerenciamento de funcionários
+    editEmployee(employee) {
+      this.isEditingEmployee = true;
+      this.employeeForm = {
+        id: employee.id,
+        name: employee.name,
+        cpf: employee.cpf
+      };
+    },
+    cancelEditEmployee() {
+      this.isEditingEmployee = false;
+      this.employeeForm = {
+        id: null,
+        name: '',
+        cpf: ''
+      };
+      this.cpfError = '';
+    },
+    async saveEmployee() {
+      if (this.cpfError) {
+        return;
+      }
+      
+      try {
+        this.savingEmployee = true;
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        if (this.isEditingEmployee) {
+          // Atualizar funcionário existente
+          const response = await fetch(`/api/employees/${this.employeeForm.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'User-ID': user.id
+            },
+            body: JSON.stringify({
+              name: this.employeeForm.name,
+              cpf: this.employeeForm.cpf
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            this.error = data.message || 'Erro ao atualizar funcionário';
+            this.savingEmployee = false;
+            return;
+          }
+          
+          // Atualiza o funcionário na lista
+          const index = this.employees.findIndex(emp => emp.id === this.employeeForm.id);
+          if (index !== -1) {
+            this.employees[index] = data.employee;
+          }
+          
+          this.success = 'Funcionário atualizado com sucesso!';
+        } else {
+          // Criar novo funcionário
+          const response = await fetch(`/api/companies/${this.companyId}/employees`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'User-ID': user.id
+            },
+            body: JSON.stringify({
+              name: this.employeeForm.name,
+              cpf: this.employeeForm.cpf
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            this.error = data.message || 'Erro ao adicionar funcionário';
+            this.savingEmployee = false;
+            return;
+          }
+          
+          // Adiciona o novo funcionário à lista
+          this.employees.push(data.employee);
+          this.success = 'Funcionário adicionado com sucesso!';
+        }
+        
+        // Limpa o formulário e fecha o modo de edição
+        this.cancelEditEmployee();
+        this.savingEmployee = false;
+      } catch (error) {
+        this.error = 'Erro ao conectar ao servidor';
+        this.savingEmployee = false;
+        console.error('Error saving employee:', error);
+      }
+    },
+    confirmDeleteEmployee(employee) {
+      this.employeeToDelete = employee;
+      this.showDeleteEmployeeConfirmation = true;
+    },
+    cancelDeleteEmployee() {
+      this.employeeToDelete = null;
+      this.showDeleteEmployeeConfirmation = false;
+    },
+    async deleteEmployee() {
+      if (!this.employeeToDelete) {
+        return;
+      }
+      
+      try {
+        this.deletingEmployee = true;
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          this.$router.push('/login');
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        const response = await fetch(`/api/employees/${this.employeeToDelete.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-ID': user.id
+          }
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          this.error = data.message || 'Erro ao excluir funcionário';
+          this.deletingEmployee = false;
+          this.showDeleteEmployeeConfirmation = false;
+          return;
+        }
+        
+        // Remove o funcionário da lista
+        this.employees = this.employees.filter(emp => emp.id !== this.employeeToDelete.id);
+        this.success = 'Funcionário excluído com sucesso!';
+        this.deletingEmployee = false;
+        this.showDeleteEmployeeConfirmation = false;
+        this.employeeToDelete = null;
+      } catch (error) {
+        this.error = 'Erro ao conectar ao servidor';
+        this.deletingEmployee = false;
+        this.showDeleteEmployeeConfirmation = false;
+        console.error('Error deleting employee:', error);
       }
     },
     formatDate(dateString) {
@@ -615,10 +1051,10 @@ export default {
 /* Layout principal - versão desktop */
 .home-layout {
   position: fixed;
-  top: 100px;
-  left: 50px;
-  right: 50px;
-  bottom: 30px;
+  top: 90px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
   display: flex;
   gap: 20px; /* Espaçamento entre os containers */
 }
@@ -670,33 +1106,39 @@ export default {
 }
 
 /* Estilo para o painel de arquivos minimalista */
-.dashboard-item.files-panel {
+.dashboard-item.files-panel,
+.dashboard-item.employees-panel {
   background-color: #f0f4f8;
   transition: all 0.2s ease;
 }
 
-.dashboard-item.files-panel:hover {
+.dashboard-item.files-panel:hover,
+.dashboard-item.employees-panel:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
-.files-content {
+.files-content,
+.employees-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.files-info h3 {
+.files-info h3,
+.employees-info h3 {
   margin-bottom: 0.3rem;
   color: #204578;
 }
 
-.files-count {
+.files-count,
+.employees-count {
   margin: 0;
   font-size: 0.9rem;
   color: #6b7280;
 }
 
-.file-manage-btn {
+.file-manage-btn,
+.employee-manage-btn {
   background-color: #204578;
   color: white;
   border: none;
@@ -710,14 +1152,50 @@ export default {
   transition: all 0.2s ease;
 }
 
-.file-manage-btn:hover {
+.file-manage-btn:hover,
+.employee-manage-btn:hover {
   background-color: #142C4D;
   transform: translateY(-1px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.file-icon {
+.file-icon,
+.employee-icon {
   margin-right: 0.5rem;
+}
+
+.employee-list-preview {
+  margin-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.employee-item-preview {
+  padding: 0.8rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.employee-item-preview:last-child {
+  border-bottom: none;
+}
+
+.employee-name {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.2rem;
+}
+
+.employee-cpf {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.more-employees {
+  text-align: center;
+  padding: 0.5rem;
+  color: #6b7280;
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
 .dashboard-item h3 {
@@ -775,7 +1253,8 @@ export default {
 }
 
 /* Formulário de empresa */
-.company-form {
+.company-form,
+.employee-form {
   margin-top: 1rem;
 }
 
@@ -972,6 +1451,52 @@ export default {
   cursor: not-allowed;
 }
 
+.edit-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.edit-btn:hover {
+  background-color: #2563eb;
+}
+
+.cancel-btn {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background-color: #4b5563;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #b91c1c;
+  font-size: 1.5rem;
+  cursor: pointer;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.close-btn.success {
+  color: #065f46;
+}
+
 /* Modal de confirmação */
 .modal-overlay {
   position: fixed;
@@ -996,95 +1521,142 @@ export default {
   animation: modal-appear 0.3s ease-out;
 }
 
-@keyframes modal-appear {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.modal-container.employee-modal {
+  max-width: 800px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
+  padding: 1.5rem;
   background-color: #f9fafb;
-  padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #111827;
-  font-size: 1.2rem;
+  color: #374151;
+  font-size: 1.25rem;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
 }
 
 .modal-body {
   padding: 1.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.employee-modal .modal-body {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
+}
+
+.employee-form-section h4,
+.employee-list-section h4 {
+  color: #374151;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.employee-list {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.employee-item {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
-.modal-body p {
-  color: #4b5563;
-  margin-bottom: 0.5rem;
-  text-align: center;
+.employee-item:last-child {
+  border-bottom: none;
 }
 
-.warning-text {
-  color: #ef4444;
-  font-weight: 600;
+.employee-details {
+  flex-grow: 1;
+}
+
+.employee-created {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.3rem;
+}
+
+.employee-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
 }
 
 .modal-icon {
-  font-size: 2.5rem;
+  font-size: 3rem;
   margin-bottom: 1rem;
 }
 
+.warning-text {
+  color: #b91c1c;
+  font-weight: 600;
+  margin: 1rem 0;
+}
+
 .confirmation-input {
-  width: 100%;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
 .confirmation-input label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 500;
-  font-size: 0.9rem;
   color: #374151;
+  font-weight: 600;
 }
 
 .confirmation-input input {
   width: 100%;
-  padding: 0.7rem;
+  padding: 0.8rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
-.confirmation-input input:focus {
-  outline: none;
-  border-color: #204578;
-  box-shadow: 0 0 0 2px rgba(32, 69, 120, 0.2);
+@keyframes modal-appear {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.modal-footer {
-  background-color: #f9fafb;
-  padding: 1rem 1.5rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.8rem;
-  border-top: 1px solid #e5e7eb;
-}
+@media (max-width: 1200px) {
+  .employee-modal .modal-body {
+    flex-direction: column;
+  }
 
-.cancel-btn {
-  padding: 0.6rem 1.2rem;
-  background-color: white;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  color: #374151;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
+  .employee-form-section,
+  .employee-list-section {
+    width: 100%;
+  }
 }
 </style>
