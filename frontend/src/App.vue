@@ -130,19 +130,17 @@ export default {
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Paleta de cores flat e elegante */
-  --primary: #654fcc;           /* Roxo elegante */
-  --primary-light: #6c63ff;     /* Roxo claro */
-  --accent: #00cec9;            /* Turquesa */
-  --accent-light: #81ecec;      /* Turquesa claro */
-  --danger: #ff7675;            /* Vermelho suave */
-  --success: #55efc4;           /* Verde menta */
-  --dark: #2d3436;              /* Cinza escuro */
-  --dark-light: #636e72;        /* Cinza médio */
-  --light: #dfe6e9;             /* Cinza claro */
+  /* Nova paleta de cores */
+  --primary: #564FCC;           /* Roxo */
+  --primary-light: #675FF5;     /* Roxo claro */
+  --dark-blue: #1A3962;         /* Azul escuro */
+  --danger: #EF4444;            /* Vermelho */
+  --danger-light: #FF5252;      /* Vermelho claro */
+  --dark-light: #B7B7B7;        /* Cinza */
+  --light: #E5E5E5;             /* Cinza claro */
   --white: #ffffff;             /* Branco */
   --card-bg: #ffffff;           /* Fundo de card */
   --bg-color: #f0f0f0;          /* Fundo da aplicação */
@@ -166,8 +164,8 @@ export default {
 
 body {
   background-color: var(--bg-color);
-  color: var(--dark);
-  font-family: 'Outfit', sans-serif;
+  color: var(--dark-blue);
+  font-family: 'Poppins', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -262,7 +260,7 @@ body {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: var(--dark);
+  color: var(--dark-blue);
   font-size: 0.9rem; /* Reduzido de 0.95rem para 0.9rem */
   cursor: pointer;
   padding: 4px 8px; /* Reduzido de 6px 10px para 4px 8px */
@@ -289,7 +287,7 @@ body {
   width: 28px; /* Reduzido de 32px para 28px */
   height: 28px; /* Reduzido de 32px para 28px */
   border-radius: var(--radius-full);
-  background-color: var(--accent);
+  background-color: var(--primary);
   color: var(--white);
   display: flex;
   align-items: center;
@@ -322,7 +320,7 @@ body {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  color: var(--dark);
+  color: var(--dark-blue);
   text-decoration: none;
   font-size: 0.9rem;
   transition: all 0.2s ease;
@@ -381,7 +379,7 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   letter-spacing: 0.3px;
 }
 
@@ -390,12 +388,12 @@ button:focus {
 }
 
 .action-button {
-  background-color: var(--accent);
+  background-color: var(--primary-light);
 }
 
 .secondary-button {
   background: var(--white);
-  color: var(--dark);
+  color: var(--dark-blue);
   border: 1.5px solid var(--light);
 }
 
@@ -405,18 +403,18 @@ button:focus {
 }
 
 input {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   border: 1.5px solid var(--light);
   border-radius: var(--radius-md);
   padding: 12px 16px;
   font-size: 1rem;
   background-color: var(--white);
-  color: var(--dark);
+  color: var(--dark-blue);
 }
 
 input:focus {
   border-color: var(--primary-light);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px rgba(86, 79, 204, 0.1);
   outline: none;
 }
 
@@ -469,15 +467,15 @@ input:focus {
 }
 
 .error-alert {
-  background-color: rgba(255, 118, 117, 0.1);
-  color: #ff4757;
-  border-left: 4px solid #ff4757;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border-left: 4px solid var(--danger);
 }
 
 .success-alert {
-  background-color: rgba(85, 239, 196, 0.1);
-  color: #00b894;
-  border-left: 4px solid #00b894;
+  background-color: rgba(103, 95, 245, 0.1);
+  color: var(--primary);
+  border-left: 4px solid var(--primary);
 }
 
 /* Media queries para responsividade */
@@ -581,6 +579,5 @@ input:focus {
     height: 24px; /* Reduzido de 28px para 24px */
     font-size: 0.8rem; /* Reduzido de 0.9rem para 0.8rem */
   }
-  
 }
 </style>
