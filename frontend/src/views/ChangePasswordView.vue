@@ -1,22 +1,16 @@
 <template>
   <div>
-    <!-- Alerta para dispositivos móveis -->
     <div v-if="isMobileDevice" class="mobile-warning">
       <div class="warning-icon">⚠️</div>
       <h2>Acesso não recomendado</h2>
       <p>Este site não foi projetado para dispositivos móveis. Por favor, acesse através de um computador para uma melhor experiência.</p>
     </div>
-
-    <!-- Conteúdo principal - visível apenas em desktop -->
     <div v-else class="home-layout">
-      <!-- Painel com a ilustração (visualmente à esquerda) -->
       <div class="illustration-panel">
         <div class="large-svg-container">
           <img src="@/assets/change-password-image.svg" alt="Password Security Illustration" class="large-svg">
         </div>
       </div>
-      
-      <!-- Painel com o conteúdo (visualmente à direita) -->
       <div class="content-panel">
         <div class="content-wrapper">
           <div class="home-header">
@@ -25,12 +19,10 @@
           
           <div class="dashboard-summary">
             <div class="dashboard-item">
-              <h3>Dicas de Segurança</h3>
-              <p>Uma senha segura deve conter pelo menos 6 caracteres, combinar letras, números e símbolos.</p>
+              <h3>Senha Segura</h3>
+              <p>Use 6+ caracteres com letras (maiúsculas e minúsculas), números e símbolos. Evite sequências óbvias.</p>
             </div>
           </div>
-          
-          <!-- Formulário de alteração de senha -->
           <div class="password-form-container">
             <form @submit.prevent="changePassword" class="password-form">
               
@@ -45,6 +37,10 @@
                     placeholder="Digite sua nova senha"
                     class="password-input"
                     :class="{ 'invalid-input': passwordErrors.newPassword }"
+                    autocomplete="new-password"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                   >
                   <button 
                     type="button" 
@@ -75,6 +71,10 @@
                     placeholder="Confirme sua nova senha"
                     class="password-input"
                     :class="{ 'invalid-input': passwordErrors.confirmPassword }"
+                    autocomplete="new-password"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                   >
                   <button 
                     type="button" 
@@ -107,11 +107,7 @@
               
               <div class="button-container">
                 <button type="button" class="cancel-btn" @click="goBack">Cancelar</button>
-                <button 
-                  type="submit" 
-                  class="submit-btn" 
-                  :disabled="isLoading || !isFormValid"
-                >
+                <button type="submit" class="submit-btn" :disabled="isLoading || !isFormValid">
                   <span v-if="isLoading" class="form-loading-indicator"></span>
                   {{ isLoading ? 'Alterando...' : 'Alterar Senha' }}
                 </button>
@@ -172,41 +168,27 @@ export default {
           text: ''
         };
       }
-      
       let strength = 0;
       let percentage = 0;
-      let color = '#dc2626'; // Vermelho (fraca)
+      let color = '#dc2626';
       let text = 'Fraca';
-      
-      // Verificar comprimento
       if (password.length >= 6) strength += 1;
       if (password.length >= 10) strength += 1;
-      
-      // Verificar números
       if (/[0-9]/.test(password)) strength += 1;
-      
-      // Verificar letras minúsculas e maiúsculas
       if (/[a-z]/.test(password)) strength += 1;
       if (/[A-Z]/.test(password)) strength += 1;
-      
-      // Verificar caracteres especiais
       if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
-      
-      // Calcular porcentagem baseado na força
       percentage = (strength / 6) * 100;
-      
-      // Definir cor e texto com base na força
       if (strength <= 2) {
-        color = '#dc2626'; // Vermelho (fraca)
+        color = '#dc2626';
         text = 'Fraca';
       } else if (strength <= 4) {
-        color = '#f59e0b'; // Amarelo (média)
+        color = '#f59e0b';
         text = 'Média';
       } else {
-        color = '#10b981'; // Verde (forte)
+        color = '#10b981';
         text = 'Forte';
       }
-      
       return {
         percentage,
         color,
@@ -217,24 +199,17 @@ export default {
   created() {
     this.checkDeviceType();
     this.checkIfLoggedIn();
-    
-    // Adicionar listener para verificar redimensionamento
     window.addEventListener('resize', this.checkDeviceType);
   },
   beforeUnmount() {
-    // Remover listener ao destruir componente
     window.removeEventListener('resize', this.checkDeviceType);
   },
   watch: {
     'passwordForm.newPassword': function(newValue) {
-      // Validar comprimento mínimo
       if (newValue && newValue.length < 6) {
         this.passwordErrors.newPassword = 'A senha deve ter pelo menos 6 caracteres';
-      } else {
-        this.passwordErrors.newPassword = '';
-      }
+      } else {this.passwordErrors.newPassword = '';}
       
-      // Validar se confirmação coincide quando ambos estão preenchidos
       if (newValue && this.passwordForm.confirmPassword && 
           newValue !== this.passwordForm.confirmPassword) {
         this.passwordErrors.confirmPassword = 'As senhas não coincidem';
@@ -243,13 +218,10 @@ export default {
       }
     },
     'passwordForm.confirmPassword': function(newValue) {
-      // Validar se confirmação coincide
       if (newValue && this.passwordForm.newPassword && 
           newValue !== this.passwordForm.newPassword) {
         this.passwordErrors.confirmPassword = 'As senhas não coincidem';
-      } else {
-        this.passwordErrors.confirmPassword = '';
-      }
+      } else {this.passwordErrors.confirmPassword = '';}
     }
   },
   methods: {
@@ -264,21 +236,16 @@ export default {
     },
     async changePassword() {
       if (!this.isFormValid) return;
-      
       this.isLoading = true;
       this.error = '';
       this.success = '';
-      
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
           this.$router.push('/login');
           return;
         }
-        
         const user = JSON.parse(userStr);
-        
-        // Usar a nova rota que não requer verificação de senha atual
         const response = await fetch(`/api/users/${user.id}/change_password_no_verify`, {
           method: 'PUT',
           headers: {
@@ -299,8 +266,7 @@ export default {
         }
         
         this.success = 'Senha alterada com sucesso!';
-        
-        // Limpar o formulário
+
         this.passwordForm = {
           newPassword: '',
           confirmPassword: ''
@@ -308,7 +274,6 @@ export default {
         
         this.isLoading = false;
         
-        // Redirecionar para a home após alguns segundos
         setTimeout(() => {
           this.$router.push('/');
         }, 3000);
@@ -326,15 +291,13 @@ export default {
 </script>
 
 <style scoped>
-/* Os estilos permanecem inalterados, então mantive-os como estavam */
-/* Alerta para dispositivos móveis */
 .mobile-warning {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: linear-gradient(135deg, #142C4D, #204578);
+  background-color: #142C4D;
   color: white;
   display: flex;
   flex-direction: column;
@@ -360,7 +323,6 @@ export default {
   max-width: 280px;
 }
 
-/* Layout principal - versão desktop */
 .home-layout {
   position: fixed;
   top: 75px;
@@ -368,20 +330,17 @@ export default {
   right: 20px;
   bottom: 20px;
   display: flex;
-  gap: 20px; /* Espaçamento entre os containers */
+  gap: 20px;
 }
 
-/* Painel de conteúdo (visualmente à direita) */
 .content-panel {
   width: calc(50% - 10px); /* 50% da largura menos metade do gap */
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  animation: fade-in 0.8s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
 }
 
-/* Painel de ilustração (visualmente à esquerda) */
 .illustration-panel {
   width: calc(50% - 10px); /* 50% da largura menos metade do gap */
   background: linear-gradient(155deg, #f0f0f0 50%, #564FCC  50%);
@@ -395,7 +354,6 @@ export default {
   animation: fade-in 0.8s ease-out;
 }
 
-/* Container e estilos para o SVG grande */
 .large-svg-container {
   width: 90%;
   height: 90%;
@@ -409,7 +367,6 @@ export default {
   max-height: 100%;
 }
 
-/* Container do conteúdo para o painel de conteúdo */
 .content-wrapper {
   width: 100%;
   height: 100%;
@@ -445,7 +402,7 @@ export default {
 
 .dashboard-item {
   padding: 1.2rem;
-  background-color: #f8f9fa;
+  background-color: #f9f9f9;
   border-radius: 8px;
   margin-bottom: 1rem;
 }
@@ -461,16 +418,15 @@ export default {
   font-size: 0.95rem;
 }
 
-/* Formulário de alteração de senha */
 .password-form-container {
   margin-bottom: 1.5rem;
 }
 
 .password-form {
-  background-color: #f0f7ff;
+  background-color: #eeecff;
   padding: 1.5rem;
   border-radius: 8px;
-  border: 1px solid #d0e1fd;
+  border: 1px solid #d8d6f8;
 }
 
 .form-group {
@@ -495,23 +451,22 @@ export default {
 .password-input {
   width: 100%;
   padding: 0.9rem;
-  border: 2px solid #d0e1fd;
+  border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
   color: #333;
-  transition: all 0.3s ease;
   background-color: #fff;
 }
 
 .password-input:focus {
-  border-color: #204578;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
+  border-color: #564fcc;
+  box-shadow: 0 0 0 3px rgba(86, 79, 204, 0.15);
   outline: none;
 }
 
 .invalid-input {
-  border-color: #f87171;
-  background-color: #fff5f5;
+  border-color: #ef4444;
+  background-color: #fee2e2;
 }
 
 .toggle-password {
@@ -521,21 +476,15 @@ export default {
   border: none;
   cursor: pointer;
   font-size: 1rem;
-  transition: all 0.2s ease;
-}
-
-.toggle-password:hover {
-  transform: scale(1.2);
 }
 
 .error-text {
-  color: #dc2626;
+  color: #ef4444;
   font-size: 0.85rem;
   margin-top: 0.4rem;
   display: block;
 }
 
-/* Mensagens de erro e sucesso */
 .error-message {
   display: flex;
   align-items: center;
@@ -543,12 +492,13 @@ export default {
   background-color: #fee2e2;
   border-radius: 8px;
   margin-bottom: 1.5rem;
+  border: 1px solid #fecaca;
 }
 
 .error-icon {
   width: 24px;
   height: 24px;
-  background-color: #dc2626;
+  background-color: #ef4444;
   color: white;
   border-radius: 50%;
   display: flex;
@@ -562,7 +512,7 @@ export default {
 .close-btn {
   background: none;
   border: none;
-  color: #b91c1c;
+  color: #666;
   cursor: pointer;
   font-size: 1.2rem;
   padding: 0 0.5rem;
@@ -574,9 +524,10 @@ export default {
   display: flex;
   align-items: center;
   padding: 1rem;
-  background-color: #d1fae5;
+  background-color: #ecfdf5;
   border-radius: 8px;
   margin-bottom: 1.5rem;
+  border: 1px solid #a7f3d0;
 }
 
 .success-icon {
@@ -593,7 +544,6 @@ export default {
   flex-shrink: 0;
 }
 
-/* Botões */
 .button-container {
   display: flex;
   justify-content: space-between;
@@ -602,118 +552,130 @@ export default {
 
 .submit-btn {
   padding: 0.9rem 2rem;
-  background: linear-gradient(to right, #142C4D, #204578);
+  background-color: #564fcc;
   border: none;
   border-radius: 8px;
   color: white;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
   min-width: 180px;
   display: flex;
   justify-content: center;
-    align-items: center;
-  }
-  
-  .submit-btn:hover:not(:disabled) {
-    background: linear-gradient(to right, #1a3760, #2a5b9e);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-  }
-  
-  .submit-btn:disabled {
-    background: linear-gradient(to right, #6c757d, #495057);
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-  
-  .cancel-btn {
-    padding: 0.9rem 2rem;
-    background-color: #f1f1f1;
-    border: 1px solid #e1e1e1;
-    border-radius: 8px;
-    color: #333;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .cancel-btn:hover {
-    background-color: #e5e5e5;
-    transform: translateY(-2px);
-  }
-  
-  /* Indicador de carregamento */
-  .form-loading-indicator {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 8px;
-  }
-  
-  /* Indicador de força da senha */
-  .password-strength {
-    margin-top: 2rem;
-    padding: 1.2rem;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-  }
-  
-  .password-strength h4 {
-    color: #333;
-    font-size: 1rem;
-    margin-bottom: 0.8rem;
-  }
-  
-  .strength-meter {
-    height: 8px;
-    background-color: #e1e1e1;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 0.5rem;
-  }
-  
-  .strength-bar {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.5s ease, background-color 0.5s ease;
-  }
-  
-  .strength-text {
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-align: right;
-  }
-  
-  .toggle-password {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  align-items: center;
+}
 
-  .eye-icon {
-    width: 24px;
-    height: 24px;
-  }
+.submit-btn:hover:not(:disabled) {
+  background-color: #675ff5;
+}
 
-  /* Animações */
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+.submit-btn:disabled {
+  background-color: #a8a5e0;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.cancel-btn {
+  padding: 0.9rem 2rem;
+  background-color: #e5e5e5;
+  border: none;
+  border-radius: 8px;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background-color: #b7b7b7;
+}
+
+.form-loading-indicator {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+.password-strength {
+  margin-top: 2rem;
+  padding: 1.2rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.password-strength h4 {
+  color: #333;
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.strength-meter {
+  height: 8px;
+  background-color: #e1e1e1;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.strength-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s;
+}
+
+.strength-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.toggle-password {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-icon {
+  width: 24px;
+  height: 24px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .home-layout {
+    flex-direction: column;
+    top: 65px;
   }
   
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  .content-panel, .illustration-panel {
+    width: 100%;
+    margin-bottom: 15px;
   }
+  
+  .home-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .button-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .submit-btn, .cancel-btn {
+    width: 100%;
+  }
+}
 </style>

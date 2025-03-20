@@ -55,7 +55,7 @@
             </div>
             
             <div v-else-if="filteredGroups.length === 0 && groups.length === 0" class="empty-state">
-              <p>Você não tem acesso a nenhum grupo no momento.</p>
+              <p>Você não tem acesso a grupos no momento.</p>
             </div>
             
             <div v-else-if="filteredGroups.length === 0" class="empty-state">
@@ -524,28 +524,19 @@ export default {
     },
     
     updateEventsForCurrentMonth() {
-      // Atualiza os eventos visíveis no calendário para o mês atual
       this.combineAllEvents();
-      
-      // Se estamos próximos da transição de ano, já carrega o próximo/anterior
-      if (this.currentMonth === 11) {
-        this.fetchNationalHolidays(this.currentYear + 1);
-      } else if (this.currentMonth === 0) {
-        this.fetchNationalHolidays(this.currentYear - 1);
-      }
+      if (this.currentMonth === 11) {this.fetchNationalHolidays(this.currentYear + 1);} 
+      else if (this.currentMonth === 0) {this.fetchNationalHolidays(this.currentYear - 1);}
     },
-    
-    // Métodos para o modal de criação de grupo
+
     closeModal() {
       if (!this.createGroupLoading) {
         this.showCreateGroupModal = false;
-        
-        // Se houver sucesso, recarrega os grupos ao fechar
+
         if (this.createGroupSuccess) {
           this.fetchGroups();
         }
-        
-        // Reseta o formulário e as mensagens
+
         this.resetCreateGroupForm();
         this.createGroupError = null;
         this.createGroupSuccess = '';
@@ -603,7 +594,6 @@ export default {
 </script>
 
 <style scoped>
-/* Alerta para dispositivos móveis */
 .mobile-warning {
   position: fixed;
   top: 0;
@@ -648,10 +638,9 @@ export default {
   gap: 20px;
 }
 
-/* Painel de conteúdo principal (visualmente à direita) */
 .content-panel {
-  grid-column: 2 / 3; /* Posiciona na segunda coluna */
-  grid-row: 1 / 3;   /* Ocupa as duas linhas do grid */
+  grid-column: 2 / 3;
+  grid-row: 1 / 3;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
@@ -660,30 +649,29 @@ export default {
   flex-direction: column;
 }
 
-/* Painel do calendário (esquerda-superior) */
 .calendar-panel {
-  grid-column: 1 / 2; /* Posiciona na primeira coluna */
-  grid-row: 1 / 2;   /* Ocupa a primeira linha */
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
   background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%);
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  height: auto; /* Altura automática baseada no grid */
+  height: auto;
 }
 
-/* Painel de eventos (esquerda-inferior) */
+
 .events-panel {
-  grid-column: 1 / 2; /* Posiciona na primeira coluna */
-  grid-row: 2 / 3;   /* Ocupa a segunda linha */
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
   background: #1E3A8A;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  height: auto; /* Altura automática baseada no grid */
+  height: auto;
 }
 
 .events-content {
@@ -697,7 +685,7 @@ export default {
 .events-content h3 {
   margin-bottom: 15px;
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 500;
   text-align: center;
 }
 
@@ -726,7 +714,6 @@ export default {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Container do conteúdo principal */
 .content-wrapper {
   width: 100%;
   height: 100%;
@@ -747,7 +734,7 @@ export default {
 .home-header h1 {
   color: #142C4D;
   font-size: 2.2rem;
-  font-weight: 700;
+  font-weight: 500;
   margin-bottom: 0.5rem;
 }
 
@@ -816,7 +803,6 @@ export default {
   font-size: 1.2rem;
 }
 
-/* Seção de grupos/lojas ta escrito store mas isso serve pra identificar grupos*/ 
 .stores-section {
   flex: 1;
   overflow-y: auto;
@@ -853,7 +839,7 @@ export default {
 }
 
 .store-name {
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.95rem;
   color: #142C4D;
 }
@@ -864,7 +850,6 @@ export default {
   gap: 10px;
 }
 
-/* Contêiner da seta de navegação */
 .arrow-container {
   width: 36px;
   height: 36px;
@@ -926,7 +911,6 @@ export default {
   100% { opacity: 1; }
 }
 
-/* Estados de erro e vazio */
 .error-message, .empty-state {
   display: flex;
   flex-direction: column;
@@ -968,7 +952,6 @@ export default {
   font-style: italic;
 }
 
-/* Botões de ação */
 .quick-actions {
   display: flex;
   flex-wrap: wrap;
@@ -985,7 +968,7 @@ export default {
   border-radius: 8px;
   color: white;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -1021,7 +1004,7 @@ export default {
 
 .calendar-header h3 {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 500;
   margin: 0;
   color: #142C4D;
 }
@@ -1031,7 +1014,7 @@ export default {
   border: none;
   color: #142C4D;
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 500;
   padding: 5px 10px;
   cursor: pointer;
   transition: all 0.2s;
@@ -1055,7 +1038,7 @@ export default {
 
 .weekday {
   text-align: center;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.85rem;
   padding: 5px 0;
   color: #142C4D;
@@ -1164,7 +1147,7 @@ export default {
 .modal-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .close-modal-btn {
@@ -1203,7 +1186,7 @@ export default {
 }
 
 .form-group label {
-  font-weight: 600;
+  font-weight: 500;
   color: #333;
   font-size: 0.95rem;
 }
@@ -1235,7 +1218,7 @@ export default {
   border-radius: 8px;
   padding: 0.8rem 1.5rem;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -1295,7 +1278,7 @@ export default {
 
 .success-message p {
   color: #047857;
-  font-weight: 600;
+  font-weight: 500;
   text-align: center;
 }
 
@@ -1309,7 +1292,7 @@ export default {
   padding: 0.6rem 1rem;
   border-radius: 6px;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }

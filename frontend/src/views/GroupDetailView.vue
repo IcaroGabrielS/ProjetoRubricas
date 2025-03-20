@@ -437,7 +437,7 @@ export default {
 .home-header h1 {
   color: #142C4D;
   font-size: 2.2rem;
-  font-weight: 700;
+  font-weight: 500;
   margin-bottom: 0.5rem;
 }
 
