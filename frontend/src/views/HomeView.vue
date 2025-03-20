@@ -33,7 +33,12 @@
                 placeholder="Pesquisar grupos..."
                 class="search-input"
               >
-              <span class="search-icon">🔍</span>
+              <span class="search-icon">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </span>
             </div>
           </div>
           
@@ -251,7 +256,6 @@ export default {
     }
   },
   computed: {
-    // Filtragem de grupos com base na pesquisa
     filteredGroups() {
       if (!this.searchQuery) {
         return this.groups;
@@ -673,7 +677,7 @@ export default {
 .events-panel {
   grid-column: 1 / 2; /* Posiciona na primeira coluna */
   grid-row: 2 / 3;   /* Ocupa a segunda linha */
-  background: linear-gradient(135deg, #1E3A8A 30%, #2A4494 70%);
+  background: #1E3A8A;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
@@ -720,7 +724,6 @@ export default {
 
 .event-item:hover {
   background-color: rgba(255, 255, 255, 0.2);
-  transform: translateX(5px);
 }
 
 /* Container do conteúdo principal */
@@ -988,11 +991,11 @@ export default {
 }
 
 .action-button.admin {
-  background: linear-gradient(to right, #2e67c4, #3b82f6);
+  background: #564fcc;
 }
 
 .action-button.admin:hover {
-  background: linear-gradient(to right, #2554a0, #326fd1);
+  background: #6c63ff;
 }
 
 /* Estilos para o calendário */
@@ -1085,7 +1088,7 @@ export default {
 }
 
 .calendar-day.today {
-  background-color: #3b82f6;
+  background-color: #564fcc;
   color: white;
   font-weight: bold;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
@@ -1375,12 +1378,12 @@ export default {
 
 /* Melhorar a visualização de eventos com cores diferentes por tipo */
 .event-item {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: #564fcc;
   padding: 10px 15px;
   margin-bottom: 8px;
   border-radius: 6px;
   transition: all 0.2s ease;
-  border-left: 3px solid #f59e0b; /* Cor padrão para feriados */
+  border-left: 3px solid #f0f0f0; /* Cor padrão para feriados */
 }
 
 /* Cor diferente para eventos do sistema (quando implementados) */

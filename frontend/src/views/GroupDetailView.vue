@@ -63,7 +63,12 @@
                   placeholder="Pesquisar empresas..."
                   class="search-input"
                 >
-                <span class="search-icon">🔍</span>
+                <span class="search-icon">
+                  <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                </span>
               </div>
             </div>
 
@@ -103,7 +108,7 @@
       <!-- Painel com a ilustração (visualmente à direita) -->
       <div class="illustration-panel">
         <div class="large-svg-container">
-          <img src="@/assets/task-animate.svg" alt="Task Illustration" class="large-svg">
+          <img src="@/assets/groups-view-image.svg" alt="Task Illustration" class="large-svg">
         </div>
       </div>
     </div>
@@ -373,7 +378,7 @@ export default {
   gap: 20px; /* Espaçamento entre os containers */
 }
 
-/* Painel de conteúdo (visualmente à esquerda) */
+/* Painel de conteúdo (visualmente à direitaaaaaa) */
 .content-panel {
   width: calc(50% - 10px); /* 50% da largura menos metade do gap */
   background-color: white;
@@ -383,10 +388,10 @@ export default {
   overflow: hidden;
 }
 
-/* Painel de ilustração (visualmente à direita) */
+/* Painel de ilustração (visualmente à esquerdaaaaaa) */
 .illustration-panel {
   width: calc(50% - 10px); /* 50% da largura menos metade do gap */
-  background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%);
+  background: linear-gradient(155deg, #f0f0f0 50%, #564FCC  50%);
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
@@ -700,7 +705,7 @@ export default {
 
 .manage-btn {
   padding: 0.6rem 0.8rem;
-  background: #142C4D;
+  background: #564fcc;
   border: none;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -711,9 +716,7 @@ export default {
 }
 
 .manage-btn:hover {
-  background: linear-gradient(to right, #1a3760, #2a5b9e);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
+  background: #6c63ff;
 }
 
 .manage-btn .manage-text {

@@ -12,7 +12,7 @@
       <!-- Painel com a ilustração (visualmente à esquerda) -->
       <div class="illustration-panel">
         <div class="large-svg-container">
-          <img src="@/assets/task-animate.svg" alt="Password Security Illustration" class="large-svg">
+          <img src="@/assets/change-password-image.svg" alt="Password Security Illustration" class="large-svg">
         </div>
       </div>
       
@@ -51,7 +51,14 @@
                     class="toggle-password" 
                     @click="showNewPassword = !showNewPassword"
                   >
-                    {{ showNewPassword ? '🔓' : '🔒' }}
+                    <svg v-if="showNewPassword" class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#636e72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg v-else class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#636e72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
                   </button>
                 </div>
                 <span v-if="passwordErrors.newPassword" class="error-text">{{ passwordErrors.newPassword }}</span>
@@ -74,7 +81,14 @@
                     class="toggle-password" 
                     @click="showConfirmPassword = !showConfirmPassword"
                   >
-                    {{ showConfirmPassword ? '🔓' : '🔒' }}
+                    <svg v-if="showConfirmPassword" class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#636e72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg v-else class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#636e72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
                   </button>
                 </div>
                 <span v-if="passwordErrors.confirmPassword" class="error-text">{{ passwordErrors.confirmPassword }}</span>
@@ -370,7 +384,7 @@ export default {
 /* Painel de ilustração (visualmente à esquerda) */
 .illustration-panel {
   width: calc(50% - 10px); /* 50% da largura menos metade do gap */
-  background: linear-gradient(135deg, #0D1B40 30%, #1E3A8A 70%);
+  background: linear-gradient(155deg, #f0f0f0 50%, #564FCC  50%);
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   display: flex;
@@ -676,6 +690,22 @@ export default {
     text-align: right;
   }
   
+  .toggle-password {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .eye-icon {
+    width: 24px;
+    height: 24px;
+  }
+
   /* Animações */
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(-10px); }

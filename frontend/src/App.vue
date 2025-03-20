@@ -134,8 +134,8 @@ export default {
 
 :root {
   /* Paleta de cores flat e elegante */
-  --primary: #6c5ce7;           /* Roxo elegante */
-  --primary-light: #8a7ef5;     /* Roxo claro */
+  --primary: #654fcc;           /* Roxo elegante */
+  --primary-light: #6c63ff;     /* Roxo claro */
   --accent: #00cec9;            /* Turquesa */
   --accent-light: #81ecec;      /* Turquesa claro */
   --danger: #ff7675;            /* Vermelho suave */
@@ -145,7 +145,7 @@ export default {
   --light: #dfe6e9;             /* Cinza claro */
   --white: #ffffff;             /* Branco */
   --card-bg: #ffffff;           /* Fundo de card */
-  --bg-color: #f9fafe;          /* Fundo da aplicação */
+  --bg-color: #f0f0f0;          /* Fundo da aplicação */
   
   /* Parâmetros de design */
   --radius-sm: 10px;            /* Raio pequeno */
