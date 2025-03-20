@@ -857,7 +857,7 @@ export default {
 /* Layout principal - versão desktop */
 .home-layout {
   position: fixed;
-  top: 90px;
+  top: 75px;
   left: 20px;
   right: 20px;
   bottom: 20px;
@@ -1388,7 +1388,7 @@ export default {
 
 .confirm-delete-btn {
   padding: 0.7rem 1.5rem;
-  background: linear-gradient(to right, #ff7675, #fab1a0);
+  background: #EF4444;
   border: none;
   border-radius: 8px;
   color: white;

@@ -174,12 +174,12 @@ body {
 
 #app {
   min-height: 100vh;
-  padding-top: 70px;
+  padding-top: 55px; /* Reduzido de 70px para 50px */
 }
 
 .app-navbar {
   background: var(--white);
-  height: 70px;
+  height: 55px; /* Reduzido de 70px para 50px */
   position: fixed;
   top: 0;
   left: 0;
@@ -204,7 +204,7 @@ body {
 }
 
 .logo-image {
-  max-height: 45px;
+  max-height: 35px; /* Reduzido de 45px para 35px */
   width: auto;
   object-fit: contain;
 }
@@ -222,10 +222,10 @@ body {
   align-items: center;
   color: var(--dark-light);
   text-decoration: none;
-  padding: 10px 18px;
+  padding: 6px 14px; /* Reduzido de 10px 18px para 6px 14px */
   border-radius: var(--radius-full);
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 0.9rem; /* Reduzido levemente de 0.95rem */
 }
 
 .nav-link:hover {
@@ -239,8 +239,8 @@ body {
 }
 
 .nav-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px; /* Reduzido de 20px para 18px */
+  height: 18px; /* Reduzido de 20px para 18px */
   margin-right: 8px;
 }
 
@@ -263,9 +263,9 @@ body {
   gap: 8px;
   font-weight: 600;
   color: var(--dark);
-  font-size: 0.95rem;
+  font-size: 0.9rem; /* Reduzido de 0.95rem para 0.9rem */
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 4px 8px; /* Reduzido de 6px 10px para 4px 8px */
   border-radius: var(--radius-md);
   transition: all 0.2s ease;
 }
@@ -286,8 +286,8 @@ body {
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px; /* Reduzido de 32px para 28px */
+  height: 28px; /* Reduzido de 32px para 28px */
   border-radius: var(--radius-full);
   background-color: var(--accent);
   color: var(--white);
@@ -295,7 +295,7 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.9rem; /* Reduzido de 1rem para 0.9rem */
 }
 
 .dropdown-menu {
@@ -343,10 +343,10 @@ body {
   background: var(--white);
   color: var(--danger);
   border: 1.5px solid var(--danger);
-  padding: 8px 18px;
+  padding: 6px 14px; /* Reduzido de 8px 18px para 6px 14px */
   border-radius: var(--radius-full);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Reduzido de 0.9rem para 0.85rem */
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -366,7 +366,7 @@ body {
 
 .app-content {
   padding-top: 20px;
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - 50px); /* Atualizado de 70px para 50px */
 }
 
 button {
@@ -487,7 +487,7 @@ input:focus {
   }
   
   .logo-image {
-    max-height: 50px;
+    max-height: 32px; /* Reduzido de 50px para 32px */
   }
   
   .nav-links {
@@ -495,7 +495,7 @@ input:focus {
   }
   
   .nav-link {
-    padding: 8px 16px;
+    padding: 6px 12px; /* Reduzido de 8px 16px para 6px 12px */
   }
   
   .user-info, .nav-logo {
@@ -506,21 +506,21 @@ input:focus {
 @media (max-width: 768px) {
   .app-navbar {
     height: auto;
-    padding: 12px 0;
+    padding: 8px 0; /* Reduzido de 12px para 8px */
   }
   
   #app {
-    padding-top: 120px;
+    padding-top: 90px; /* Reduzido de 120px para 90px */
   }
   
   .app-content {
-    min-height: calc(100vh - 120px);
+    min-height: calc(100vh - 90px); /* Atualizado de 120px para 90px */
   }
   
   .nav-container {
     flex-direction: column;
     padding: 0 16px;
-    gap: 12px;
+    gap: 8px; /* Reduzido de 12px para 8px */
   }
   
   .nav-links {
@@ -541,7 +541,7 @@ input:focus {
   }
   
   .logo-image {
-    max-height: 45px;
+    max-height: 30px; /* Reduzido de 45px para 30px */
   }
 }
 
@@ -556,30 +556,30 @@ input:focus {
   
   .nav-icon {
     margin-right: 0;
-    width: 24px;
-    height: 24px;
+    width: 22px; /* Reduzido de 24px para 22px */
+    height: 22px; /* Reduzido de 24px para 22px */
   }
   
   .app-navbar {
-    padding: 10px 0;
+    padding: 8px 0; /* Reduzido de 10px para 8px */
   }
   
   #app {
-    padding-top: 100px;
+    padding-top: 80px; /* Reduzido de 100px para 80px */
   }
   
   .app-content {
-    min-height: calc(100vh - 100px);
+    min-height: calc(100vh - 80px); /* Atualizado de 100px para 80px */
   }
   
   .logo-image {
-    max-height: 35px;
+    max-height: 28px; /* Reduzido de 35px para 28px */
   }
   
   .avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 0.9rem;
+    width: 24px; /* Reduzido de 28px para 24px */
+    height: 24px; /* Reduzido de 28px para 24px */
+    font-size: 0.8rem; /* Reduzido de 0.9rem para 0.8rem */
   }
   
 }

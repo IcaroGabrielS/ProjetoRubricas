@@ -1060,7 +1060,7 @@ export default {
 /* Layout principal - versão desktop */
 .home-layout {
   position: fixed;
-  top: 90px;
+  top: 75px;
   left: 20px;
   right: 20px;
   bottom: 20px;

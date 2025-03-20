@@ -638,7 +638,7 @@ export default {
 
 .home-layout {
   position: fixed;
-  top: 90px;
+  top: 75px;
   bottom: 20px;
   left: 20px;
   right: 20px;
