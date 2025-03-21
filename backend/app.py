@@ -26,18 +26,18 @@ def create_app(config_class=Config):
     # Importa as blueprints após inicialização para evitar imports circulares
     from routes.auth import auth_bp
     from routes.users import users_bp
-    from routes.groups import groups_bp
     from routes.companies import companies_bp
     from routes.employees import employees_bp
     from routes.files import files_bp
+    from routes.imports import imports_bp
     
     # Registra as blueprints
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(users_bp, url_prefix='/api')
-    app.register_blueprint(groups_bp, url_prefix='/api')
     app.register_blueprint(companies_bp, url_prefix='/api')
     app.register_blueprint(employees_bp, url_prefix='/api')
     app.register_blueprint(files_bp, url_prefix='/api')
+    app.register_blueprint(imports_bp, url_prefix='/api')
     
     # Cria as tabelas no banco de dados e inicializa o admin
     with app.app_context():
