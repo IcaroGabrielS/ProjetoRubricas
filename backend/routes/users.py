@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models import db, User, CompanyPermission
+from models import db, User, CompanyPermission, Company
 from middleware.auth import admin_required, login_required, get_current_user
 
 users_bp = Blueprint('users', __name__)
