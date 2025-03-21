@@ -1,18 +1,15 @@
 from flask import Blueprint, request, jsonify
-from models import db, Employee, Company, User
-from middleware.auth import admin_required, user_has_company_access
+from models import db, Employee, Company, User, CompanyPermission
+from middleware.auth import admin_required, login_required, get_current_user, user_has_company_access
 from utils.validation import is_valid_uuid
 
 employees_bp = Blueprint('employees', __name__)
 
 @employees_bp.route('/employees', methods=['GET'])
+@login_required
 def list_employees():
     """Lista todos os funcionários que o usuário tem acesso"""
-    user_id = request.headers.get('User-ID')
-    user = User.query.get(user_id)
-    
-    if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
+    user = get_current_user()
     
     # Filtrar por empresa se especificado
     company_id = request.args.get('company_id')
@@ -25,9 +22,8 @@ def list_employees():
         else:
             employees = Employee.query.all()
     else:
-        from models import CompanyPermission
         # Obter empresas que o usuário tem acesso
-        permissions = CompanyPermission.query.filter_by(user_id=user_id).all()
+        permissions = CompanyPermission.query.filter_by(user_id=user.id).all()
         allowed_company_ids = [p.company_id for p in permissions]
         
         if company_id:
@@ -45,19 +41,15 @@ def list_employees():
     }), 200
 
 @employees_bp.route('/employees/<int:employee_id>', methods=['GET'])
+@login_required
 def get_employee(employee_id):
     """Obtém detalhes de um funcionário específico"""
     employee = Employee.query.get_or_404(employee_id)
-    
-    user_id = request.headers.get('User-ID')
-    user = User.query.get(user_id)
-    
-    if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
+    user = get_current_user()
     
     # Verificar se o usuário tem acesso à empresa do funcionário
     if employee.company_id and not user.is_admin:
-        if not user_has_company_access(user_id, employee.company_id):
+        if not user_has_company_access(user.id, employee.company_id):
             return jsonify({'message': 'Acesso não autorizado a este funcionário'}), 403
     
     return jsonify({
@@ -87,7 +79,8 @@ def create_employee():
         i_empregados=data.get('i_empregados'),
         salario=data.get('salario'),
         admissao=data.get('admissao'),
-        i_afastamentos=data.get('i_afastamentos')
+        i_afastamentos=data.get('i_afastamentos'),
+        codi_emp=data.get('codi_emp')
     )
     
     db.session.add(new_employee)
@@ -124,6 +117,8 @@ def update_employee(employee_id):
         employee.admissao = data['admissao']
     if 'i_afastamentos' in data:
         employee.i_afastamentos = data['i_afastamentos']
+    if 'codi_emp' in data:
+        employee.codi_emp = data['codi_emp']
     
     db.session.commit()
     

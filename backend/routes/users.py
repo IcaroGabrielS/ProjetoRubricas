@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from models import db, User, Group, GroupPermission
-from middleware.auth import admin_required
+from models import db, User, CompanyPermission
+from middleware.auth import admin_required, login_required, get_current_user
 
 users_bp = Blueprint('users', __name__)
 
@@ -9,9 +9,12 @@ users_bp = Blueprint('users', __name__)
 def register():
     data = request.get_json()
     
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({'message': 'Nome de usuário e senha são obrigatórios'}), 400
+    
     existing_user = User.query.filter_by(username=data['username']).first()
     if existing_user:
-        return jsonify({'message': 'Username already exists'}), 400
+        return jsonify({'message': 'Nome de usuário já existe'}), 400
     
     new_user = User(
         username=data['username'],
@@ -22,7 +25,7 @@ def register():
     db.session.add(new_user)
     db.session.commit()
     
-    return jsonify({'message': 'User registered successfully', 'user': new_user.to_dict()}), 201
+    return jsonify({'message': 'Usuário registrado com sucesso', 'user': new_user.to_dict()}), 201
 
 @users_bp.route('/users', methods=['GET'])
 @admin_required
@@ -67,15 +70,15 @@ def update_user(user_id):
 def delete_user(user_id):
     user_to_delete = User.query.get_or_404(user_id)
     
-    admin_id = request.headers.get('User-ID')
-    if int(admin_id) == user_id:
+    current_user = get_current_user()
+    if current_user.id == user_id:
         return jsonify({'message': 'Não é possível excluir seu próprio usuário'}), 400
     
-    groups_created = Group.query.filter_by(created_by=user_id).all()
-    if groups_created:
-        return jsonify({'message': 'Não é possível excluir este usuário porque ele criou grupos'}), 400
+    companies_created = Company.query.filter_by(created_by=user_id).all()
+    if companies_created:
+        return jsonify({'message': 'Não é possível excluir este usuário porque ele criou empresas'}), 400
     
-    GroupPermission.query.filter_by(user_id=user_id).delete()
+    CompanyPermission.query.filter_by(user_id=user_id).delete()
     
     db.session.delete(user_to_delete)
     db.session.commit()
@@ -83,17 +86,14 @@ def delete_user(user_id):
     return jsonify({'message': 'Usuário excluído com sucesso'}), 200
 
 @users_bp.route('/users/<int:user_id>/change_password_no_verify', methods=['PUT'])
+@login_required
 def change_password_no_verify(user_id):
     data = request.get_json()
-    current_user_id = request.headers.get('User-ID')
-    current_user = User.query.get(current_user_id)
-    
-    if not current_user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
+    current_user = get_current_user()
     
     user_to_change = User.query.get_or_404(user_id)
     
-    if not current_user.is_admin and int(current_user_id) != user_id:
+    if not current_user.is_admin and current_user.id != user_id:
         return jsonify({'message': 'Acesso não autorizado'}), 403
     
     if 'new_password' not in data:
@@ -108,17 +108,14 @@ def change_password_no_verify(user_id):
     return jsonify({'message': 'Senha alterada com sucesso'}), 200
 
 @users_bp.route('/users/<int:user_id>/password', methods=['PUT'])
+@login_required
 def change_password(user_id):
     data = request.get_json()
-    current_user_id = request.headers.get('User-ID')
-    current_user = User.query.get(current_user_id)
-    
-    if not current_user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
+    current_user = get_current_user()
     
     user_to_change = User.query.get_or_404(user_id)
     
-    if not current_user.is_admin and int(current_user_id) != user_id:
+    if not current_user.is_admin and current_user.id != user_id:
         return jsonify({'message': 'Acesso não autorizado'}), 403
     
     if 'new_password' not in data:
@@ -127,7 +124,7 @@ def change_password(user_id):
     if len(data['new_password']) < 6:
         return jsonify({'message': 'A senha deve ter pelo menos 6 caracteres'}), 400
     
-    if not current_user.is_admin and int(current_user_id) == user_id:
+    if not current_user.is_admin and current_user.id == user_id:
         if 'current_password' not in data:
             return jsonify({'message': 'Senha atual é necessária'}), 400
         
@@ -139,16 +136,17 @@ def change_password(user_id):
     
     return jsonify({'message': 'Senha alterada com sucesso'}), 200
 
-@users_bp.route('/users/<int:user_id>/groups', methods=['GET'])
+@users_bp.route('/users/<int:user_id>/companies', methods=['GET'])
 @admin_required
-def get_user_groups(user_id):
+def get_user_companies(user_id):
     User.query.get_or_404(user_id)
     
-    permissions = GroupPermission.query.filter_by(user_id=user_id).all()
-    group_ids = [permission.group_id for permission in permissions]
+    permissions = CompanyPermission.query.filter_by(user_id=user_id).all()
+    company_ids = [permission.company_id for permission in permissions]
     
-    groups = Group.query.filter(Group.id.in_(group_ids)).all()
+    from models import Company
+    companies = Company.query.filter(Company.id.in_(company_ids)).all()
     
     return jsonify({
-        'groups': [group.to_dict() for group in groups]
+        'companies': [company.to_dict() for company in companies]
     }), 200
