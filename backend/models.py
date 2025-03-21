@@ -40,6 +40,7 @@ class Company(db.Model):
     cnpj = db.Column(db.String(18), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    codi_emp = db.Column(db.String(50), unique=True, nullable=True)  # Campo adicionado
     
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_companies')
     
@@ -49,7 +50,8 @@ class Company(db.Model):
             "name": self.name,
             "cnpj": self.cnpj,
             "created_at": self.created_at.isoformat(),
-            "created_by": self.created_by
+            "created_by": self.created_by,
+            "codi_emp": self.codi_emp
         }
     
     def to_dict_with_permissions(self):

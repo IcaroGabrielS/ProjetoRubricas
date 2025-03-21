@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
-from models import db, Employee
-from middleware.auth import admin_required
+from models import db, Employee, Company, CompanyPermission
+from middleware.auth import admin_required, get_current_user
 import pyodbc
 
 imports_bp = Blueprint('imports', __name__)
@@ -162,6 +162,91 @@ def list_employee_codes():
     
     return jsonify(result), 200
 
+@imports_bp.route('/import/companies', methods=['POST'])
+@admin_required
+def import_companies():
+    try:
+        # Parâmetros de conexão - podem ser passados no request ou usar os padrões
+        data = request.get_json() or {}
+        conn_params = {
+            "Driver": data.get("Driver", "{SQL Anywhere 17}"),
+            "Host": data.get("Host", "10.0.25.19"),
+            "Server": data.get("Server", "Srvcontabil"),
+            "DatabaseName": data.get("DatabaseName", "Contabil"),
+            "UID": data.get("UID", "externo"),
+            "PWD": data.get("PWD", "externo"),
+            "Port": data.get("Port", "2638")
+        }
+        
+        # Estabelecer conexão
+        conn_str = ";".join([f"{k}={v}" for k, v in conn_params.items()])
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        
+        # Executar a consulta para importar empresas
+        query = "SELECT cgce_emp, apel_emp, codi_emp FROM bethadba.geempre"
+        cursor.execute(query)
+        
+        # Processar resultados
+        companies_added = 0
+        companies_updated = 0
+        errors = []
+        
+        for row in cursor.fetchall():
+            try:
+                cgce_emp, apel_emp, codi_emp = row
+                
+                # Formatar CNPJ - remover pontos e traços
+                cnpj = ''.join(filter(str.isdigit, cgce_emp if cgce_emp else ""))
+                
+                # Verificar se a empresa já existe pelo código
+                existing_company = Company.query.filter_by(codi_emp=codi_emp).first()
+                
+                if existing_company:
+                    # Atualizar empresa existente
+                    existing_company.name = apel_emp
+                    existing_company.cnpj = cnpj
+                    companies_updated += 1
+                else:
+                    # Criar nova empresa com o modelo simplificado
+                    new_company = Company(
+                        name=apel_emp,
+                        cnpj=cnpj,
+                        codi_emp=codi_emp
+                    )
+                    db.session.add(new_company)
+                    companies_added += 1
+                
+                # Commit a cada 100 registros para evitar problemas de memória
+                if (companies_added + companies_updated) % 100 == 0:
+                    db.session.commit()
+            
+            except Exception as e:
+                errors.append(f"Erro ao processar empresa {row[2] if row else 'desconhecida'}: {str(e)}")
+        
+        # Commit final
+        db.session.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "message": "Importação de empresas concluída",
+            "companies_added": companies_added,
+            "companies_updated": companies_updated,
+            "errors": errors
+        }), 200
+        
+    except pyodbc.Error as e:
+        return jsonify({
+            "message": f"Erro de conexão ODBC: {str(e)}",
+            "success": False
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "message": f"Erro: {str(e)}",
+            "success": False
+        }), 500
+
 @imports_bp.route('/employees/associate-by-code', methods=['POST'])
 @admin_required
 def associate_employees_by_code():
@@ -204,3 +289,44 @@ def associate_employees_by_code():
     db.session.commit()
     
     return jsonify(results), 200
+
+@imports_bp.route('/associate-employees-to-companies', methods=['POST'])
+@admin_required
+def associate_employees_to_companies():
+    """Associa funcionários às empresas automaticamente com base no codi_emp"""
+    try:
+        # Encontrar funcionários sem empresa
+        unassigned_employees = Employee.query.filter_by(company_id=None).all()
+        
+        assigned_count = 0
+        not_found_count = 0
+        errors = []
+        
+        for employee in unassigned_employees:
+            try:
+                if employee.codi_emp:
+                    # Buscar empresa pelo código
+                    company = Company.query.filter_by(codi_emp=employee.codi_emp).first()
+                    
+                    if company:
+                        employee.company_id = company.id
+                        assigned_count += 1
+                    else:
+                        not_found_count += 1
+            except Exception as e:
+                errors.append(f"Erro ao associar funcionário {employee.id}: {str(e)}")
+        
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Associação concluída",
+            "assigned_count": assigned_count,
+            "not_found_count": not_found_count,
+            "errors": errors
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "message": f"Erro: {str(e)}",
+            "success": False
+        }), 500

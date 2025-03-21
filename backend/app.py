@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from models import db, bcrypt, User
 from config import Config
@@ -43,6 +43,24 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
         create_admin_user()
+    
+    # Adiciona tratamento global de erros
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        app.logger.error(f"Erro não tratado: {str(e)}")
+        return jsonify({"mensagem": "Erro interno do servidor"}), 500
+    
+    @app.errorhandler(404)
+    def not_found(e):
+        return jsonify({"mensagem": "Recurso não encontrado"}), 404
+    
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        return jsonify({"mensagem": "Método não permitido"}), 405
+    
+    @app.errorhandler(400)
+    def bad_request(e):
+        return jsonify({"mensagem": "Requisição inválida"}), 400
     
     return app
 
