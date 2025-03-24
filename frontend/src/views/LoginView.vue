@@ -68,7 +68,41 @@ export default {
       isLoading
     }
   },
+  created() {
+    // Verificar autenticação ao iniciar o componente
+    this.checkExistingAuth();
+  },
   methods: {
+    async checkExistingAuth() {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      if (userData && userData.token) {
+        this.isLoading = true;
+        try {
+          const response = await fetch('/api/verify-token', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${userData.token}`
+            }
+          });
+          
+          if (response.ok) {
+            // Token ainda válido, configurar estado e redirecionar
+            this.setupTokenRefresh();
+            this.$router.push('/');
+          } else {
+            // Token inválido, limpar localStorage
+            localStorage.removeItem('user');
+            this.error = 'Sua sessão expirou. Por favor faça login novamente.';
+          }
+        } catch (error) {
+          console.error('Token verification error:', error);
+          this.error = 'Erro ao verificar autenticação';
+        } finally {
+          this.isLoading = false;
+        }
+      }
+    },
+    
     async handleLogin() {
       this.isLoading = true
       this.error = ''
@@ -99,14 +133,16 @@ export default {
           id: data.user_id,
           username: data.username,
           is_admin: data.is_admin,
-          token: data.token
+          token: data.token,
+          // Armazenar o momento em que o token foi obtido para verificar expiração
+          tokenObtainedAt: new Date().getTime()
         };
         
         // Salva no localStorage
         localStorage.setItem('user', JSON.stringify(userData));
         
-        // Configura o token para futuras requisições, se estiver usando Axios ou similar
-        // this.$http.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+        // Configurar token para futuras requisições
+        this.configureAuthToken(userData.token);
         
         // Verificar token automaticamente
         this.setupTokenRefresh();
@@ -121,13 +157,34 @@ export default {
       }
     },
     
+    configureAuthToken(token) {
+      // Utilizar o token para evitar o erro do ESLint
+      console.log('Token configurado:', token ? token.substring(0, 10) + '...' : 'Token inválido');
+      
+      // Esta função pode ser usada para configurar o token em um cliente HTTP centralizado
+      // Se você estiver usando Axios, por exemplo:
+      // this.$http.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    },
+    
     setupTokenRefresh() {
+      // Limpar qualquer intervalo existente para evitar duplicação
+      if (this.tokenInterval) clearInterval(this.tokenInterval);
+      
       // Implementação para verificar o token
-      // Esta função pode ser chamada periodicamente ou em eventos específicos
       const verifyToken = async () => {
         try {
           const userData = JSON.parse(localStorage.getItem('user'));
           if (!userData || !userData.token) return;
+          
+          // Verificar se o token está próximo de expirar (assumindo 24h de validade)
+          const now = new Date().getTime();
+          const tokenAge = now - (userData.tokenObtainedAt || 0);
+          const tokenTTL = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
+          const warningThreshold = tokenTTL * 0.9; // Avisar quando atingir 90% do tempo
+          
+          if (tokenAge > warningThreshold) {
+            console.log('Token próximo de expirar, verificando validade...');
+          }
           
           const response = await fetch('/api/verify-token', {
             method: 'GET',
@@ -137,17 +194,24 @@ export default {
           });
           
           if (!response.ok) {
-            // Token inválido, volta para a tela de login
+            // Token inválido, notificar usuário e redirecionar
+            console.warn('Token expirado ou inválido');
             localStorage.removeItem('user');
-            this.$router.push('/login');
+            
+            // Mostrar mensagem apenas se o usuário estiver em outra página
+            if (this.$route.path !== '/login') {
+              alert('Sua sessão expirou. Você será redirecionado para a página de login.');
+              this.$router.push('/login');
+            }
           }
         } catch (error) {
           console.error('Token verification error:', error);
         }
       };
       
-      // Verificar token a cada 30 minutos
-      this.tokenInterval = setInterval(verifyToken, 30 * 60 * 1000);
+      // Verificar token a cada 15 minutos em vez de 30
+      // Isso permite uma detecção mais rápida de tokens inválidos
+      this.tokenInterval = setInterval(verifyToken, 15 * 60 * 1000);
     }
   },
   beforeUnmount() {

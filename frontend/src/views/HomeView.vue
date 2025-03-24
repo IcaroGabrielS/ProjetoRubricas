@@ -19,18 +19,18 @@
           
           <div class="dashboard-summary">
             <div class="dashboard-item">
-              <h3>Seus Grupos</h3>
-              <p>Selecione um grupo abaixo para acessar seus detalhes e arquivos.</p>
+              <h3>Suas Empresas</h3>
+              <p>Selecione uma empresa abaixo para acessar seus detalhes e arquivos.</p>
             </div>
           </div>
           
-          <!-- Caixa de busca para grupos -->
+          <!-- Caixa de busca para empresas -->
           <div class="search-container">
             <div class="search-box">
               <input 
                 type="text" 
                 v-model="searchQuery" 
-                placeholder="Pesquisar grupos..."
+                placeholder="Pesquisar empresas..."
                 class="search-input"
               >
               <span class="search-icon">
@@ -42,48 +42,43 @@
             </div>
           </div>
           
-          <!-- Lista de grupos -->
+          <!-- Lista de empresas -->
           <div class="stores-section">
-            <div v-if="groupsLoading" class="groups-loading-container">
+            <div v-if="companiesLoading" class="groups-loading-container">
               <div class="groups-loading-spinner"></div>
-              <p>Carregando grupos...</p>
+              <p>Carregando empresas...</p>
             </div>
             
-            <div v-else-if="groupsError" class="error-message">
+            <div v-else-if="companiesError" class="error-message">
               <div class="error-icon">!</div>
-              <p>{{ groupsError }}</p>
+              <p>{{ companiesError }}</p>
             </div>
             
-            <div v-else-if="filteredGroups.length === 0 && groups.length === 0" class="empty-state">
-              <p>Você não tem acesso a grupos no momento.</p>
+            <div v-else-if="filteredCompanies.length === 0 && companies.length === 0" class="empty-state">
+              <p>Você não tem acesso a empresas no momento.</p>
             </div>
             
-            <div v-else-if="filteredGroups.length === 0" class="empty-state">
-              <p>Nenhum grupo encontrado.</p>
+            <div v-else-if="filteredCompanies.length === 0" class="empty-state">
+              <p>Nenhuma empresa encontrada.</p>
             </div>
             
             <div v-else class="stores-list">
               <div 
-                v-for="group in filteredGroups" 
-                :key="group.id" 
+                v-for="company in filteredCompanies" 
+                :key="company.id" 
                 class="store-item"
               >
                 <div class="store-item-details">
-                  <span class="store-name">{{ group.name }}</span>
+                  <span class="store-name">{{ company.name }}</span>
+                  <span class="company-cnpj" v-if="company.cnpj">CNPJ: {{ formatCNPJ(company.cnpj) }}</span>
                 </div>
                 <div class="store-item-actions">
-                  <div class="arrow-container" @click="goToGroupDetail(group.id)" title="Ver detalhes do grupo">
+                  <div class="arrow-container" @click="goToCompanyDetail(company.id)" title="Ver detalhes da empresa">
                     <span class="store-item-arrow">›</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <!-- Botões de ação -->
-          <div class="quick-actions">
-            <button v-if="isAdmin" class="action-button admin" @click="showCreateGroupModal = true">Novo Grupo</button>
-            <button v-if="isAdmin" class="action-button admin" @click="manageAccounts">Gerenciar Contas</button>
           </div>
         </div>
       </div>
@@ -164,53 +159,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Modal para criar novo grupo -->
-    <div v-if="showCreateGroupModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-container">
-        <div class="modal-header">
-          <h2>Criar Novo Grupo</h2>
-          <button class="close-modal-btn" @click="closeModal">×</button>
-        </div>
-        
-        <div class="modal-body">
-          <form @submit.prevent="handleCreateGroup" class="create-group-form">
-            <div class="form-group">
-              <label for="name">Nome do Grupo:</label>
-              <input 
-                type="text" 
-                id="name" 
-                v-model="newGroup.name" 
-                required
-                placeholder="Digite o nome do grupo"
-              >
-            </div>
-            
-            <div class="button-container">
-              <button type="submit" :disabled="createGroupLoading" class="submit-btn">
-                <span v-if="createGroupLoading" class="form-loading-indicator"></span>
-                {{ createGroupLoading ? 'Criando...' : 'Criar Grupo' }}
-              </button>
-            </div>
-          </form>
-          
-          <div v-if="createGroupError" class="error-message">
-            <div class="error-icon">!</div>
-            <p>{{ createGroupError }}</p>
-            <button class="close-btn" @click="createGroupError = null" aria-label="Fechar">×</button>
-          </div>
-          
-          <div v-if="createGroupSuccess" class="success-message">
-            <div class="success-icon">✓</div>
-            <p>{{ createGroupSuccess }}</p>
-            <div class="success-actions">
-              <button @click="closeModal" class="action-btn view-btn">Voltar para Home</button>
-              <button @click="resetCreateGroupForm" class="action-btn reset-btn">Criar outro grupo</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -219,26 +167,17 @@ export default {
   name: 'HomeView',
   data() {
     return {
-      // Usuário e grupos
+      // Usuário e empresas
       username: 'Usuário',
       isAdmin: false,
-      groups: [],
-      groupsLoading: true,
-      groupsError: null,
+      companies: [],
+      companiesLoading: true,
+      companiesError: null,
       searchQuery: '',
       
       // Responsividade
       isMobileDevice: false,
       
-      // Novo Grupo Modal
-      showCreateGroupModal: false,
-      newGroup: {
-        name: ''
-      },
-      createGroupLoading: false,
-      createGroupError: null,
-      createGroupSuccess: '',
-
       // Calendário
       weekdays: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
       monthNames: [
@@ -256,14 +195,15 @@ export default {
     }
   },
   computed: {
-    filteredGroups() {
+    filteredCompanies() {
       if (!this.searchQuery) {
-        return this.groups;
+        return this.companies;
       }
       
       const query = this.searchQuery.toLowerCase();
-      return this.groups.filter(group => 
-        group.name.toLowerCase().includes(query)
+      return this.companies.filter(company => 
+        company.name.toLowerCase().includes(query) || 
+        (company.cnpj && company.cnpj.includes(query))
       );
     },
     
@@ -290,7 +230,7 @@ export default {
   created() {
     this.checkDeviceType();
     this.loadUserInfo();
-    this.fetchGroups();
+    this.fetchCompanies();
     this.fetchHolidaysAndEvents(); // Buscar feriados nacionais
     
     // Adicionar listener para verificar redimensionamento
@@ -317,7 +257,7 @@ export default {
       }
     },
     
-    async fetchGroups() {
+    async fetchCompanies() {
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -327,38 +267,48 @@ export default {
         
         const user = JSON.parse(userStr);
         
-        const response = await fetch('/api/groups', {
+        const response = await fetch('/api/companies', {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'User-ID': user.id
+            'Authorization': `Bearer ${user.token}`,
+            'Content-Type': 'application/json'
           }
         });
         
         const data = await response.json();
         
         if (!response.ok) {
-          this.groupsError = data.message || 'Erro ao carregar grupos';
-          this.groupsLoading = false;
+          this.companiesError = data.message || 'Erro ao carregar empresas';
+          this.companiesLoading = false;
           return;
         }
         
-        this.groups = data.groups;
-        this.groupsLoading = false;
+        this.companies = data.companies;
+        this.companiesLoading = false;
       } catch (error) {
-        this.groupsError = 'Erro ao conectar ao servidor';
-        this.groupsLoading = false;
-        console.error('Error fetching groups:', error);
+        this.companiesError = 'Erro ao conectar ao servidor';
+        this.companiesLoading = false;
+        console.error('Error fetching companies:', error);
       }
     },
     
-    // Navegação
-    goToGroupDetail(groupId) {
-      this.$router.push(`/groups/${groupId}`);
+    formatCNPJ(cnpj) {
+      if (!cnpj) return '';
+      
+      // Remove qualquer caractere não numérico
+      const numbers = cnpj.replace(/\D/g, '');
+      
+      // Aplica a formatação XX.XXX.XXX/XXXX-XX
+      if (numbers.length === 14) {
+        return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/g, '$1.$2.$3/$4-$5');
+      }
+      
+      return cnpj; // Retorna o valor original se não conseguir formatar
     },
     
-    manageAccounts() {
-      this.$router.push('/users');
+    // Navegação
+    goToCompanyDetail(companyId) {
+      this.$router.push(`/companies/${companyId}`);
     },
     
     // Métodos para o calendário
@@ -413,7 +363,6 @@ export default {
     
     dayClicked(day) {
       // Mostra os eventos deste dia específico
-      // Removida a declaração de clickedDate que não era utilizada
       const eventsOnThisDay = this.events.filter(event => {
         const eventDate = new Date(event.date);
         return eventDate.getDate() === day && 
@@ -525,68 +474,11 @@ export default {
     
     updateEventsForCurrentMonth() {
       this.combineAllEvents();
-      if (this.currentMonth === 11) {this.fetchNationalHolidays(this.currentYear + 1);} 
-      else if (this.currentMonth === 0) {this.fetchNationalHolidays(this.currentYear - 1);}
-    },
-
-    closeModal() {
-      if (!this.createGroupLoading) {
-        this.showCreateGroupModal = false;
-
-        if (this.createGroupSuccess) {
-          this.fetchGroups();
-        }
-
-        this.resetCreateGroupForm();
-        this.createGroupError = null;
-        this.createGroupSuccess = '';
-      }
-    },
-    
-    resetCreateGroupForm() {
-      this.newGroup = {
-        name: ''
-      };
-      this.createGroupSuccess = '';
-    },
-    
-    async handleCreateGroup() {
-      this.createGroupLoading = true;
-      this.createGroupError = null;
-      
-      try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          this.$router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        
-        const response = await fetch('/api/groups', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-ID': user.id
-          },
-          body: JSON.stringify(this.newGroup)
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          console.error('Erro no servidor:', data);
-          this.createGroupError = data.message || 'Erro ao criar grupo';
-          this.createGroupLoading = false;
-          return;
-        }
-        
-        this.createGroupSuccess = 'Grupo criado com sucesso!';
-        this.createGroupLoading = false;
-      } catch (error) {
-        console.error('Erro ao conectar ao servidor:', error);
-        this.createGroupError = 'Erro ao conectar ao servidor';
-        this.createGroupLoading = false;
+      if (this.currentMonth === 11) {
+        this.fetchNationalHolidays(this.currentYear + 1);
+      } 
+      else if (this.currentMonth === 0) {
+        this.fetchNationalHolidays(this.currentYear - 1);
       }
     }
   }
@@ -660,7 +552,6 @@ export default {
   justify-content: center;
   height: auto;
 }
-
 
 .events-panel {
   grid-column: 1 / 2;
@@ -844,6 +735,11 @@ export default {
   color: #142C4D;
 }
 
+.company-cnpj {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
 .store-item-actions {
   display: flex;
   align-items: center;
@@ -952,35 +848,6 @@ export default {
   font-style: italic;
 }
 
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0;
-  margin-top: auto;
-}
-
-.action-button {
-  flex: 1;
-  min-width: 150px;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.action-button.admin {
-  background: #564fcc;
-}
-
-.action-button.admin:hover {
-  background: #6c63ff;
-}
-
 /* Estilos para o calendário */
 .full-calendar-container {
   width: 100%;
@@ -1052,6 +919,7 @@ export default {
   flex: 1;
 }
 
+
 .calendar-day {
   position: relative;
   display: flex;
@@ -1070,13 +938,6 @@ export default {
   background-color: rgba(59, 130, 246, 0.1);
 }
 
-.calendar-day.today {
-  background-color: #564fcc;
-  color: white;
-  font-weight: bold;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
-}
-
 .calendar-day.faded {
   color: #CBD5E1;
   cursor: default;
@@ -1086,296 +947,41 @@ export default {
   background-color: transparent;
 }
 
-.calendar-day.has-event::after {
-  content: '';
-  position: absolute;
-  bottom: 3px;
-  width: 5px;
-  height: 5px;
-  background-color: #f59e0b;
-  border-radius: 50%;
+.calendar-day.today {
+  background-color: #564fcc;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.calendar-day.has-event {
+  font-weight: 500;
 }
 
 .event-indicator {
   position: absolute;
-  bottom: 3px;
+  bottom: 2px;
   width: 5px;
   height: 5px;
-  background-color: #f59e0b;
+  background-color: #3b82f6;
   border-radius: 50%;
 }
 
-/* Modal para criação de grupo */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fade-in 0.3s ease;
-}
-
-.modal-container {
-  width: 90%;
-  max-width: 600px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-  animation: slide-up 0.3s ease;
-}
-
-@keyframes slide-up {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.modal-header {
-  background: linear-gradient(to right, #142C4D, #204578);
-  color: white;
-  padding: 1.2rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 500;
-}
-
-.close-modal-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.8rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-}
-
-.close-modal-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.create-group-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #333;
-  font-size: 0.95rem;
-}
-
-.form-group input {
-  padding: 0.8rem 1rem;
-  border: 2px solid #e1e1e1;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.3s;
-}
-
-.form-group input:focus {
-  border-color: #204578;
-  box-shadow: 0 0 0 3px rgba(32, 69, 120, 0.15);
-  outline: none;
-}
-
-.button-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-.submit-btn {
-  background: linear-gradient(to right, #142C4D, #204578);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.submit-btn:hover {
-  box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
-}
-
-.submit-btn:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.form-loading-indicator {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-}
-
-/* Mensagens de sucesso e erro */
-.success-message, .error-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.2rem;
-  border-radius: 8px;
-  margin: 1.5rem 0 1rem;
-  animation: fade-in 0.3s ease;
-}
-
-.success-message {
-  background-color: #ecfdf5;
-  border: 1px solid #d1fae5;
-}
-
-.success-icon {
-  width: 36px;
-  height: 36px;
-  background-color: #10b981;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  margin-bottom: 0.8rem;
-}
-
-.success-message p {
-  color: #047857;
-  font-weight: 500;
-  text-align: center;
-}
-
-.success-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.action-btn {
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.view-btn {
-  background-color: #1e40af;
-  color: white;
-  border: none;
-}
-
-.view-btn:hover {
-  background-color: #1e3a8a;
-}
-
-.reset-btn {
-  background-color: #f3f4f6;
-  color: #1f2937;
-  border: 1px solid #d1d5db;
-}
-
-.reset-btn:hover {
-  background-color: #e5e7eb;
-}
-
-.close-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: none;
-  border: none;
-  color: #b91c1c;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background-color: rgba(185, 28, 28, 0.1);
-}
-
-/* Estilos para os indicadores de eventos */
 .events-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
-  text-align: center;
+  padding: 20px 0;
 }
 
 .events-loading-spinner {
   width: 30px;
   height: 30px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(255, 255, 255, 0.2);
   border-top: 3px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-/* Melhorar a visualização de eventos com cores diferentes por tipo */
-.event-item {
-  background-color: #564fcc;
-  padding: 10px 15px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  border-left: 3px solid #f0f0f0; /* Cor padrão para feriados */
-}
-
-/* Cor diferente para eventos do sistema (quando implementados) */
-.event-item[data-type="system"] {
-  border-left: 3px solid #10b981; /* Verde para eventos do sistema */
-}
-
-/* Cor diferente para eventos pessoais (quando implementados) */
-.event-item[data-type="personal"] {
-  border-left: 3px solid #3b82f6; /* Azul para eventos pessoais */
+  margin-bottom: 10px;
 }
 </style>
