@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from models import db, User
 import jwt
 import datetime
+from middleware.auth import get_current_user  # Corrigir importação circular
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -38,8 +39,7 @@ def login():
 
 @auth_bp.route('/verify-token', methods=['GET'])
 def verify_token():
-    from middleware.auth import get_current_user
-    
+    # Não importar dentro da função para evitar importação circular
     user = get_current_user()
     if not user:
         return jsonify({'valid': False, 'message': 'Invalid or expired token'}), 401

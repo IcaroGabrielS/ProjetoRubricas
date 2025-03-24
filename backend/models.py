@@ -61,7 +61,11 @@ class Company(db.Model):
         ]
         return company_dict
 
-class CompanyPermission(db.Model):
+class CompanyPermclass CompanyPermission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)ission(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
     user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)

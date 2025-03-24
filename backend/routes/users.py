@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import db, User, CompanyPermission, Company
 from middleware.auth import admin_required, login_required, get_current_user
+from utils.validation import is_valid_uuid
 
 users_bp = Blueprint('users', __name__)
 
@@ -35,17 +36,25 @@ def list_users():
         'users': [user.to_dict() for user in users]
     }), 200
 
-@users_bp.route('/users/<int:user_id>', methods=['GET'])
+@users_bp.route('/users/<user_id>', methods=['GET'])
 @admin_required
 def get_user(user_id):
+    # Verificar se é um UUID válido
+    if not is_valid_uuid(user_id):
+        return jsonify({'message': 'Invalid user ID format'}), 400
+        
     user = User.query.get_or_404(user_id)
     return jsonify({
         'user': user.to_dict()
     }), 200
 
-@users_bp.route('/users/<int:user_id>', methods=['PUT'])
+@users_bp.route('/users/<user_id>', methods=['PUT'])
 @admin_required
 def update_user(user_id):
+    # Verificar se é um UUID válido
+    if not is_valid_uuid(user_id):
+        return jsonify({'message': 'Invalid user ID format'}), 400
+        
     data = request.get_json()
     user = User.query.get_or_404(user_id)
     
@@ -65,9 +74,13 @@ def update_user(user_id):
         'user': user.to_dict()
     }), 200
 
-@users_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@users_bp.route('/users/<user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
+    # Verificar se é um UUID válido
+    if not is_valid_uuid(user_id):
+        return jsonify({'message': 'Invalid user ID format'}), 400
+        
     user_to_delete = User.query.get_or_404(user_id)
     
     current_user = get_current_user()
@@ -85,9 +98,13 @@ def delete_user(user_id):
     
     return jsonify({'message': 'User deleted successfully'}), 200
 
-@users_bp.route('/users/<int:user_id>/change_password_no_verify', methods=['PUT'])
+@users_bp.route('/users/<user_id>/change_password_no_verify', methods=['PUT'])
 @login_required
 def change_password_no_verify(user_id):
+    # Verificar se é um UUID válido
+    if not is_valid_uuid(user_id):
+        return jsonify({'message': 'Invalid user ID format'}), 400
+        
     data = request.get_json()
     current_user = get_current_user()
     
@@ -107,9 +124,13 @@ def change_password_no_verify(user_id):
     
     return jsonify({'message': 'Password changed successfully'}), 200
 
-@users_bp.route('/users/<int:user_id>/password', methods=['PUT'])
+@users_bp.route('/users/<user_id>/password', methods=['PUT'])
 @login_required
 def change_password(user_id):
+    # Verificar se é um UUID válido
+    if not is_valid_uuid(user_id):
+        return jsonify({'message': 'Invalid user ID format'}), 400
+        
     data = request.get_json()
     current_user = get_current_user()
     
@@ -136,9 +157,13 @@ def change_password(user_id):
     
     return jsonify({'message': 'Password changed successfully'}), 200
 
-@users_bp.route('/users/<int:user_id>/companies', methods=['GET'])
+@users_bp.route('/users/<user_id>/companies', methods=['GET'])
 @admin_required
 def get_user_companies(user_id):
+    # Verificar se é um UUID válido
+    if not is_valid_uuid(user_id):
+        return jsonify({'message': 'Invalid user ID format'}), 400
+        
     User.query.get_or_404(user_id)
     
     permissions = CompanyPermission.query.filter_by(user_id=user_id).all()

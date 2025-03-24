@@ -56,8 +56,13 @@ def list_employees():
     if search:
         query = query.filter(Employee.name.ilike(f'%{search}%'))
     
-    # Executar a paginação
-    pagination = query.paginate(page=page, per_page=per_page)
+    # Executar a paginação - Adaptado para ser compatível com diferentes versões do SQLAlchemy
+    try:
+        # SQLAlchemy 1.4+
+        pagination = query.paginate(page=page, per_page=per_page)
+    except TypeError:
+        # SQLAlchemy antigo
+        pagination = query.paginate(page, per_page)
     
     return jsonify({
         'employees': [emp.to_dict() for emp in pagination.items],
@@ -66,11 +71,15 @@ def list_employees():
         'current_page': page
     }), 200
 
-@employees_bp.route('/employees/<int:employee_id>', methods=['GET'])
+@employees_bp.route('/employees/<employee_id>', methods=['GET'])
 @login_required
 def get_employee(employee_id):
     """Obtém detalhes de um funcionário específico"""
     try:
+        # Verificar se é um UUID válido
+        if not is_valid_uuid(employee_id):
+            return jsonify({'message': 'Invalid employee ID format'}), 400
+            
         employee = Employee.query.get_or_404(employee_id)
         user = get_current_user()
         
@@ -100,12 +109,17 @@ def create_employee():
     if existing:
         return jsonify({'message': 'CPF already registered'}), 400
     
+    # Validar company_id se fornecido
+    company_id = data.get('company_id')
+    if company_id and not is_valid_uuid(company_id):
+        return jsonify({'message': 'Invalid company ID format'}), 400
+    
     try:
         # Criar funcionário
         new_employee = Employee(
             name=data['name'],
             cpf=data['cpf'],
-            company_id=data.get('company_id'),
+            company_id=company_id,
             i_empregados=data.get('i_empregados'),
             salario=data.get('salario'),
             admissao=data.get('admissao'),
@@ -124,10 +138,14 @@ def create_employee():
         db.session.rollback()
         return jsonify({'message': f'Error registering employee: {str(e)}'}), 500
 
-@employees_bp.route('/employees/<int:employee_id>', methods=['PUT'])
+@employees_bp.route('/employees/<employee_id>', methods=['PUT'])
 @admin_required
 def update_employee(employee_id):
     """Atualiza um funcionário existente"""
+    # Verificar se é um UUID válido
+    if not is_valid_uuid(employee_id):
+        return jsonify({'message': 'Invalid employee ID format'}), 400
+        
     data = request.get_json() or {}
     
     if not data:
@@ -170,10 +188,14 @@ def update_employee(employee_id):
         db.session.rollback()
         return jsonify({'message': f'Error updating employee: {str(e)}'}), 500
 
-@employees_bp.route('/employees/<int:employee_id>', methods=['DELETE'])
+@employees_bp.route('/employees/<employee_id>', methods=['DELETE'])
 @admin_required
 def delete_employee(employee_id):
     """Remove um funcionário"""
+    # Verificar se é um UUID válido
+    if not is_valid_uuid(employee_id):
+        return jsonify({'message': 'Invalid employee ID format'}), 400
+        
     try:
         employee = Employee.query.get_or_404(employee_id)
         

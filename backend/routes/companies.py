@@ -32,13 +32,14 @@ def create_company():
     # Se forem especificados usuários com acesso, adicionar permissões
     if 'allowed_users' in data and isinstance(data['allowed_users'], list):
         for user_id in data['allowed_users']:
-            user_exists = User.query.get(user_id)
-            if user_exists:
-                permission = CompanyPermission(
-                    company_id=new_company.id,
-                    user_id=user_id
-                )
-                db.session.add(permission)
+            if is_valid_uuid(user_id):  # Validar UUID do usuário
+                user_exists = User.query.get(user_id)
+                if user_exists:
+                    permission = CompanyPermission(
+                        company_id=new_company.id,
+                        user_id=user_id
+                    )
+                    db.session.add(permission)
         
         db.session.commit()
     
@@ -74,8 +75,13 @@ def list_companies():
         else:
             query = query.order_by(getattr(Company, sort_by).asc())
     
-    # Executar a paginação
-    pagination = query.paginate(page=page, per_page=per_page)
+    # Executar a paginação - Adaptado para ser compatível com diferentes versões do SQLAlchemy
+    try:
+        # SQLAlchemy 1.4+
+        pagination = query.paginate(page=page, per_page=per_page)
+    except TypeError:
+        # SQLAlchemy antigo
+        pagination = query.paginate(page, per_page)
     
     return jsonify({
         'companies': [company.to_dict() for company in pagination.items],
@@ -112,7 +118,14 @@ def get_company(company_id):
         emp_per_page = request.args.get('emp_per_page', 50, type=int)
         
         employees_query = Employee.query.filter_by(company_id=company_id)
-        employees_pagination = employees_query.paginate(page=emp_page, per_page=emp_per_page)
+        
+        # Executar a paginação - Adaptado para ser compatível com diferentes versões do SQLAlchemy
+        try:
+            # SQLAlchemy 1.4+
+            employees_pagination = employees_query.paginate(page=emp_page, per_page=emp_per_page)
+        except TypeError:
+            # SQLAlchemy antigo
+            employees_pagination = employees_query.paginate(emp_page, emp_per_page)
         
         company_dict['employees'] = {
             'items': [employee.to_dict() for employee in employees_pagination.items],
@@ -147,11 +160,17 @@ def update_company(company_id):
     
     # Atualizar permissões de usuários se fornecidas
     if 'allowed_users' in data and isinstance(data['allowed_users'], list):
+        # Validar UUIDs antes de prosseguir
+        valid_user_ids = []
+        for user_id in data['allowed_users']:
+            if is_valid_uuid(user_id):
+                valid_user_ids.append(user_id)
+        
         # Remover permissões existentes
         CompanyPermission.query.filter_by(company_id=company_id).delete()
         
         # Adicionar novas permissões
-        for user_id in data['allowed_users']:
+        for user_id in valid_user_ids:
             user_exists = User.query.get(user_id)
             if user_exists:
                 permission = CompanyPermission(

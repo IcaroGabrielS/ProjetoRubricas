@@ -61,11 +61,15 @@ def upload_file(company_id):
                 
             file.save(file_path)
             
+            # Armazenar apenas o nome do arquivo e não o caminho completo para evitar problemas entre OSes
+            # Usar caminho relativo à pasta de uploads para portabilidade
+            relative_path = os.path.join(f'company_{company_id}', filename)
+            
             file_type = filename.rsplit('.', 1)[1].lower()
             new_file = CompanyFile(
                 company_id=company_id,
                 filename=filename,
-                file_path=file_path,
+                file_path=relative_path,  # Corrigido para path relativo
                 file_type=file_type
             )
             
@@ -111,6 +115,9 @@ def list_company_files(company_id):
 @login_required
 def download_file(file_id):
     try:
+        if not is_valid_uuid(file_id):
+            return jsonify({'message': 'ID de arquivo inválido'}), 400
+            
         user = get_current_user()
         file_obj = CompanyFile.query.get(file_id)
         
@@ -120,11 +127,11 @@ def download_file(file_id):
         if not user.is_admin and not user_has_company_access(user.id, file_obj.company_id):
             return jsonify({'message': 'Acesso não autorizado a este arquivo'}), 403
         
-        # Verificar se o arquivo existe no sistema de arquivos
+        # Construir caminho correto para o arquivo
         company_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], f'company_{file_obj.company_id}')
-        file_path = os.path.join(company_folder, file_obj.filename)
         
-        if not os.path.exists(file_path):
+        # Verificar se o arquivo existe no sistema de arquivos
+        if not os.path.exists(os.path.join(company_folder, file_obj.filename)):
             return jsonify({'message': 'Arquivo não encontrado no sistema'}), 404
             
         return send_from_directory(company_folder, file_obj.filename, as_attachment=True)
