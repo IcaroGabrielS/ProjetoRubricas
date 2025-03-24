@@ -11,7 +11,7 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
@@ -62,9 +62,9 @@ class Company(db.Model):
         return company_dict
 
 class CompanyPermission(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     
     company = db.relationship('Company', backref='permissions')
@@ -83,7 +83,7 @@ class CompanyPermission(db.Model):
         }
 
 class Employee(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(100), nullable=False)
     cpf = db.Column(db.String(14), nullable=False, unique=True)
     company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=True)
@@ -111,7 +111,7 @@ class Employee(db.Model):
         }
     
 class CompanyFile(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.String(500), nullable=False)

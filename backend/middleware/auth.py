@@ -12,12 +12,7 @@ def get_token():
 
 def get_current_user():
     """Extrai e valida o token JWT, retornando o usuário atual"""
-    # Para compatibilidade com sistema antigo, verifica o header User-ID primeiro
-    user_id = request.headers.get('User-ID')
-    if user_id:
-        return User.query.get(user_id)
-        
-    # Tenta o método JWT
+    # Usando apenas o método JWT para autenticação
     token = get_token()
     if not token:
         return None

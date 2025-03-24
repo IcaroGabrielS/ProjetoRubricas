@@ -13,8 +13,8 @@ def create_app(config_class=Config):
     UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
-    
+    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB max upload
+
     # Certifica-se de que a pasta instance existe
     os.makedirs(os.path.join(app.root_path, 'instance'), exist_ok=True)
     
