@@ -11,7 +11,7 @@ def login():
     data = request.get_json() or {}
     
     if 'username' not in data or 'password' not in data:
-        return jsonify({'mensagem': 'Nome de usuário e senha são obrigatórios'}), 400
+        return jsonify({'message': 'Nome de usuário e senha são obrigatórios'}), 400
     
     user = User.query.filter_by(username=data['username']).first()
     
@@ -33,14 +33,14 @@ def login():
         )
         
         return jsonify({
-            'mensagem': 'Login realizado com sucesso',
+            'message': 'Login realizado com sucesso',
             'user_id': user.id,
             'username': user.username,
             'is_admin': user.is_admin,
             'token': token
         }), 200
     
-    return jsonify({'mensagem': 'Nome de usuário ou senha inválidos'}), 401
+    return jsonify({'message': 'Nome de usuário ou senha inválidos'}), 401
 
 @auth_bp.route('/verify-token', methods=['GET'])
 def verify_token():
@@ -48,7 +48,7 @@ def verify_token():
     
     user = get_current_user()
     if not user:
-        return jsonify({'valid': False, 'mensagem': 'Token inválido ou expirado'}), 401
+        return jsonify({'valid': False, 'message': 'Token inválido ou expirado'}), 401
         
     return jsonify({
         'valid': True,

@@ -13,12 +13,12 @@ def create_company():
     
     # Validar dados obrigatórios
     if not data or 'name' not in data or 'cnpj' not in data:
-        return jsonify({'mensagem': 'Nome e CNPJ são obrigatórios'}), 400
+        return jsonify({'message': 'Nome e CNPJ são obrigatórios'}), 400
     
     # Verificar se já existe empresa com este CNPJ
     existing = Company.query.filter_by(cnpj=data['cnpj']).first()
     if existing:
-        return jsonify({'mensagem': 'CNPJ já cadastrado'}), 400
+        return jsonify({'message': 'CNPJ já cadastrado'}), 400
     
     new_company = Company(
         name=data['name'],
@@ -43,7 +43,7 @@ def create_company():
         db.session.commit()
     
     return jsonify({
-        'mensagem': 'Empresa criada com sucesso!',
+        'message': 'Empresa criada com sucesso!',
         'company': new_company.to_dict()
     }), 201
 
@@ -88,13 +88,13 @@ def list_companies():
 @login_required
 def get_company(company_id):
     if not is_valid_uuid(company_id):
-        return jsonify({'mensagem': 'ID de empresa inválido'}), 400
+        return jsonify({'message': 'ID de empresa inválido'}), 400
     
     user = get_current_user()
     company = Company.query.get_or_404(company_id)
     
     if not user.is_admin and not user_has_company_access(user.id, company_id):
-        return jsonify({'mensagem': 'Acesso não autorizado a esta empresa'}), 403
+        return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
     
     # Implementação de flags para incluir dados relacionados opcionalmente
     include_files = request.args.get('include_files', 'true').lower() == 'true'
@@ -127,13 +127,13 @@ def get_company(company_id):
 @admin_required
 def update_company(company_id):
     if not is_valid_uuid(company_id):
-        return jsonify({'mensagem': 'ID de empresa inválido'}), 400
+        return jsonify({'message': 'ID de empresa inválido'}), 400
     
     company = Company.query.get_or_404(company_id)
     data = request.get_json()
     
     if not data:
-        return jsonify({'mensagem': 'Nenhum dado fornecido para atualização'}), 400
+        return jsonify({'message': 'Nenhum dado fornecido para atualização'}), 400
     
     if 'name' in data:
         company.name = data['name']
@@ -142,7 +142,7 @@ def update_company(company_id):
         # Verificar se já existe outra empresa com este CNPJ
         existing = Company.query.filter(Company.cnpj == data['cnpj'], Company.id != company_id).first()
         if existing:
-            return jsonify({'mensagem': 'CNPJ já cadastrado para outra empresa'}), 400
+            return jsonify({'message': 'CNPJ já cadastrado para outra empresa'}), 400
         company.cnpj = data['cnpj']
     
     # Atualizar permissões de usuários se fornecidas
@@ -163,18 +163,18 @@ def update_company(company_id):
     try:
         db.session.commit()
         return jsonify({
-            'mensagem': 'Empresa atualizada com sucesso',
+            'message': 'Empresa atualizada com sucesso',
             'empresa': company.to_dict_with_permissions()
         }), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'mensagem': f'Erro ao atualizar empresa: {str(e)}'}), 500
+        return jsonify({'message': f'Erro ao atualizar empresa: {str(e)}'}), 500
 
 @companies_bp.route('/companies/<company_id>', methods=['DELETE'])
 @admin_required
 def delete_company(company_id):
     if not is_valid_uuid(company_id):
-        return jsonify({'mensagem': 'ID de empresa inválido'}), 400
+        return jsonify({'message': 'ID de empresa inválido'}), 400
     
     company = Company.query.get_or_404(company_id)
     
@@ -187,16 +187,16 @@ def delete_company(company_id):
         db.session.delete(company)
         db.session.commit()
         
-        return jsonify({'mensagem': 'Empresa excluída com sucesso'}), 200
+        return jsonify({'message': 'Empresa excluída com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'mensagem': f'Erro ao excluir empresa: {str(e)}'}), 500
+        return jsonify({'message': f'Erro ao excluir empresa: {str(e)}'}), 500
 
 @companies_bp.route('/companies/<company_id>/permissions', methods=['GET'])
 @admin_required
 def get_company_permissions(company_id):
     if not is_valid_uuid(company_id):
-        return jsonify({'mensagem': 'ID de empresa inválido'}), 400
+        return jsonify({'message': 'ID de empresa inválido'}), 400
     
     Company.query.get_or_404(company_id)
     

@@ -37,7 +37,10 @@
           >
         </div>
         
-        <button type="submit" class="login-button">Entrar</button>
+        <button type="submit" class="login-button" :disabled="isLoading">
+          <span v-if="isLoading">Processando...</span>
+          <span v-else>Entrar</span>
+        </button>
       </form>
       
       <div class="login-footer">
@@ -48,17 +51,28 @@
 </template>
 
 <script>
+import { ref } from 'vue'
+
 export default {
   name: 'LoginView',
-  data() {
+  setup() {
+    const username = ref('')
+    const password = ref('')
+    const error = ref('')
+    const isLoading = ref(false)
+
     return {
-      username: '',
-      password: '',
-      error: ''
+      username,
+      password,
+      error,
+      isLoading
     }
   },
   methods: {
     async handleLogin() {
+      this.isLoading = true
+      this.error = ''
+      
       try {
         const response = await fetch('/api/login', {
           method: 'POST',
@@ -74,30 +88,77 @@ export default {
         const data = await response.json();
         
         if (!response.ok) {
-          this.error = data.message || 'Erro ao fazer login';
+          // Trata ambos os formatos de mensagem de erro (message ou mensagem)
+          this.error = data.mensagem || data.message || 'Erro ao fazer login';
+          this.isLoading = false;
           return;
         }
         
-        // Salva o usuário no localStorage com a informação de admin
-        localStorage.setItem('user', JSON.stringify({
+        // Armazena informações do usuário incluindo o token JWT
+        const userData = {
           id: data.user_id,
           username: data.username,
-          is_admin: data.is_admin
-        }));
+          is_admin: data.is_admin,
+          token: data.token
+        };
+        
+        // Salva no localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Configura o token para futuras requisições, se estiver usando Axios ou similar
+        // this.$http.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+        
+        // Verificar token automaticamente
+        this.setupTokenRefresh();
         
         // Redireciona para a página inicial
         this.$router.push('/');
       } catch (error) {
         this.error = 'Erro ao conectar ao servidor';
         console.error('Login error:', error);
+      } finally {
+        this.isLoading = false;
       }
+    },
+    
+    setupTokenRefresh() {
+      // Implementação para verificar o token
+      // Esta função pode ser chamada periodicamente ou em eventos específicos
+      const verifyToken = async () => {
+        try {
+          const userData = JSON.parse(localStorage.getItem('user'));
+          if (!userData || !userData.token) return;
+          
+          const response = await fetch('/api/verify-token', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${userData.token}`
+            }
+          });
+          
+          if (!response.ok) {
+            // Token inválido, volta para a tela de login
+            localStorage.removeItem('user');
+            this.$router.push('/login');
+          }
+        } catch (error) {
+          console.error('Token verification error:', error);
+        }
+      };
+      
+      // Verificar token a cada 30 minutos
+      this.tokenInterval = setInterval(verifyToken, 30 * 60 * 1000);
     }
+  },
+  beforeUnmount() {
+    // Limpar o intervalo quando o componente for desmontado
+    if (this.tokenInterval) clearInterval(this.tokenInterval);
   }
 }
 </script>
 
 <style>
-/* CSS remains unchanged */
+/* CSS permanece o mesmo */
 @import url('https://fonts.googleapis.com/css2?family=Sarala:wght@400;700&display=swap');
 
 * {
@@ -215,14 +276,19 @@ body {
   margin-top: 0.5rem;
 }
 
-.login-button:hover {
+.login-button:hover:not(:disabled) {
   background: linear-gradient(to right, #1a3760, #2a5b9e);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(20, 44, 77, 0.3);
 }
 
-.login-button:active {
+.login-button:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.login-button:disabled {
+  background: #b3b3b3;
+  cursor: not-allowed;
 }
 
 .login-footer {

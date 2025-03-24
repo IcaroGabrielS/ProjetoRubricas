@@ -42,7 +42,7 @@ def login_required(f):
         user = get_current_user()
         
         if not user:
-            return jsonify({"mensagem": "Autenticação necessária"}), 401
+            return jsonify({"message": "Autenticação necessária"}), 401
             
         # Adiciona o usuário ao contexto da requisição para uso posterior
         request.current_user = user
@@ -56,10 +56,10 @@ def admin_required(f):
         user = get_current_user()
         
         if not user:
-            return jsonify({"mensagem": "Autenticação necessária"}), 401
+            return jsonify({"message": "Autenticação necessária"}), 401
             
         if not user.is_admin:
-            return jsonify({"mensagem": "Acesso restrito a administradores"}), 403
+            return jsonify({"message": "Acesso restrito a administradores"}), 403
             
         # Adiciona o usuário ao contexto da requisição para uso posterior
         request.current_user = user

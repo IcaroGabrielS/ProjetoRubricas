@@ -24,7 +24,7 @@ def list_employees():
     if user.is_admin:
         if company_id:
             if not is_valid_uuid(company_id):
-                return jsonify({'mensagem': 'ID de empresa inválido'}), 400
+                return jsonify({'message': 'ID de empresa inválido'}), 400
             query = query.filter_by(company_id=company_id)
     else:
         # Obter empresas que o usuário tem acesso
@@ -33,9 +33,9 @@ def list_employees():
         
         if company_id:
             if not is_valid_uuid(company_id):
-                return jsonify({'mensagem': 'ID de empresa inválido'}), 400
+                return jsonify({'message': 'ID de empresa inválido'}), 400
             if company_id not in allowed_company_ids:
-                return jsonify({'mensagem': 'Acesso não autorizado a esta empresa'}), 403
+                return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
             query = query.filter_by(company_id=company_id)
         else:
             # Mostrar apenas funcionários de empresas que o usuário tem acesso
@@ -77,13 +77,13 @@ def get_employee(employee_id):
         # Verificar se o usuário tem acesso à empresa do funcionário
         if employee.company_id and not user.is_admin:
             if not user_has_company_access(user.id, employee.company_id):
-                return jsonify({'mensagem': 'Acesso não autorizado a este funcionário'}), 403
+                return jsonify({'message': 'Acesso não autorizado a este funcionário'}), 403
         
         return jsonify({
             'funcionario': employee.to_dict()
         }), 200
     except Exception as e:
-        return jsonify({'mensagem': f'Erro ao buscar funcionário: {str(e)}'}), 500
+        return jsonify({'message': f'Erro ao buscar funcionário: {str(e)}'}), 500
 
 @employees_bp.route('/employees', methods=['POST'])
 @admin_required
@@ -93,12 +93,12 @@ def create_employee():
     
     # Validar dados obrigatórios
     if 'name' not in data or 'cpf' not in data:
-        return jsonify({'mensagem': 'Nome e CPF são obrigatórios'}), 400
+        return jsonify({'message': 'Nome e CPF são obrigatórios'}), 400
     
     # Verificar se o CPF já existe
     existing = Employee.query.filter_by(cpf=data['cpf']).first()
     if existing:
-        return jsonify({'mensagem': 'CPF já cadastrado'}), 400
+        return jsonify({'message': 'CPF já cadastrado'}), 400
     
     try:
         # Criar funcionário
@@ -117,12 +117,12 @@ def create_employee():
         db.session.commit()
         
         return jsonify({
-            'mensagem': 'Funcionário cadastrado com sucesso',
+            'message': 'Funcionário cadastrado com sucesso',
             'funcionario': new_employee.to_dict()
         }), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'mensagem': f'Erro ao cadastrar funcionário: {str(e)}'}), 500
+        return jsonify({'message': f'Erro ao cadastrar funcionário: {str(e)}'}), 500
 
 @employees_bp.route('/employees/<int:employee_id>', methods=['PUT'])
 @admin_required
@@ -131,7 +131,7 @@ def update_employee(employee_id):
     data = request.get_json() or {}
     
     if not data:
-        return jsonify({'mensagem': 'Nenhum dado fornecido para atualização'}), 400
+        return jsonify({'message': 'Nenhum dado fornecido para atualização'}), 400
     
     try:
         employee = Employee.query.get_or_404(employee_id)
@@ -143,11 +143,11 @@ def update_employee(employee_id):
             # Verificar se o CPF já existe em outro funcionário
             existing = Employee.query.filter(Employee.cpf == data['cpf'], Employee.id != employee_id).first()
             if existing:
-                return jsonify({'mensagem': 'CPF já cadastrado para outro funcionário'}), 400
+                return jsonify({'message': 'CPF já cadastrado para outro funcionário'}), 400
             employee.cpf = data['cpf']
         if 'company_id' in data:
             if data['company_id'] is not None and not is_valid_uuid(data['company_id']):
-                return jsonify({'mensagem': 'ID de empresa inválido'}), 400
+                return jsonify({'message': 'ID de empresa inválido'}), 400
             employee.company_id = data['company_id']
         if 'i_empregados' in data:
             employee.i_empregados = data['i_empregados']
@@ -163,12 +163,12 @@ def update_employee(employee_id):
         db.session.commit()
         
         return jsonify({
-            'mensagem': 'Funcionário atualizado com sucesso',
+            'message': 'Funcionário atualizado com sucesso',
             'funcionario': employee.to_dict()
         }), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'mensagem': f'Erro ao atualizar funcionário: {str(e)}'}), 500
+        return jsonify({'message': f'Erro ao atualizar funcionário: {str(e)}'}), 500
 
 @employees_bp.route('/employees/<int:employee_id>', methods=['DELETE'])
 @admin_required
@@ -181,8 +181,8 @@ def delete_employee(employee_id):
         db.session.commit()
         
         return jsonify({
-            'mensagem': 'Funcionário removido com sucesso'
+            'message': 'Funcionário removido com sucesso'
         }), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'mensagem': f'Erro ao remover funcionário: {str(e)}'}), 500
+        return jsonify({'message': f'Erro ao remover funcionário: {str(e)}'}), 500
