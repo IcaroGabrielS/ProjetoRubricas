@@ -4,6 +4,14 @@ from models import db, bcrypt, User
 from config import Config
 import os
 
+def create_admin_user():
+    """Cria um usuário admin se não existir"""
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
+        admin = User(username='admin', password='admin123', is_admin=True)
+        db.session.add(admin)
+        db.session.commit()
+
 def create_app(config_class=Config):
     """Factory function para criar e configurar a aplicação Flask"""
     app = Flask(__name__)
@@ -63,14 +71,6 @@ def create_app(config_class=Config):
         return jsonify({"message": "Invalid request"}), 400
     
     return app
-
-def create_admin_user():
-    """Cria um usuário admin se não existir"""
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
-        admin = User(username='admin', password='admin123', is_admin=True)
-        db.session.add(admin)
-        db.session.commit()
 
 if __name__ == '__main__':
     app = create_app()

@@ -6,6 +6,7 @@ from utils.error_handling import handle_error
 from werkzeug.utils import secure_filename
 import os
 import datetime
+import uuid
 
 files_bp = Blueprint('files', __name__)
 
@@ -21,6 +22,14 @@ def sanitize_filename(filename):
     # Remover qualquer caminho e manter apenas o nome do arquivo
     sanitized = os.path.basename(secure_filename(filename))
     return sanitized
+
+def generate_unique_filename(original_filename):
+    """Gera um nome de arquivo único baseado no original para evitar colisões"""
+    name, ext = os.path.splitext(sanitize_filename(original_filename))
+    # Usar UUID para evitar conflitos mesmo em requisições simultâneas
+    unique_id = uuid.uuid4().hex[:8]
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    return f"{name}_{timestamp}_{unique_id}{ext}"
 
 @files_bp.route('/companies/<company_id>/files', methods=['POST'])
 @admin_required
@@ -45,31 +54,22 @@ def upload_file(company_id):
             return jsonify({'message': 'Arquivo excede o tamanho máximo permitido de 50MB'}), 413
         
         if file and allowed_file(file.filename):
-            filename = sanitize_filename(file.filename)
+            # Sempre gerar um nome único para o arquivo para evitar race conditions
+            unique_filename = generate_unique_filename(file.filename)
             company_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], f'company_{company_id}')
             os.makedirs(company_folder, exist_ok=True)
             
-            file_path = os.path.join(company_folder, filename)
-            
-            # Verificar se o arquivo já existe
-            if os.path.exists(file_path):
-                # Adicionar timestamp ao nome do arquivo para torná-lo único
-                name, ext = os.path.splitext(filename)
-                timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-                filename = f"{name}_{timestamp}{ext}"
-                file_path = os.path.join(company_folder, filename)
-                
+            file_path = os.path.join(company_folder, unique_filename)
             file.save(file_path)
             
-            # Armazenar apenas o nome do arquivo e não o caminho completo para evitar problemas entre OSes
             # Usar caminho relativo à pasta de uploads para portabilidade
-            relative_path = os.path.join(f'company_{company_id}', filename)
+            relative_path = os.path.join(f'company_{company_id}', unique_filename)
             
-            file_type = filename.rsplit('.', 1)[1].lower()
+            file_type = unique_filename.rsplit('.', 1)[1].lower()
             new_file = CompanyFile(
                 company_id=company_id,
-                filename=filename,
-                file_path=relative_path,  # Corrigido para path relativo
+                filename=unique_filename,
+                file_path=relative_path,
                 file_type=file_type
             )
             

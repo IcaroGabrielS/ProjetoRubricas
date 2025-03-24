@@ -2,9 +2,35 @@ from flask import Blueprint, request, jsonify, current_app
 from models import db, User
 import jwt
 import datetime
-from middleware.auth import get_current_user  # Corrigir importação circular
 
 auth_bp = Blueprint('auth', __name__)
+
+def get_token():
+    """Extrai o token JWT do cabeçalho Authorization"""
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        return auth_header.split(' ')[1]
+    return None
+
+def get_user_from_token():
+    """Extrai e valida o token JWT, retornando o usuário atual"""
+    # Usando apenas o método JWT para autenticação
+    token = get_token()
+    if not token:
+        return None
+        
+    try:
+        payload = jwt.decode(
+            token, 
+            current_app.config['JWT_SECRET_KEY'],
+            algorithms=["HS256"]
+        )
+        user_id = payload.get('sub')
+        return User.query.get(user_id)
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -39,8 +65,8 @@ def login():
 
 @auth_bp.route('/verify-token', methods=['GET'])
 def verify_token():
-    # Não importar dentro da função para evitar importação circular
-    user = get_current_user()
+    # Usar a função local para evitar importação circular
+    user = get_user_from_token()
     if not user:
         return jsonify({'valid': False, 'message': 'Invalid or expired token'}), 401
         

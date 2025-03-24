@@ -39,7 +39,7 @@ class Company(db.Model):
     name = db.Column(db.String(100), nullable=False)
     cnpj = db.Column(db.String(18), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_by = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     codi_emp = db.Column(db.String(50), unique=True, nullable=True)  # Campo adicionado
     
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_companies')
@@ -61,11 +61,7 @@ class Company(db.Model):
         ]
         return company_dict
 
-class CompanyPermclass CompanyPermission(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)ission(db.Model):
+class CompanyPermission(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
     user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
