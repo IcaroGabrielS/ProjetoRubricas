@@ -73,7 +73,7 @@ def import_employees():
                     db.session.commit()
             
             except Exception as e:
-                errors.append(f"Erro ao processar funcionário {row[0] if row else 'desconhecido'}: {str(e)}")
+                errors.append(f"Error processing employee {row[0] if row else 'unknown'}: {str(e)}")
         
         # Commit final
         db.session.commit()
@@ -81,7 +81,7 @@ def import_employees():
         conn.close()
         
         return jsonify({
-            "message": "Importação concluída",
+            "message": "Import completed",
             "employees_added": employees_added,
             "employees_updated": employees_updated,
             "errors": errors
@@ -89,12 +89,12 @@ def import_employees():
         
     except pyodbc.Error as e:
         return jsonify({
-            "message": f"Erro de conexão ODBC: {str(e)}",
+            "message": f"ODBC connection error: {str(e)}",
             "success": False
         }), 500
     except Exception as e:
         return jsonify({
-            "message": f"Erro: {str(e)}",
+            "message": f"Error: {str(e)}",
             "success": False
         }), 500
 
@@ -115,13 +115,13 @@ def assign_employees():
     data = request.get_json()
     
     if not data or 'company_id' not in data or 'employee_ids' not in data:
-        return jsonify({"message": "company_id e employee_ids são necessários"}), 400
+        return jsonify({"message": "company_id and employee_ids are required"}), 400
     
     company_id = data['company_id']
     employee_ids = data['employee_ids']
     
     if not isinstance(employee_ids, list):
-        return jsonify({"message": "employee_ids deve ser uma lista"}), 400
+        return jsonify({"message": "employee_ids must be a list"}), 400
     
     count = 0
     errors = []
@@ -133,14 +133,14 @@ def assign_employees():
                 employee.company_id = company_id
                 count += 1
             else:
-                errors.append(f"Funcionário ID {emp_id} não encontrado")
+                errors.append(f"Employee ID {emp_id} not found")
         except Exception as e:
-            errors.append(f"Erro ao associar funcionário ID {emp_id}: {str(e)}")
+            errors.append(f"Error associating employee ID {emp_id}: {str(e)}")
     
     db.session.commit()
     
     return jsonify({
-        "message": f"{count} funcionários associados à empresa com sucesso",
+        "message": f"{count} employees associated with the company successfully",
         "errors": errors
     }), 200
 
@@ -222,7 +222,7 @@ def import_companies():
                     db.session.commit()
             
             except Exception as e:
-                errors.append(f"Erro ao processar empresa {row[2] if row else 'desconhecida'}: {str(e)}")
+                errors.append(f"Error processing company {row[2] if row else 'unknown'}: {str(e)}")
         
         # Commit final
         db.session.commit()
@@ -230,7 +230,7 @@ def import_companies():
         conn.close()
         
         return jsonify({
-            "message": "Importação de empresas concluída",
+            "message": "Company import completed",
             "companies_added": companies_added,
             "companies_updated": companies_updated,
             "errors": errors
@@ -238,12 +238,12 @@ def import_companies():
         
     except pyodbc.Error as e:
         return jsonify({
-            "message": f"Erro de conexão ODBC: {str(e)}",
+            "message": f"ODBC connection error: {str(e)}",
             "success": False
         }), 500
     except Exception as e:
         return jsonify({
-            "message": f"Erro: {str(e)}",
+            "message": f"Error: {str(e)}",
             "success": False
         }), 500
 
@@ -255,7 +255,7 @@ def associate_employees_by_code():
     
     if not data or 'mappings' not in data:
         return jsonify({
-            "message": "É necessário fornecer um mapeamento de códigos de empresa para IDs de empresa",
+            "message": "A mapping of company codes to company IDs is required",
             "example": {
                 "mappings": {
                     "1": "uuid-empresa-1",
@@ -284,7 +284,7 @@ def associate_employees_by_code():
             results["by_company"][company_id] = count
             
         except Exception as e:
-            results["errors"].append(f"Erro ao processar código {codi_emp}: {str(e)}")
+            results["errors"].append(f"Error processing code {codi_emp}: {str(e)}")
     
     db.session.commit()
     
@@ -314,12 +314,12 @@ def associate_employees_to_companies():
                     else:
                         not_found_count += 1
             except Exception as e:
-                errors.append(f"Erro ao associar funcionário {employee.id}: {str(e)}")
+                errors.append(f"Error associating employee {employee.id}: {str(e)}")
         
         db.session.commit()
         
         return jsonify({
-            "message": "Associação concluída",
+            "message": "Association completed",
             "assigned_count": assigned_count,
             "not_found_count": not_found_count,
             "errors": errors
@@ -327,6 +327,6 @@ def associate_employees_to_companies():
         
     except Exception as e:
         return jsonify({
-            "message": f"Erro: {str(e)}",
+            "message": f"Error: {str(e)}",
             "success": False
         }), 500

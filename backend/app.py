@@ -48,19 +48,19 @@ def create_app(config_class=Config):
     @app.errorhandler(Exception)
     def handle_exception(e):
         app.logger.error(f"Erro não tratado: {str(e)}")
-        return jsonify({"message": "Erro interno do servidor"}), 500
+        return jsonify({"message": "Internal server error"}), 500
     
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({"message": "Recurso não encontrado"}), 404
+        return jsonify({"message": "Resource not found"}), 404
     
     @app.errorhandler(405)
     def method_not_allowed(e):
-        return jsonify({"message": "Método não permitido"}), 405
+        return jsonify({"message": "Method not allowed"}), 405
     
     @app.errorhandler(400)
     def bad_request(e):
-        return jsonify({"message": "Requisição inválida"}), 400
+        return jsonify({"message": "Invalid request"}), 400
     
     return app
 

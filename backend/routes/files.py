@@ -17,7 +17,7 @@ def allowed_file(filename):
 @admin_required
 def upload_file(company_id):
     if not is_valid_uuid(company_id):
-        return jsonify({'message': 'ID de empresa inválido'}), 400
+        return jsonify({'message': 'Invalid company ID'}), 400
     
     company = Company.query.get_or_404(company_id)
     
@@ -48,23 +48,23 @@ def upload_file(company_id):
         db.session.commit()
         
         return jsonify({
-            'message': 'Arquivo enviado com sucesso',
+            'message': 'File uploaded successfully',
             'file': new_file.to_dict()
         }), 201
     
-    return jsonify({'message': 'Tipo de arquivo não permitido'}), 400
+    return jsonify({'message': 'File type not allowed'}), 400
 
 @files_bp.route('/companies/<company_id>/files', methods=['GET'])
 @login_required
 def list_company_files(company_id):
     if not is_valid_uuid(company_id):
-        return jsonify({'message': 'ID de empresa inválido'}), 400
+        return jsonify({'message': 'Invalid company ID'}), 400
     
     user = get_current_user()
     company = Company.query.get_or_404(company_id)
     
     if not user.is_admin and not user_has_company_access(user.id, company_id):
-        return jsonify({'message': 'Acesso não autorizado a esta empresa'}), 403
+        return jsonify({'message': 'Unauthorized access to this company'}), 403
     
     files = CompanyFile.query.filter_by(company_id=company_id).all()
     
@@ -79,7 +79,7 @@ def download_file(file_id):
     file_obj = CompanyFile.query.get_or_404(file_id)
     
     if not user.is_admin and not user_has_company_access(user.id, file_obj.company_id):
-        return jsonify({'message': 'Acesso não autorizado a este arquivo'}), 403
+        return jsonify({'message': 'Unauthorized access to this file'}), 403
     
     company_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], f'company_{file_obj.company_id}')
     return send_from_directory(company_folder, file_obj.filename, as_attachment=True)

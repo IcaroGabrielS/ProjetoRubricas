@@ -10,11 +10,11 @@ def register():
     data = request.get_json()
     
     if not data or 'username' not in data or 'password' not in data:
-        return jsonify({'message': 'Nome de usuário e senha são obrigatórios'}), 400
+        return jsonify({'message': 'Username and password are required'}), 400
     
     existing_user = User.query.filter_by(username=data['username']).first()
     if existing_user:
-        return jsonify({'message': 'Nome de usuário já existe'}), 400
+        return jsonify({'message': 'Username already exists'}), 400
     
     new_user = User(
         username=data['username'],
@@ -25,7 +25,7 @@ def register():
     db.session.add(new_user)
     db.session.commit()
     
-    return jsonify({'message': 'Usuário registrado com sucesso', 'user': new_user.to_dict()}), 201
+    return jsonify({'message': 'User registered successfully', 'user': new_user.to_dict()}), 201
 
 @users_bp.route('/users', methods=['GET'])
 @admin_required
@@ -52,7 +52,7 @@ def update_user(user_id):
     if 'username' in data and data['username'] != user.username:
         existing_user = User.query.filter_by(username=data['username']).first()
         if existing_user:
-            return jsonify({'message': 'Nome de usuário já está em uso'}), 400
+            return jsonify({'message': 'Username is already in use'}), 400
         user.username = data['username']
     
     if 'is_admin' in data:
@@ -61,7 +61,7 @@ def update_user(user_id):
     db.session.commit()
     
     return jsonify({
-        'message': 'Informações do usuário atualizadas com sucesso',
+        'message': 'User information updated successfully',
         'user': user.to_dict()
     }), 200
 
@@ -72,18 +72,18 @@ def delete_user(user_id):
     
     current_user = get_current_user()
     if current_user.id == user_id:
-        return jsonify({'message': 'Não é possível excluir seu próprio usuário'}), 400
+        return jsonify({'message': 'Cannot delete your own user'}), 400
     
     companies_created = Company.query.filter_by(created_by=user_id).all()
     if companies_created:
-        return jsonify({'message': 'Não é possível excluir este usuário porque ele criou empresas'}), 400
+        return jsonify({'message': 'Cannot delete this user because they created companies'}), 400
     
     CompanyPermission.query.filter_by(user_id=user_id).delete()
     
     db.session.delete(user_to_delete)
     db.session.commit()
     
-    return jsonify({'message': 'Usuário excluído com sucesso'}), 200
+    return jsonify({'message': 'User deleted successfully'}), 200
 
 @users_bp.route('/users/<int:user_id>/change_password_no_verify', methods=['PUT'])
 @login_required
@@ -94,18 +94,18 @@ def change_password_no_verify(user_id):
     user_to_change = User.query.get_or_404(user_id)
     
     if not current_user.is_admin and current_user.id != user_id:
-        return jsonify({'message': 'Acesso não autorizado'}), 403
+        return jsonify({'message': 'Unauthorized access'}), 403
     
     if 'new_password' not in data:
-        return jsonify({'message': 'Nova senha é necessária'}), 400
+        return jsonify({'message': 'New password is required'}), 400
     
     if len(data['new_password']) < 6:
-        return jsonify({'message': 'A senha deve ter pelo menos 6 caracteres'}), 400
+        return jsonify({'message': 'Password must be at least 6 characters long'}), 400
     
     user_to_change.set_password(data['new_password'])
     db.session.commit()
     
-    return jsonify({'message': 'Senha alterada com sucesso'}), 200
+    return jsonify({'message': 'Password changed successfully'}), 200
 
 @users_bp.route('/users/<int:user_id>/password', methods=['PUT'])
 @login_required
@@ -116,25 +116,25 @@ def change_password(user_id):
     user_to_change = User.query.get_or_404(user_id)
     
     if not current_user.is_admin and current_user.id != user_id:
-        return jsonify({'message': 'Acesso não autorizado'}), 403
+        return jsonify({'message': 'Unauthorized access'}), 403
     
     if 'new_password' not in data:
-        return jsonify({'message': 'Nova senha é necessária'}), 400
+        return jsonify({'message': 'New password is required'}), 400
     
     if len(data['new_password']) < 6:
-        return jsonify({'message': 'A senha deve ter pelo menos 6 caracteres'}), 400
+        return jsonify({'message': 'Password must be at least 6 characters long'}), 400
     
     if not current_user.is_admin and current_user.id == user_id:
         if 'current_password' not in data:
-            return jsonify({'message': 'Senha atual é necessária'}), 400
+            return jsonify({'message': 'Current password is required'}), 400
         
         if not user_to_change.check_password(data['current_password']):
-            return jsonify({'message': 'Senha atual incorreta'}), 400
+            return jsonify({'message': 'Current password is incorrect'}), 400
     
     user_to_change.set_password(data['new_password'])
     db.session.commit()
     
-    return jsonify({'message': 'Senha alterada com sucesso'}), 200
+    return jsonify({'message': 'Password changed successfully'}), 200
 
 @users_bp.route('/users/<int:user_id>/companies', methods=['GET'])
 @admin_required
